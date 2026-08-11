@@ -19,6 +19,19 @@ import { Route as IntegracoesRouteImport } from './routes/integracoes'
 import { Route as ObrigacoesRouteImport } from './routes/obrigacoes'
 import { Route as PatrimonioRouteImport } from './routes/patrimonio'
 import { Route as RelatoriosRouteImport } from './routes/relatorios'
+import { Route as ContabilBalanceteRouteImport } from './routes/contabil.balancete'
+import { Route as ContabilBalancoPatrimonialRouteImport } from './routes/contabil.balanco-patrimonial'
+import { Route as ContabilCentrosDeCustoRouteImport } from './routes/contabil.centros-de-custo'
+import { Route as ContabilCompetenciasRouteImport } from './routes/contabil.competencias'
+import { Route as ContabilConciliacaoRouteImport } from './routes/contabil.conciliacao'
+import { Route as ContabilDiarioRouteImport } from './routes/contabil.diario'
+import { Route as ContabilDreRouteImport } from './routes/contabil.dre'
+import { Route as ContabilHistoricosRouteImport } from './routes/contabil.historicos'
+import { Route as ContabilLancamentosRouteImport } from './routes/contabil.lancamentos'
+import { Route as ContabilLotesRouteImport } from './routes/contabil.lotes'
+import { Route as ContabilPlanoDeContasRouteImport } from './routes/contabil.plano-de-contas'
+import { Route as ContabilRateiosRouteImport } from './routes/contabil.rateios'
+import { Route as ContabilRazaoRouteImport } from './routes/contabil.razao'
 import { Route as EmpresasIndexRouteImport } from './routes/empresas.index'
 import { Route as EmpresasIdRouteImport } from './routes/empresas.$id'
 
@@ -72,6 +85,72 @@ const RelatoriosRoute = RelatoriosRouteImport.update({
   path: '/relatorios',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ContabilBalanceteRoute = ContabilBalanceteRouteImport.update({
+  id: '/contabil/balancete',
+  path: '/contabil/balancete',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContabilBalancoPatrimonialRoute =
+  ContabilBalancoPatrimonialRouteImport.update({
+    id: '/contabil/balanco-patrimonial',
+    path: '/contabil/balanco-patrimonial',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ContabilCentrosDeCustoRoute = ContabilCentrosDeCustoRouteImport.update({
+  id: '/contabil/centros-de-custo',
+  path: '/contabil/centros-de-custo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContabilCompetenciasRoute = ContabilCompetenciasRouteImport.update({
+  id: '/contabil/competencias',
+  path: '/contabil/competencias',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContabilConciliacaoRoute = ContabilConciliacaoRouteImport.update({
+  id: '/contabil/conciliacao',
+  path: '/contabil/conciliacao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContabilDiarioRoute = ContabilDiarioRouteImport.update({
+  id: '/contabil/diario',
+  path: '/contabil/diario',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContabilDreRoute = ContabilDreRouteImport.update({
+  id: '/contabil/dre',
+  path: '/contabil/dre',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContabilHistoricosRoute = ContabilHistoricosRouteImport.update({
+  id: '/contabil/historicos',
+  path: '/contabil/historicos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContabilLancamentosRoute = ContabilLancamentosRouteImport.update({
+  id: '/contabil/lancamentos',
+  path: '/contabil/lancamentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContabilLotesRoute = ContabilLotesRouteImport.update({
+  id: '/contabil/lotes',
+  path: '/contabil/lotes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContabilPlanoDeContasRoute = ContabilPlanoDeContasRouteImport.update({
+  id: '/contabil/plano-de-contas',
+  path: '/contabil/plano-de-contas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContabilRateiosRoute = ContabilRateiosRouteImport.update({
+  id: '/contabil/rateios',
+  path: '/contabil/rateios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContabilRazaoRoute = ContabilRazaoRouteImport.update({
+  id: '/contabil/razao',
+  path: '/contabil/razao',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EmpresasIndexRoute = EmpresasIndexRouteImport.update({
   id: '/empresas/',
   path: '/empresas/',
@@ -94,6 +173,19 @@ export interface FileRoutesByFullPath {
   '/obrigacoes': typeof ObrigacoesRoute
   '/patrimonio': typeof PatrimonioRoute
   '/relatorios': typeof RelatoriosRoute
+  '/contabil/balancete': typeof ContabilBalanceteRoute
+  '/contabil/balanco-patrimonial': typeof ContabilBalancoPatrimonialRoute
+  '/contabil/centros-de-custo': typeof ContabilCentrosDeCustoRoute
+  '/contabil/competencias': typeof ContabilCompetenciasRoute
+  '/contabil/conciliacao': typeof ContabilConciliacaoRoute
+  '/contabil/diario': typeof ContabilDiarioRoute
+  '/contabil/dre': typeof ContabilDreRoute
+  '/contabil/historicos': typeof ContabilHistoricosRoute
+  '/contabil/lancamentos': typeof ContabilLancamentosRoute
+  '/contabil/lotes': typeof ContabilLotesRoute
+  '/contabil/plano-de-contas': typeof ContabilPlanoDeContasRoute
+  '/contabil/rateios': typeof ContabilRateiosRoute
+  '/contabil/razao': typeof ContabilRazaoRoute
   '/empresas/$id': typeof EmpresasIdRoute
   '/empresas/': typeof EmpresasIndexRoute
 }
@@ -108,6 +200,19 @@ export interface FileRoutesByTo {
   '/obrigacoes': typeof ObrigacoesRoute
   '/patrimonio': typeof PatrimonioRoute
   '/relatorios': typeof RelatoriosRoute
+  '/contabil/balancete': typeof ContabilBalanceteRoute
+  '/contabil/balanco-patrimonial': typeof ContabilBalancoPatrimonialRoute
+  '/contabil/centros-de-custo': typeof ContabilCentrosDeCustoRoute
+  '/contabil/competencias': typeof ContabilCompetenciasRoute
+  '/contabil/conciliacao': typeof ContabilConciliacaoRoute
+  '/contabil/diario': typeof ContabilDiarioRoute
+  '/contabil/dre': typeof ContabilDreRoute
+  '/contabil/historicos': typeof ContabilHistoricosRoute
+  '/contabil/lancamentos': typeof ContabilLancamentosRoute
+  '/contabil/lotes': typeof ContabilLotesRoute
+  '/contabil/plano-de-contas': typeof ContabilPlanoDeContasRoute
+  '/contabil/rateios': typeof ContabilRateiosRoute
+  '/contabil/razao': typeof ContabilRazaoRoute
   '/empresas/$id': typeof EmpresasIdRoute
   '/empresas': typeof EmpresasIndexRoute
 }
@@ -123,6 +228,19 @@ export interface FileRoutesById {
   '/obrigacoes': typeof ObrigacoesRoute
   '/patrimonio': typeof PatrimonioRoute
   '/relatorios': typeof RelatoriosRoute
+  '/contabil/balancete': typeof ContabilBalanceteRoute
+  '/contabil/balanco-patrimonial': typeof ContabilBalancoPatrimonialRoute
+  '/contabil/centros-de-custo': typeof ContabilCentrosDeCustoRoute
+  '/contabil/competencias': typeof ContabilCompetenciasRoute
+  '/contabil/conciliacao': typeof ContabilConciliacaoRoute
+  '/contabil/diario': typeof ContabilDiarioRoute
+  '/contabil/dre': typeof ContabilDreRoute
+  '/contabil/historicos': typeof ContabilHistoricosRoute
+  '/contabil/lancamentos': typeof ContabilLancamentosRoute
+  '/contabil/lotes': typeof ContabilLotesRoute
+  '/contabil/plano-de-contas': typeof ContabilPlanoDeContasRoute
+  '/contabil/rateios': typeof ContabilRateiosRoute
+  '/contabil/razao': typeof ContabilRazaoRoute
   '/empresas/$id': typeof EmpresasIdRoute
   '/empresas/': typeof EmpresasIndexRoute
 }
@@ -139,6 +257,19 @@ export interface FileRouteTypes {
     | '/obrigacoes'
     | '/patrimonio'
     | '/relatorios'
+    | '/contabil/balancete'
+    | '/contabil/balanco-patrimonial'
+    | '/contabil/centros-de-custo'
+    | '/contabil/competencias'
+    | '/contabil/conciliacao'
+    | '/contabil/diario'
+    | '/contabil/dre'
+    | '/contabil/historicos'
+    | '/contabil/lancamentos'
+    | '/contabil/lotes'
+    | '/contabil/plano-de-contas'
+    | '/contabil/rateios'
+    | '/contabil/razao'
     | '/empresas/$id'
     | '/empresas/'
   fileRoutesByTo: FileRoutesByTo
@@ -153,6 +284,19 @@ export interface FileRouteTypes {
     | '/obrigacoes'
     | '/patrimonio'
     | '/relatorios'
+    | '/contabil/balancete'
+    | '/contabil/balanco-patrimonial'
+    | '/contabil/centros-de-custo'
+    | '/contabil/competencias'
+    | '/contabil/conciliacao'
+    | '/contabil/diario'
+    | '/contabil/dre'
+    | '/contabil/historicos'
+    | '/contabil/lancamentos'
+    | '/contabil/lotes'
+    | '/contabil/plano-de-contas'
+    | '/contabil/rateios'
+    | '/contabil/razao'
     | '/empresas/$id'
     | '/empresas'
   id:
@@ -167,6 +311,19 @@ export interface FileRouteTypes {
     | '/obrigacoes'
     | '/patrimonio'
     | '/relatorios'
+    | '/contabil/balancete'
+    | '/contabil/balanco-patrimonial'
+    | '/contabil/centros-de-custo'
+    | '/contabil/competencias'
+    | '/contabil/conciliacao'
+    | '/contabil/diario'
+    | '/contabil/dre'
+    | '/contabil/historicos'
+    | '/contabil/lancamentos'
+    | '/contabil/lotes'
+    | '/contabil/plano-de-contas'
+    | '/contabil/rateios'
+    | '/contabil/razao'
     | '/empresas/$id'
     | '/empresas/'
   fileRoutesById: FileRoutesById
@@ -182,6 +339,19 @@ export interface RootRouteChildren {
   ObrigacoesRoute: typeof ObrigacoesRoute
   PatrimonioRoute: typeof PatrimonioRoute
   RelatoriosRoute: typeof RelatoriosRoute
+  ContabilBalanceteRoute: typeof ContabilBalanceteRoute
+  ContabilBalancoPatrimonialRoute: typeof ContabilBalancoPatrimonialRoute
+  ContabilCentrosDeCustoRoute: typeof ContabilCentrosDeCustoRoute
+  ContabilCompetenciasRoute: typeof ContabilCompetenciasRoute
+  ContabilConciliacaoRoute: typeof ContabilConciliacaoRoute
+  ContabilDiarioRoute: typeof ContabilDiarioRoute
+  ContabilDreRoute: typeof ContabilDreRoute
+  ContabilHistoricosRoute: typeof ContabilHistoricosRoute
+  ContabilLancamentosRoute: typeof ContabilLancamentosRoute
+  ContabilLotesRoute: typeof ContabilLotesRoute
+  ContabilPlanoDeContasRoute: typeof ContabilPlanoDeContasRoute
+  ContabilRateiosRoute: typeof ContabilRateiosRoute
+  ContabilRazaoRoute: typeof ContabilRazaoRoute
   EmpresasIdRoute: typeof EmpresasIdRoute
   EmpresasIndexRoute: typeof EmpresasIndexRoute
 }
@@ -258,6 +428,97 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RelatoriosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/contabil/balancete': {
+      id: '/contabil/balancete'
+      path: '/contabil/balancete'
+      fullPath: '/contabil/balancete'
+      preLoaderRoute: typeof ContabilBalanceteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contabil/balanco-patrimonial': {
+      id: '/contabil/balanco-patrimonial'
+      path: '/contabil/balanco-patrimonial'
+      fullPath: '/contabil/balanco-patrimonial'
+      preLoaderRoute: typeof ContabilBalancoPatrimonialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contabil/centros-de-custo': {
+      id: '/contabil/centros-de-custo'
+      path: '/contabil/centros-de-custo'
+      fullPath: '/contabil/centros-de-custo'
+      preLoaderRoute: typeof ContabilCentrosDeCustoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contabil/competencias': {
+      id: '/contabil/competencias'
+      path: '/contabil/competencias'
+      fullPath: '/contabil/competencias'
+      preLoaderRoute: typeof ContabilCompetenciasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contabil/conciliacao': {
+      id: '/contabil/conciliacao'
+      path: '/contabil/conciliacao'
+      fullPath: '/contabil/conciliacao'
+      preLoaderRoute: typeof ContabilConciliacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contabil/diario': {
+      id: '/contabil/diario'
+      path: '/contabil/diario'
+      fullPath: '/contabil/diario'
+      preLoaderRoute: typeof ContabilDiarioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contabil/dre': {
+      id: '/contabil/dre'
+      path: '/contabil/dre'
+      fullPath: '/contabil/dre'
+      preLoaderRoute: typeof ContabilDreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contabil/historicos': {
+      id: '/contabil/historicos'
+      path: '/contabil/historicos'
+      fullPath: '/contabil/historicos'
+      preLoaderRoute: typeof ContabilHistoricosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contabil/lancamentos': {
+      id: '/contabil/lancamentos'
+      path: '/contabil/lancamentos'
+      fullPath: '/contabil/lancamentos'
+      preLoaderRoute: typeof ContabilLancamentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contabil/lotes': {
+      id: '/contabil/lotes'
+      path: '/contabil/lotes'
+      fullPath: '/contabil/lotes'
+      preLoaderRoute: typeof ContabilLotesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contabil/plano-de-contas': {
+      id: '/contabil/plano-de-contas'
+      path: '/contabil/plano-de-contas'
+      fullPath: '/contabil/plano-de-contas'
+      preLoaderRoute: typeof ContabilPlanoDeContasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contabil/rateios': {
+      id: '/contabil/rateios'
+      path: '/contabil/rateios'
+      fullPath: '/contabil/rateios'
+      preLoaderRoute: typeof ContabilRateiosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contabil/razao': {
+      id: '/contabil/razao'
+      path: '/contabil/razao'
+      fullPath: '/contabil/razao'
+      preLoaderRoute: typeof ContabilRazaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/empresas/': {
       id: '/empresas/'
       path: '/empresas'
@@ -286,9 +547,32 @@ const rootRouteChildren: RootRouteChildren = {
   ObrigacoesRoute: ObrigacoesRoute,
   PatrimonioRoute: PatrimonioRoute,
   RelatoriosRoute: RelatoriosRoute,
+  ContabilBalanceteRoute: ContabilBalanceteRoute,
+  ContabilBalancoPatrimonialRoute: ContabilBalancoPatrimonialRoute,
+  ContabilCentrosDeCustoRoute: ContabilCentrosDeCustoRoute,
+  ContabilCompetenciasRoute: ContabilCompetenciasRoute,
+  ContabilConciliacaoRoute: ContabilConciliacaoRoute,
+  ContabilDiarioRoute: ContabilDiarioRoute,
+  ContabilDreRoute: ContabilDreRoute,
+  ContabilHistoricosRoute: ContabilHistoricosRoute,
+  ContabilLancamentosRoute: ContabilLancamentosRoute,
+  ContabilLotesRoute: ContabilLotesRoute,
+  ContabilPlanoDeContasRoute: ContabilPlanoDeContasRoute,
+  ContabilRateiosRoute: ContabilRateiosRoute,
+  ContabilRazaoRoute: ContabilRazaoRoute,
   EmpresasIdRoute: EmpresasIdRoute,
   EmpresasIndexRoute: EmpresasIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
