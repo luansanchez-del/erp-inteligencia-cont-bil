@@ -10,33 +10,180 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdministracaoRouteImport } from './routes/administracao'
+import { Route as EcdEcfRouteImport } from './routes/ecd-ecf'
+import { Route as FiscalRouteImport } from './routes/fiscal'
+import { Route as GruposRouteImport } from './routes/grupos'
+import { Route as ImportacoesRouteImport } from './routes/importacoes'
+import { Route as IntegracoesRouteImport } from './routes/integracoes'
+import { Route as ObrigacoesRouteImport } from './routes/obrigacoes'
+import { Route as PatrimonioRouteImport } from './routes/patrimonio'
+import { Route as RelatoriosRouteImport } from './routes/relatorios'
+import { Route as EmpresasIndexRouteImport } from './routes/empresas.index'
+import { Route as EmpresasIdRouteImport } from './routes/empresas.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdministracaoRoute = AdministracaoRouteImport.update({
+  id: '/administracao',
+  path: '/administracao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EcdEcfRoute = EcdEcfRouteImport.update({
+  id: '/ecd-ecf',
+  path: '/ecd-ecf',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FiscalRoute = FiscalRouteImport.update({
+  id: '/fiscal',
+  path: '/fiscal',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GruposRoute = GruposRouteImport.update({
+  id: '/grupos',
+  path: '/grupos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ImportacoesRoute = ImportacoesRouteImport.update({
+  id: '/importacoes',
+  path: '/importacoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IntegracoesRoute = IntegracoesRouteImport.update({
+  id: '/integracoes',
+  path: '/integracoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ObrigacoesRoute = ObrigacoesRouteImport.update({
+  id: '/obrigacoes',
+  path: '/obrigacoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PatrimonioRoute = PatrimonioRouteImport.update({
+  id: '/patrimonio',
+  path: '/patrimonio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RelatoriosRoute = RelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmpresasIndexRoute = EmpresasIndexRouteImport.update({
+  id: '/empresas/',
+  path: '/empresas/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmpresasIdRoute = EmpresasIdRouteImport.update({
+  id: '/empresas/$id',
+  path: '/empresas/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/administracao': typeof AdministracaoRoute
+  '/ecd-ecf': typeof EcdEcfRoute
+  '/fiscal': typeof FiscalRoute
+  '/grupos': typeof GruposRoute
+  '/importacoes': typeof ImportacoesRoute
+  '/integracoes': typeof IntegracoesRoute
+  '/obrigacoes': typeof ObrigacoesRoute
+  '/patrimonio': typeof PatrimonioRoute
+  '/relatorios': typeof RelatoriosRoute
+  '/empresas/$id': typeof EmpresasIdRoute
+  '/empresas/': typeof EmpresasIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/administracao': typeof AdministracaoRoute
+  '/ecd-ecf': typeof EcdEcfRoute
+  '/fiscal': typeof FiscalRoute
+  '/grupos': typeof GruposRoute
+  '/importacoes': typeof ImportacoesRoute
+  '/integracoes': typeof IntegracoesRoute
+  '/obrigacoes': typeof ObrigacoesRoute
+  '/patrimonio': typeof PatrimonioRoute
+  '/relatorios': typeof RelatoriosRoute
+  '/empresas/$id': typeof EmpresasIdRoute
+  '/empresas': typeof EmpresasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/administracao': typeof AdministracaoRoute
+  '/ecd-ecf': typeof EcdEcfRoute
+  '/fiscal': typeof FiscalRoute
+  '/grupos': typeof GruposRoute
+  '/importacoes': typeof ImportacoesRoute
+  '/integracoes': typeof IntegracoesRoute
+  '/obrigacoes': typeof ObrigacoesRoute
+  '/patrimonio': typeof PatrimonioRoute
+  '/relatorios': typeof RelatoriosRoute
+  '/empresas/$id': typeof EmpresasIdRoute
+  '/empresas/': typeof EmpresasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/administracao'
+    | '/ecd-ecf'
+    | '/fiscal'
+    | '/grupos'
+    | '/importacoes'
+    | '/integracoes'
+    | '/obrigacoes'
+    | '/patrimonio'
+    | '/relatorios'
+    | '/empresas/$id'
+    | '/empresas/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/administracao'
+    | '/ecd-ecf'
+    | '/fiscal'
+    | '/grupos'
+    | '/importacoes'
+    | '/integracoes'
+    | '/obrigacoes'
+    | '/patrimonio'
+    | '/relatorios'
+    | '/empresas/$id'
+    | '/empresas'
+  id:
+    | '__root__'
+    | '/'
+    | '/administracao'
+    | '/ecd-ecf'
+    | '/fiscal'
+    | '/grupos'
+    | '/importacoes'
+    | '/integracoes'
+    | '/obrigacoes'
+    | '/patrimonio'
+    | '/relatorios'
+    | '/empresas/$id'
+    | '/empresas/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdministracaoRoute: typeof AdministracaoRoute
+  EcdEcfRoute: typeof EcdEcfRoute
+  FiscalRoute: typeof FiscalRoute
+  GruposRoute: typeof GruposRoute
+  ImportacoesRoute: typeof ImportacoesRoute
+  IntegracoesRoute: typeof IntegracoesRoute
+  ObrigacoesRoute: typeof ObrigacoesRoute
+  PatrimonioRoute: typeof PatrimonioRoute
+  RelatoriosRoute: typeof RelatoriosRoute
+  EmpresasIdRoute: typeof EmpresasIdRoute
+  EmpresasIndexRoute: typeof EmpresasIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +195,100 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/administracao': {
+      id: '/administracao'
+      path: '/administracao'
+      fullPath: '/administracao'
+      preLoaderRoute: typeof AdministracaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ecd-ecf': {
+      id: '/ecd-ecf'
+      path: '/ecd-ecf'
+      fullPath: '/ecd-ecf'
+      preLoaderRoute: typeof EcdEcfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/fiscal': {
+      id: '/fiscal'
+      path: '/fiscal'
+      fullPath: '/fiscal'
+      preLoaderRoute: typeof FiscalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/grupos': {
+      id: '/grupos'
+      path: '/grupos'
+      fullPath: '/grupos'
+      preLoaderRoute: typeof GruposRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/importacoes': {
+      id: '/importacoes'
+      path: '/importacoes'
+      fullPath: '/importacoes'
+      preLoaderRoute: typeof ImportacoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/integracoes': {
+      id: '/integracoes'
+      path: '/integracoes'
+      fullPath: '/integracoes'
+      preLoaderRoute: typeof IntegracoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/obrigacoes': {
+      id: '/obrigacoes'
+      path: '/obrigacoes'
+      fullPath: '/obrigacoes'
+      preLoaderRoute: typeof ObrigacoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/patrimonio': {
+      id: '/patrimonio'
+      path: '/patrimonio'
+      fullPath: '/patrimonio'
+      preLoaderRoute: typeof PatrimonioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/relatorios': {
+      id: '/relatorios'
+      path: '/relatorios'
+      fullPath: '/relatorios'
+      preLoaderRoute: typeof RelatoriosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/empresas/': {
+      id: '/empresas/'
+      path: '/empresas'
+      fullPath: '/empresas/'
+      preLoaderRoute: typeof EmpresasIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/empresas/$id': {
+      id: '/empresas/$id'
+      path: '/empresas/$id'
+      fullPath: '/empresas/$id'
+      preLoaderRoute: typeof EmpresasIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdministracaoRoute: AdministracaoRoute,
+  EcdEcfRoute: EcdEcfRoute,
+  FiscalRoute: FiscalRoute,
+  GruposRoute: GruposRoute,
+  ImportacoesRoute: ImportacoesRoute,
+  IntegracoesRoute: IntegracoesRoute,
+  ObrigacoesRoute: ObrigacoesRoute,
+  PatrimonioRoute: PatrimonioRoute,
+  RelatoriosRoute: RelatoriosRoute,
+  EmpresasIdRoute: EmpresasIdRoute,
+  EmpresasIndexRoute: EmpresasIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
