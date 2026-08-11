@@ -19,10 +19,10 @@ export const Route = createFileRoute("/contabil/plano-de-contas")({
 type Registro = Record<string, string>;
 
 const colunas: Column<Registro>[] = [
-  { key: "codigo", header: "Código", className: "font-mono w-40", render: (r) => r.codigo ?? "", valor: (r) => r.codigo ?? "" },
-  { key: "descricao", header: "Descrição", render: (r) => r.descricao ?? "", valor: (r) => r.descricao ?? "" },
-  { key: "natureza", header: "Natureza", className: "w-32", render: (r) => r.natureza ?? "", valor: (r) => r.natureza ?? "" },
-  { key: "tipo", header: "Tipo", className: "w-28", render: (r) => r.tipo ?? "", valor: (r) => r.tipo ?? "" },
+  { key: "codigo", header: "Código", className: "font-mono w-40", render: (r) => r["codigo"] ?? "", valor: (r) => r["codigo"] ?? "" },
+  { key: "descricao", header: "Descrição", render: (r) => r["descricao"] ?? "", valor: (r) => r["descricao"] ?? "" },
+  { key: "natureza", header: "Natureza", className: "w-32", render: (r) => r["natureza"] ?? "", valor: (r) => r["natureza"] ?? "" },
+  { key: "tipo", header: "Tipo", className: "w-28", render: (r) => r["tipo"] ?? "", valor: (r) => r["tipo"] ?? "" },
 ];
 
 function PlanoDeContas() {
@@ -40,7 +40,7 @@ function PlanoDeContas() {
       <DataTable
         colunas={colunas}
         dados={[]}
-        chave={(r) => r.id!}
+        chave={(r) => r["id"]!}
         placeholderBusca="Buscar por código ou descrição…"
         vazio="Nenhuma conta cadastrada."
       />

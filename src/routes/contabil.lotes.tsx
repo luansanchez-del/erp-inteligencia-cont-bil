@@ -19,11 +19,11 @@ export const Route = createFileRoute("/contabil/lotes")({
 type Registro = Record<string, string>;
 
 const colunas: Column<Registro>[] = [
-  { key: "numero", header: "Lote", className: "font-mono w-24", render: (r) => r.numero ?? "", valor: (r) => r.numero ?? "" },
-  { key: "origem", header: "Origem", className: "w-32", render: (r) => r.origem ?? "", valor: (r) => r.origem ?? "" },
-  { key: "quantidade", header: "Lançamentos", className: "w-28 font-mono", render: (r) => r.quantidade ?? "", valor: (r) => r.quantidade ?? "" },
-  { key: "valor", header: "Valor total", className: "text-right font-mono w-32", render: (r) => r.valor ?? "", valor: (r) => r.valor ?? "" },
-  { key: "status", header: "Situação", className: "w-28", render: (r) => r.status ?? "", valor: (r) => r.status ?? "" },
+  { key: "numero", header: "Lote", className: "font-mono w-24", render: (r) => r["numero"] ?? "", valor: (r) => r["numero"] ?? "" },
+  { key: "origem", header: "Origem", className: "w-32", render: (r) => r["origem"] ?? "", valor: (r) => r["origem"] ?? "" },
+  { key: "quantidade", header: "Lançamentos", className: "w-28 font-mono", render: (r) => r["quantidade"] ?? "", valor: (r) => r["quantidade"] ?? "" },
+  { key: "valor", header: "Valor total", className: "text-right font-mono w-32", render: (r) => r["valor"] ?? "", valor: (r) => r["valor"] ?? "" },
+  { key: "status", header: "Situação", className: "w-28", render: (r) => r["status"] ?? "", valor: (r) => r["status"] ?? "" },
 ];
 
 function Lotes() {
@@ -41,7 +41,7 @@ function Lotes() {
       <DataTable
         colunas={colunas}
         dados={[]}
-        chave={(r) => r.id!}
+        chave={(r) => r["id"]!}
         placeholderBusca="Buscar lote…"
         vazio="Nenhum lote na competência selecionada."
       />

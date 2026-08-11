@@ -19,12 +19,12 @@ export const Route = createFileRoute("/contabil/lancamentos")({
 type Registro = Record<string, string>;
 
 const colunas: Column<Registro>[] = [
-  { key: "numero", header: "Número", className: "font-mono w-28", render: (r) => r.numero ?? "", valor: (r) => r.numero ?? "" },
-  { key: "data", header: "Data", className: "w-28", render: (r) => r.data ?? "", valor: (r) => r.data ?? "" },
-  { key: "debito", header: "Conta débito", render: (r) => r.debito ?? "", valor: (r) => r.debito ?? "" },
-  { key: "credito", header: "Conta crédito", render: (r) => r.credito ?? "", valor: (r) => r.credito ?? "" },
-  { key: "historico", header: "Histórico", render: (r) => r.historico ?? "", valor: (r) => r.historico ?? "" },
-  { key: "valor", header: "Valor", className: "text-right font-mono w-32", render: (r) => r.valor ?? "", valor: (r) => r.valor ?? "" },
+  { key: "numero", header: "Número", className: "font-mono w-28", render: (r) => r["numero"] ?? "", valor: (r) => r["numero"] ?? "" },
+  { key: "data", header: "Data", className: "w-28", render: (r) => r["data"] ?? "", valor: (r) => r["data"] ?? "" },
+  { key: "debito", header: "Conta débito", render: (r) => r["debito"] ?? "", valor: (r) => r["debito"] ?? "" },
+  { key: "credito", header: "Conta crédito", render: (r) => r["credito"] ?? "", valor: (r) => r["credito"] ?? "" },
+  { key: "historico", header: "Histórico", render: (r) => r["historico"] ?? "", valor: (r) => r["historico"] ?? "" },
+  { key: "valor", header: "Valor", className: "text-right font-mono w-32", render: (r) => r["valor"] ?? "", valor: (r) => r["valor"] ?? "" },
 ];
 
 function Lancamentos() {
@@ -42,7 +42,7 @@ function Lancamentos() {
       <DataTable
         colunas={colunas}
         dados={[]}
-        chave={(r) => r.id!}
+        chave={(r) => r["id"]!}
         placeholderBusca="Buscar por número, conta ou histórico…"
         vazio="Nenhum lançamento na competência selecionada."
       />

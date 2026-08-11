@@ -19,9 +19,9 @@ export const Route = createFileRoute("/contabil/historicos")({
 type Registro = Record<string, string>;
 
 const colunas: Column<Registro>[] = [
-  { key: "codigo", header: "Código", className: "font-mono w-24", render: (r) => r.codigo ?? "", valor: (r) => r.codigo ?? "" },
-  { key: "descricao", header: "Descrição", render: (r) => r.descricao ?? "", valor: (r) => r.descricao ?? "" },
-  { key: "complemento", header: "Complemento livre", className: "w-40", render: (r) => r.complemento ?? "", valor: (r) => r.complemento ?? "" },
+  { key: "codigo", header: "Código", className: "font-mono w-24", render: (r) => r["codigo"] ?? "", valor: (r) => r["codigo"] ?? "" },
+  { key: "descricao", header: "Descrição", render: (r) => r["descricao"] ?? "", valor: (r) => r["descricao"] ?? "" },
+  { key: "complemento", header: "Complemento livre", className: "w-40", render: (r) => r["complemento"] ?? "", valor: (r) => r["complemento"] ?? "" },
 ];
 
 function Historicos() {
@@ -39,7 +39,7 @@ function Historicos() {
       <DataTable
         colunas={colunas}
         dados={[]}
-        chave={(r) => r.id!}
+        chave={(r) => r["id"]!}
         placeholderBusca="Buscar histórico…"
         vazio="Nenhum histórico cadastrado."
       />

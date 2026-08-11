@@ -19,9 +19,9 @@ export const Route = createFileRoute("/contabil/centros-de-custo")({
 type Registro = Record<string, string>;
 
 const colunas: Column<Registro>[] = [
-  { key: "codigo", header: "Código", className: "font-mono w-32", render: (r) => r.codigo ?? "", valor: (r) => r.codigo ?? "" },
-  { key: "descricao", header: "Descrição", render: (r) => r.descricao ?? "", valor: (r) => r.descricao ?? "" },
-  { key: "situacao", header: "Situação", className: "w-28", render: (r) => r.situacao ?? "", valor: (r) => r.situacao ?? "" },
+  { key: "codigo", header: "Código", className: "font-mono w-32", render: (r) => r["codigo"] ?? "", valor: (r) => r["codigo"] ?? "" },
+  { key: "descricao", header: "Descrição", render: (r) => r["descricao"] ?? "", valor: (r) => r["descricao"] ?? "" },
+  { key: "situacao", header: "Situação", className: "w-28", render: (r) => r["situacao"] ?? "", valor: (r) => r["situacao"] ?? "" },
 ];
 
 function CentrosDeCusto() {
@@ -39,7 +39,7 @@ function CentrosDeCusto() {
       <DataTable
         colunas={colunas}
         dados={[]}
-        chave={(r) => r.id!}
+        chave={(r) => r["id"]!}
         placeholderBusca="Buscar centro de custo…"
         vazio="Nenhum centro de custo cadastrado."
       />

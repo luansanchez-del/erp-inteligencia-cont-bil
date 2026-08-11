@@ -26,6 +26,8 @@ import { Route as ContabilCompetenciasRouteImport } from './routes/contabil.comp
 import { Route as ContabilConciliacaoRouteImport } from './routes/contabil.conciliacao'
 import { Route as ContabilDiarioRouteImport } from './routes/contabil.diario'
 import { Route as ContabilDreRouteImport } from './routes/contabil.dre'
+import { Route as ContabilEncerramentoRouteImport } from './routes/contabil.encerramento'
+import { Route as ContabilFechamentoRouteImport } from './routes/contabil.fechamento'
 import { Route as ContabilHistoricosRouteImport } from './routes/contabil.historicos'
 import { Route as ContabilLancamentosRouteImport } from './routes/contabil.lancamentos'
 import { Route as ContabilLotesRouteImport } from './routes/contabil.lotes'
@@ -121,6 +123,16 @@ const ContabilDreRoute = ContabilDreRouteImport.update({
   path: '/contabil/dre',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ContabilEncerramentoRoute = ContabilEncerramentoRouteImport.update({
+  id: '/contabil/encerramento',
+  path: '/contabil/encerramento',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContabilFechamentoRoute = ContabilFechamentoRouteImport.update({
+  id: '/contabil/fechamento',
+  path: '/contabil/fechamento',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ContabilHistoricosRoute = ContabilHistoricosRouteImport.update({
   id: '/contabil/historicos',
   path: '/contabil/historicos',
@@ -180,6 +192,8 @@ export interface FileRoutesByFullPath {
   '/contabil/conciliacao': typeof ContabilConciliacaoRoute
   '/contabil/diario': typeof ContabilDiarioRoute
   '/contabil/dre': typeof ContabilDreRoute
+  '/contabil/encerramento': typeof ContabilEncerramentoRoute
+  '/contabil/fechamento': typeof ContabilFechamentoRoute
   '/contabil/historicos': typeof ContabilHistoricosRoute
   '/contabil/lancamentos': typeof ContabilLancamentosRoute
   '/contabil/lotes': typeof ContabilLotesRoute
@@ -207,6 +221,8 @@ export interface FileRoutesByTo {
   '/contabil/conciliacao': typeof ContabilConciliacaoRoute
   '/contabil/diario': typeof ContabilDiarioRoute
   '/contabil/dre': typeof ContabilDreRoute
+  '/contabil/encerramento': typeof ContabilEncerramentoRoute
+  '/contabil/fechamento': typeof ContabilFechamentoRoute
   '/contabil/historicos': typeof ContabilHistoricosRoute
   '/contabil/lancamentos': typeof ContabilLancamentosRoute
   '/contabil/lotes': typeof ContabilLotesRoute
@@ -235,6 +251,8 @@ export interface FileRoutesById {
   '/contabil/conciliacao': typeof ContabilConciliacaoRoute
   '/contabil/diario': typeof ContabilDiarioRoute
   '/contabil/dre': typeof ContabilDreRoute
+  '/contabil/encerramento': typeof ContabilEncerramentoRoute
+  '/contabil/fechamento': typeof ContabilFechamentoRoute
   '/contabil/historicos': typeof ContabilHistoricosRoute
   '/contabil/lancamentos': typeof ContabilLancamentosRoute
   '/contabil/lotes': typeof ContabilLotesRoute
@@ -264,6 +282,8 @@ export interface FileRouteTypes {
     | '/contabil/conciliacao'
     | '/contabil/diario'
     | '/contabil/dre'
+    | '/contabil/encerramento'
+    | '/contabil/fechamento'
     | '/contabil/historicos'
     | '/contabil/lancamentos'
     | '/contabil/lotes'
@@ -291,6 +311,8 @@ export interface FileRouteTypes {
     | '/contabil/conciliacao'
     | '/contabil/diario'
     | '/contabil/dre'
+    | '/contabil/encerramento'
+    | '/contabil/fechamento'
     | '/contabil/historicos'
     | '/contabil/lancamentos'
     | '/contabil/lotes'
@@ -318,6 +340,8 @@ export interface FileRouteTypes {
     | '/contabil/conciliacao'
     | '/contabil/diario'
     | '/contabil/dre'
+    | '/contabil/encerramento'
+    | '/contabil/fechamento'
     | '/contabil/historicos'
     | '/contabil/lancamentos'
     | '/contabil/lotes'
@@ -346,6 +370,8 @@ export interface RootRouteChildren {
   ContabilConciliacaoRoute: typeof ContabilConciliacaoRoute
   ContabilDiarioRoute: typeof ContabilDiarioRoute
   ContabilDreRoute: typeof ContabilDreRoute
+  ContabilEncerramentoRoute: typeof ContabilEncerramentoRoute
+  ContabilFechamentoRoute: typeof ContabilFechamentoRoute
   ContabilHistoricosRoute: typeof ContabilHistoricosRoute
   ContabilLancamentosRoute: typeof ContabilLancamentosRoute
   ContabilLotesRoute: typeof ContabilLotesRoute
@@ -477,6 +503,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContabilDreRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/contabil/encerramento': {
+      id: '/contabil/encerramento'
+      path: '/contabil/encerramento'
+      fullPath: '/contabil/encerramento'
+      preLoaderRoute: typeof ContabilEncerramentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contabil/fechamento': {
+      id: '/contabil/fechamento'
+      path: '/contabil/fechamento'
+      fullPath: '/contabil/fechamento'
+      preLoaderRoute: typeof ContabilFechamentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/contabil/historicos': {
       id: '/contabil/historicos'
       path: '/contabil/historicos'
@@ -554,6 +594,8 @@ const rootRouteChildren: RootRouteChildren = {
   ContabilConciliacaoRoute: ContabilConciliacaoRoute,
   ContabilDiarioRoute: ContabilDiarioRoute,
   ContabilDreRoute: ContabilDreRoute,
+  ContabilEncerramentoRoute: ContabilEncerramentoRoute,
+  ContabilFechamentoRoute: ContabilFechamentoRoute,
   ContabilHistoricosRoute: ContabilHistoricosRoute,
   ContabilLancamentosRoute: ContabilLancamentosRoute,
   ContabilLotesRoute: ContabilLotesRoute,
@@ -566,13 +608,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

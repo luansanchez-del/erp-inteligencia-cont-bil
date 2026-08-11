@@ -19,10 +19,10 @@ export const Route = createFileRoute("/contabil/rateios")({
 type Registro = Record<string, string>;
 
 const colunas: Column<Registro>[] = [
-  { key: "codigo", header: "Código", className: "font-mono w-24", render: (r) => r.codigo ?? "", valor: (r) => r.codigo ?? "" },
-  { key: "descricao", header: "Descrição", render: (r) => r.descricao ?? "", valor: (r) => r.descricao ?? "" },
-  { key: "criterio", header: "Critério", className: "w-32", render: (r) => r.criterio ?? "", valor: (r) => r.criterio ?? "" },
-  { key: "linhas", header: "Linhas", className: "w-24 font-mono", render: (r) => r.linhas ?? "", valor: (r) => r.linhas ?? "" },
+  { key: "codigo", header: "Código", className: "font-mono w-24", render: (r) => r["codigo"] ?? "", valor: (r) => r["codigo"] ?? "" },
+  { key: "descricao", header: "Descrição", render: (r) => r["descricao"] ?? "", valor: (r) => r["descricao"] ?? "" },
+  { key: "criterio", header: "Critério", className: "w-32", render: (r) => r["criterio"] ?? "", valor: (r) => r["criterio"] ?? "" },
+  { key: "linhas", header: "Linhas", className: "w-24 font-mono", render: (r) => r["linhas"] ?? "", valor: (r) => r["linhas"] ?? "" },
 ];
 
 function Rateios() {
@@ -40,7 +40,7 @@ function Rateios() {
       <DataTable
         colunas={colunas}
         dados={[]}
-        chave={(r) => r.id!}
+        chave={(r) => r["id"]!}
         placeholderBusca="Buscar regra de rateio…"
         vazio="Nenhuma regra de rateio cadastrada."
       />

@@ -19,10 +19,10 @@ export const Route = createFileRoute("/contabil/competencias")({
 type Registro = Record<string, string>;
 
 const colunas: Column<Registro>[] = [
-  { key: "periodo", header: "Período", className: "font-mono w-28", render: (r) => r.periodo ?? "", valor: (r) => r.periodo ?? "" },
-  { key: "empresa", header: "Empresa", render: (r) => r.empresa ?? "", valor: (r) => r.empresa ?? "" },
-  { key: "status", header: "Situação", className: "w-32", render: (r) => r.status ?? "", valor: (r) => r.status ?? "" },
-  { key: "fechadaEm", header: "Fechada em", className: "w-36", render: (r) => r.fechadaEm ?? "", valor: (r) => r.fechadaEm ?? "" },
+  { key: "periodo", header: "Período", className: "font-mono w-28", render: (r) => r["periodo"] ?? "", valor: (r) => r["periodo"] ?? "" },
+  { key: "empresa", header: "Empresa", render: (r) => r["empresa"] ?? "", valor: (r) => r["empresa"] ?? "" },
+  { key: "status", header: "Situação", className: "w-32", render: (r) => r["status"] ?? "", valor: (r) => r["status"] ?? "" },
+  { key: "fechadaEm", header: "Fechada em", className: "w-36", render: (r) => r["fechadaEm"] ?? "", valor: (r) => r["fechadaEm"] ?? "" },
 ];
 
 function Competencias() {
@@ -40,7 +40,7 @@ function Competencias() {
       <DataTable
         colunas={colunas}
         dados={[]}
-        chave={(r) => r.id!}
+        chave={(r) => r["id"]!}
         placeholderBusca="Buscar competência…"
         vazio="Nenhuma competência cadastrada."
       />
