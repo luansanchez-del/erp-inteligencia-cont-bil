@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { CircleAlert, Plus } from "lucide-react";
 import { PageHeader, PageShell } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
