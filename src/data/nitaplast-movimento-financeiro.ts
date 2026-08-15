@@ -1920,4 +1920,4 @@ const raw = `
 29/06/2026|B34101|96|D|126000.00|96-TRANSF. - MESMA TITULARI TRANSF P/ B34100 . 1
 30/06/2026|B34101|7|C|178.44|7-RENDIMENTO APLIC. FINANC 001/001 1
 `;
-export const movimentosFinanceiros: MovimentoFinanceiro[] = raw.trim().split("\n").map((line,index) => { const [data,banco,codigo,tipo,valor,historico] = line.split("|"); return { id: `MF-${index+1}`, data, banco, codigo, tipo: tipo === "D" ? "debito" : "credito", valor: Number(valor), historico, classificacao: classes[codigo] ?? "A classificar" }; });
+export const movimentosFinanceiros: MovimentoFinanceiro[] = raw.trim().split("\n").map((line,index) => { const [data = "", banco = "", codigo = "", tipo = "", valor = "0", historico = ""] = line.split("|"); return { id: `MF-${index+1}`, data, banco, codigo, tipo: tipo === "D" ? "debito" as const : "credito" as const, valor: Number(valor), historico, classificacao: classes[codigo] ?? "A classificar" }; });

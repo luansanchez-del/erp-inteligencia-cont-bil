@@ -8,6 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 import { cadastroFiscalNitaplast, dreCompletaJunho, receitaBrutaJunho } from "@/data/nitaplast-dre-completa";
 import { composicaoDrePorConta, depreciacaoContaAConta, totalDepreciacaoPrevisto } from "@/data/nitaplast-dre-contas";
+import { depreciacoes } from "@/data/nitaplast-razao-integrado";
+
+const valoresComCodigo = new Set<number>(depreciacaoContaAConta.map((conta) => conta.valor));
+const depreciacaoSemCodigo = depreciacoes.filter(([, , valor]) => !valoresComCodigo.has(valor));
 
 export const Route = createFileRoute("/contabil/dre")({ component: DrePage });
 
@@ -20,8 +24,8 @@ function DrePage() {
   const resultadoOperacional = dreCompletaJunho.find((linha) => linha.id === "resultado-op")!.valor;
   const lucroLiquido = dreCompletaJunho.find((linha) => linha.id === "lucro-liq")!.valor;
   const diferencas = composicaoDrePorConta.filter((conta) => conta.situacao === "a_distribuir");
-  const totalDepreciacaoLocalizado = depreciacaoContaAConta.reduce((total, conta) => total + conta.valor, 0);
-  const diferencaDepreciacao = totalDepreciacaoPrevisto - totalDepreciacaoLocalizado;
+  const totalDepreciacaoLocalizado = depreciacaoContaAConta.reduce((total, conta) => total + conta.valor, 0) + depreciacaoSemCodigo.reduce((total, [, , valor]) => total + valor, 0);
+  const diferencaDepreciacao = Math.round((totalDepreciacaoPrevisto - totalDepreciacaoLocalizado) * 100) / 100;
 
   const porGrupo = useMemo(() => {
     const grupos = new Map<string, typeof composicaoDrePorConta>();
@@ -104,14 +108,16 @@ function DrePage() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Depreciação — conta a conta</CardTitle><CardDescription>Lançamento pontual previsto em {brl.format(totalDepreciacaoPrevisto)}. As contas abaixo foram localizadas no fechamento.</CardDescription></CardHeader>
+        <CardHeader><CardTitle className="text-base">Depreciação — conta a conta</CardTitle><CardDescription>Lançamento pontual previsto em {brl.format(totalDepreciacaoPrevisto)}. As contas abaixo têm código do plano localizado; as demais aparecem com o detalhe do razão até o código ser confirmado.</CardDescription></CardHeader>
         <CardContent className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-sm"><thead><tr className="border-b bg-muted/40 text-left text-xs"><th className="p-2">Conta</th><th className="p-2">Classificação</th><th className="p-2">Descrição</th><th className="p-2 text-right">Valor</th></tr></thead><tbody>
             {depreciacaoContaAConta.map((conta) => <tr key={conta.codigo} className="border-b"><td className="p-2 font-mono">{conta.codigo}</td><td className="p-2 font-mono text-xs">{conta.classificacao}</td><td className="p-2">{conta.descricao}</td><td className="p-2 text-right tabular-nums">{brl.format(conta.valor)}</td></tr>)}
-            <tr className="border-t-2 bg-amber-50 font-medium"><td className="p-2" colSpan={3}>Saldo de depreciação/amortização ainda a distribuir entre as demais contas</td><td className="p-2 text-right text-amber-800">{brl.format(diferencaDepreciacao)}</td></tr>
+            {depreciacaoSemCodigo.map(([, creditoCodigo, valor, descricao]) => <tr key={creditoCodigo} className="border-b bg-amber-50/60"><td className="p-2 font-mono text-muted-foreground">—</td><td className="p-2 font-mono text-xs text-muted-foreground">—</td><td className="p-2">{descricao} <span className="text-xs text-muted-foreground">(detalhe do razão; conta da DRE a confirmar)</span></td><td className="p-2 text-right tabular-nums">{brl.format(valor)}</td></tr>)}
+            <tr className="border-t-2 bg-amber-50 font-medium"><td className="p-2" colSpan={3}>Saldo de depreciação/amortização ainda sem suporte documental</td><td className="p-2 text-right text-amber-800">{brl.format(diferencaDepreciacao)}</td></tr>
           </tbody></table>
         </CardContent>
       </Card>
+
 
       <Card className="border-amber-500/40 bg-amber-500/5"><CardContent className="flex gap-3 pt-6"><CircleAlert className="mt-0.5 size-5 shrink-0 text-amber-700" /><div><p className="font-medium">O total da DRE fecha; a distribuição contábil ainda tem diferenças identificadas</p><p className="mt-1 text-sm text-muted-foreground">As linhas “DIFERENÇA DO FECHAMENTO A DISTRIBUIR POR CONTA” são a ponte entre os documentos/folha localizados e a DRE manual. Elas não são lançadas automaticamente em uma conta genérica. Precisam ser classificadas antes da importação definitiva no Questor.</p></div></CardContent></Card>
     </PageShell>
