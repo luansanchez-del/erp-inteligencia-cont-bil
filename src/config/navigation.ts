@@ -49,7 +49,7 @@ export const navGroups: NavGroup[] = [
       { label: "Rateios", to: "/contabil/rateios" },
       { label: "Conciliação", to: "/contabil/conciliacao" },
       { label: "Fechamento", to: "/contabil/fechamento" },
-      { label: "Fechamento Assistido", to: "/contabil/fechamento-assistido" },
+      { label: "Nitaplast 06/2026", to: "/contabil/fechamento-assistido" },
       { label: "Encerramento", to: "/contabil/encerramento" },
       { label: "Razão", to: "/contabil/razao" },
       { label: "Diário", to: "/contabil/diario" },
