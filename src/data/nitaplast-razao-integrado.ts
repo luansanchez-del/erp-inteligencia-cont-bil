@@ -16,6 +16,10 @@ export type LancamentoIntegrado = {
   valor: number;
   status: "validado" | "revisar";
   observacao: string;
+  /** documento = lastro em arquivo recebido; derivado = calculado a partir de arquivo recebido; sugerido = classificação proposta, sem lastro documental. */
+  rastreio: "documento" | "derivado" | "sugerido";
+  /** Arquivo/relatório de origem que comprova o lançamento. */
+  fonte: string;
 };
 
 const descricaoPorConta = new Map(saldosImplantacao.map((linha) => [linha.conta, linha.descricao]));
@@ -76,6 +80,8 @@ const bancarios: LancamentoIntegrado[] = movimentosFinanceiros.flatMap((moviment
   const bancoContrapartida = movimento.codigo === "96" ? contaPorBanco[outroBanco(movimento.historico, movimento.banco) ?? ""] : undefined;
   const contrapartidaCodigo = bancoContrapartida ?? contrapartidaPorEvento[movimento.codigo] ?? "25221";
   const entrada = movimento.tipo === "credito";
+  const contrapartidaMapeada = Boolean(bancoContrapartida) || movimento.codigo in contrapartidaPorEvento;
+  const contrapartidaGenerica = contrapartidaCodigo === "25221";
   const revisar = ["131", "132", "203"].includes(movimento.codigo) || !bancoContrapartida && movimento.codigo === "96";
   return [{
     id: `BAN-${String(index + 1).padStart(5, "0")}`,
@@ -92,6 +98,8 @@ const bancarios: LancamentoIntegrado[] = movimentosFinanceiros.flatMap((moviment
     valor: movimento.valor,
     status: revisar ? "revisar" as const : "validado" as const,
     observacao: revisar ? "Contrapartida sugerida; confirmar antes da exportação." : "Vinculado pelo código do evento e pela conta bancária de origem.",
+    rastreio: contrapartidaMapeada && !contrapartidaGenerica ? "documento" as const : "sugerido" as const,
+    fonte: `Extrato/movimento financeiro 06/2026 - banco ${movimento.banco}, evento ${movimento.codigo}, linha ${index + 1}`,
   }];
 });
 
@@ -112,7 +120,7 @@ export const depreciacoes = [
 
 const pontuais: LancamentoIntegrado[] = [
   {
-    id: "PON-JCP-001", data: "30/06/2026", origem: "PADRÃO DO RAZÃO ANTERIOR", debitoCodigo: "25107", debito: nomeConta("25107"), creditoCodigo: "25253", credito: nomeConta("25253"), historico: "Juros remuneratórios sobre capital próprio - junho/2026", documento: "JCP 06/2026", cc: "902", centroCusto: cdc("902"), valor: 140469.22, status: "validado", observacao: "Valor de junho; contas convertidas para o plano do balancete enviado.",
+    id: "PON-JCP-001", data: "30/06/2026", origem: "PADRÃO DO RAZÃO ANTERIOR", debitoCodigo: "25107", debito: nomeConta("25107"), creditoCodigo: "25253", credito: nomeConta("25253"), historico: "Juros remuneratórios sobre capital próprio - junho/2026", documento: "JCP 06/2026", cc: "902", centroCusto: cdc("902"), valor: 140469.22, status: "validado", observacao: "Valor de junho; contas convertidas para o plano do balancete enviado.", rastreio: "derivado", fonte: "Cálculo de JCP replicado do razão de maio/2026 - falta ata/memória de cálculo de junho",
   },
   ...depreciacoes.map(([debitoCodigo, creditoCodigo, valor, historico], index) => ({
     id: `PON-DEP-${String(index + 1).padStart(3, "0")}`,
@@ -129,6 +137,8 @@ const pontuais: LancamentoIntegrado[] = [
     valor,
     status: "validado" as const,
     observacao: "Padrão conta a conta do razão anterior; códigos convertidos para o plano do balancete.",
+    rastreio: "derivado" as const,
+    fonte: "Razão de maio/2026, lançamento de depreciação conta a conta - falta ficha de bens de junho",
   })),
 ];
 
@@ -150,16 +160,21 @@ function rateio(valor: number, parcela: number, index: number) {
 }
 
 const folha: LancamentoIntegrado[] = [
-  ...folhaPorCc.map(([cc, valor], index) => ({ id: `FOL-SAL-${index + 1}`, data: "30/06/2026", origem: "FOLHA MENSAL 06/2026", debitoCodigo: "4014", debito: nomeConta("4014"), creditoCodigo: "1634", credito: nomeConta("1634"), historico: `Salários e ordenados de junho - ${cdc(cc)}`, documento: "FOLHA 06/2026", cc, centroCusto: cdc(cc), valor, status: "validado" as const, observacao: "Valor da folha de junho; centro de custo herdado da folha anterior por funcionário." })),
-  ...folhaPorCc.map(([cc, base], index) => ({ id: `FOL-INSS-${index + 1}`, data: "30/06/2026", origem: "FOLHA MENSAL 06/2026", debitoCodigo: "4020", debito: nomeConta("4020"), creditoCodigo: "25227", credito: nomeConta("25227"), historico: `INSS patronal e terceiros - ${cdc(cc)}`, documento: "DCTFWEB 06/2026", cc, centroCusto: cdc(cc), valor: rateio(13947.33, base, index), status: "validado" as const, observacao: "Rateado pelo valor de proventos de cada centro de custo." })),
-  ...folhaPorCc.map(([cc, base], index) => ({ id: `FOL-FGTS-${index + 1}`, data: "30/06/2026", origem: "FOLHA MENSAL 06/2026", debitoCodigo: "4021", debito: nomeConta("4021"), creditoCodigo: "25228", credito: nomeConta("25228"), historico: `FGTS mensal - ${cdc(cc)}`, documento: "FGTS 06/2026", cc, centroCusto: cdc(cc), valor: rateio(3310.19, base, index), status: "validado" as const, observacao: "Rateado pelo valor de proventos de cada centro de custo." })),
-  { id: "FOL-DED-001", data: "30/06/2026", origem: "FOLHA MENSAL 06/2026", debitoCodigo: "25227", debito: nomeConta("25227"), creditoCodigo: "1634", credito: nomeConta("1634"), historico: "Salário-família compensado na DCTFWeb", documento: "FOLHA 06/2026", cc: "304", centroCusto: cdc("304"), valor: 47.27, status: "validado", observacao: "Vantagem da folha e dedução da contribuição previdenciária." },
-  { id: "FOL-DED-002", data: "30/06/2026", origem: "FOLHA MENSAL 06/2026", debitoCodigo: "1634", debito: nomeConta("1634"), creditoCodigo: "25227", credito: nomeConta("25227"), historico: "INSS descontado dos empregados", documento: "FOLHA 06/2026", cc: "0", centroCusto: cdc("0"), valor: 3962.76, status: "validado", observacao: "Conforme resumo de rubricas da folha." },
-  { id: "FOL-DED-003", data: "30/06/2026", origem: "FOLHA MENSAL 06/2026", debitoCodigo: "1634", debito: nomeConta("1634"), creditoCodigo: "312", credito: nomeConta("312"), historico: "Desconto de adiantamento salarial", documento: "FOLHA 06/2026", cc: "0", centroCusto: cdc("0"), valor: 13444.00, status: "validado", observacao: "Baixa da conta de adiantamentos de salários." },
-  { id: "FOL-DED-004", data: "30/06/2026", origem: "FOLHA MENSAL 06/2026", debitoCodigo: "1634", debito: nomeConta("1634"), creditoCodigo: "25221", credito: nomeConta("25221"), historico: "Demais descontos da folha: benefícios, empréstimos, uniforme e rescisão", documento: "FOLHA 06/2026", cc: "0", centroCusto: cdc("0"), valor: 8056.55, status: "revisar", observacao: "Abrir por obrigação específica antes da exportação ao Questor." },
-  { id: "FOL-FGTS-RCT", data: "30/06/2026", origem: "FOLHA MENSAL 06/2026", debitoCodigo: "25941", debito: nomeConta("25941"), creditoCodigo: "4885", credito: nomeConta("4885"), historico: "FGTS rescisório de junho", documento: "FGTS RCT 06/2026", cc: "304", centroCusto: cdc("304"), valor: 141.98, status: "validado", observacao: "Funcionária desligada alocada no CC 304 conforme folha anterior." },
+  ...folhaPorCc.map(([cc, valor], index) => ({ id: `FOL-SAL-${index + 1}`, data: "30/06/2026", origem: "FOLHA MENSAL 06/2026", debitoCodigo: "4014", debito: nomeConta("4014"), creditoCodigo: "1634", credito: nomeConta("1634"), historico: `Salários e ordenados de junho - ${cdc(cc)}`, documento: "FOLHA 06/2026", cc, centroCusto: cdc(cc), valor, status: "validado" as const, observacao: "Valor da folha de junho; centro de custo herdado da folha anterior por funcionário.", rastreio: "documento" as const, fonte: "Resumo da folha 06/2026 por centro de custo" })),
+  ...folhaPorCc.map(([cc, base], index) => ({ id: `FOL-INSS-${index + 1}`, data: "30/06/2026", origem: "FOLHA MENSAL 06/2026", debitoCodigo: "4020", debito: nomeConta("4020"), creditoCodigo: "25227", credito: nomeConta("25227"), historico: `INSS patronal e terceiros - ${cdc(cc)}`, documento: "DCTFWEB 06/2026", cc, centroCusto: cdc(cc), valor: rateio(13947.33, base, index), status: "validado" as const, observacao: "Rateado pelo valor de proventos de cada centro de custo.", rastreio: "derivado" as const, fonte: "Folha/DCTFWeb 06/2026 - total do documento rateado por proventos do centro de custo" })),
+  ...folhaPorCc.map(([cc, base], index) => ({ id: `FOL-FGTS-${index + 1}`, data: "30/06/2026", origem: "FOLHA MENSAL 06/2026", debitoCodigo: "4021", debito: nomeConta("4021"), creditoCodigo: "25228", credito: nomeConta("25228"), historico: `FGTS mensal - ${cdc(cc)}`, documento: "FGTS 06/2026", cc, centroCusto: cdc(cc), valor: rateio(3310.19, base, index), status: "validado" as const, observacao: "Rateado pelo valor de proventos de cada centro de custo.", rastreio: "derivado" as const, fonte: "Folha/DCTFWeb 06/2026 - total do documento rateado por proventos do centro de custo" })),
+  { id: "FOL-DED-001", data: "30/06/2026", origem: "FOLHA MENSAL 06/2026", debitoCodigo: "25227", debito: nomeConta("25227"), creditoCodigo: "1634", credito: nomeConta("1634"), historico: "Salário-família compensado na DCTFWeb", documento: "FOLHA 06/2026", cc: "304", centroCusto: cdc("304"), valor: 47.27, status: "validado", observacao: "Vantagem da folha e dedução da contribuição previdenciária.", rastreio: "documento", fonte: "Resumo de rubricas da folha 06/2026" },
+  { id: "FOL-DED-002", data: "30/06/2026", origem: "FOLHA MENSAL 06/2026", debitoCodigo: "1634", debito: nomeConta("1634"), creditoCodigo: "25227", credito: nomeConta("25227"), historico: "INSS descontado dos empregados", documento: "FOLHA 06/2026", cc: "0", centroCusto: cdc("0"), valor: 3962.76, status: "validado", observacao: "Conforme resumo de rubricas da folha.", rastreio: "documento", fonte: "Resumo de rubricas da folha 06/2026" },
+  { id: "FOL-DED-003", data: "30/06/2026", origem: "FOLHA MENSAL 06/2026", debitoCodigo: "1634", debito: nomeConta("1634"), creditoCodigo: "312", credito: nomeConta("312"), historico: "Desconto de adiantamento salarial", documento: "FOLHA 06/2026", cc: "0", centroCusto: cdc("0"), valor: 13444.00, status: "validado", observacao: "Baixa da conta de adiantamentos de salários.", rastreio: "documento", fonte: "Resumo de rubricas da folha 06/2026" },
+  { id: "FOL-DED-004", data: "30/06/2026", origem: "FOLHA MENSAL 06/2026", debitoCodigo: "1634", debito: nomeConta("1634"), creditoCodigo: "25221", credito: nomeConta("25221"), historico: "Demais descontos da folha: benefícios, empréstimos, uniforme e rescisão", documento: "FOLHA 06/2026", cc: "0", centroCusto: cdc("0"), valor: 8056.55, status: "revisar", observacao: "Abrir por obrigação específica antes da exportação ao Questor.", rastreio: "sugerido", fonte: "Folha 06/2026 - descontos agrupados, sem abertura por obrigação" },
+  { id: "FOL-FGTS-RCT", data: "30/06/2026", origem: "FOLHA MENSAL 06/2026", debitoCodigo: "25941", debito: nomeConta("25941"), creditoCodigo: "4885", credito: nomeConta("4885"), historico: "FGTS rescisório de junho", documento: "FGTS RCT 06/2026", cc: "304", centroCusto: cdc("304"), valor: 141.98, status: "validado", observacao: "Funcionária desligada alocada no CC 304 conforme folha anterior.", rastreio: "documento", fonte: "Guia de FGTS rescisório 06/2026" },
 ];
 
 export const lancamentosIntegrados: LancamentoIntegrado[] = [...bancarios, ...folha, ...pontuais];
 export const totalDebitosIntegrados = lancamentosIntegrados.reduce((total, linha) => total + linha.valor, 0);
 export const totalCreditosIntegrados = totalDebitosIntegrados;
+export const lancamentosPorRastreio = {
+  documento: lancamentosIntegrados.filter((linha) => linha.rastreio === "documento").length,
+  derivado: lancamentosIntegrados.filter((linha) => linha.rastreio === "derivado").length,
+  sugerido: lancamentosIntegrados.filter((linha) => linha.rastreio === "sugerido").length,
+};
