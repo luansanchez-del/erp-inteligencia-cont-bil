@@ -5,6 +5,7 @@ import { DataTable, type Column } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { empresas, grupos } from "@/data/mock";
+import { regimeTexto } from "@/lib/empresa";
 import type { Empresa } from "@/types/erp";
 
 export const Route = createFileRoute("/empresas/")({
