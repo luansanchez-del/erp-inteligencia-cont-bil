@@ -30,10 +30,11 @@ const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" 
 
 const fontes = [
   ["Saldo de implantação", "Saldo anterior do balancete de junho usado como 31/05/2026", "validado"],
-  ["Entradas e saídas", "Planilhas fiscais da matriz e relatórios de apuração", "validado"],
+  ["Entradas e saídas", "Totais fiscais recebidos; notas por centro de custo ainda não carregadas no razão", "pendente"],
   ["Movimentação bancária", "Extrato completo de 01/06 a 30/06/2026", "validado"],
   ["Folha mensal", "Folha 06/2026 da matriz, 12 colaboradores", "validado"],
-  ["Inventário", "Estoque atualizado com data-base 30/06/2026", "validado"],
+  ["Inventário", "Saldos informados; movimento de estoque de junho não lançado no razão", "pendente"],
+  ["Despesas a apropriar", "Seguros, IPTU e IPVA (contas 25141/25142/25143) sem apropriação em junho", "pendente"],
   ["Cartões", "Despesas classificadas por conta e centro de custo", "em revisão"],
   ["Depreciação", "Cálculo conta a conta conforme padrão do razão de maio", "em revisão"],
   ["JCP", "Cálculo de junho mantido conforme maio", "validado"],
@@ -119,7 +120,7 @@ function FechamentoAssistidoPage() {
             {fontes.map(([nome, detalhe, status]) => (
               <div key={nome} className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
                 <div className="min-w-0"><p className="text-sm font-medium">{nome}</p><p className="text-xs text-muted-foreground">{detalhe}</p></div>
-                <Badge variant={status === "validado" ? "default" : "outline"}>{status}</Badge>
+                <Badge variant={status === "validado" ? "default" : status === "pendente" ? "destructive" : "outline"}>{status}</Badge>
               </div>
             ))}
           </div>
@@ -142,7 +143,7 @@ function FechamentoAssistidoPage() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Boxes className="size-4" /> Inventário em 30/06/2026</CardTitle><CardDescription>Total validado de {brl.format(5969832.58)}.</CardDescription></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Boxes className="size-4" /> Inventário em 30/06/2026</CardTitle><CardDescription>Saldos informados somando {brl.format(5969832.58)}. Ainda sem contrapartida no razão de junho: falta o movimento de estoque (entradas, consumo/CPV e produção) vinculado às notas.</CardDescription></CardHeader>
         <CardContent className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
           {estoque.map(([nome, valor]) => <div key={nome} className="rounded-md border p-3"><p className="text-xs text-muted-foreground">{nome}</p><p className="mt-1 font-semibold tabular-nums">{brl.format(valor)}</p></div>)}
         </CardContent>
