@@ -2,6 +2,9 @@ import { saldosImplantacaoParte1 } from "./nitaplast-implantacao-parte-1";
 import { saldosImplantacaoParte2 } from "./nitaplast-implantacao-parte-2";
 import { saldosImplantacaoParte3 } from "./nitaplast-implantacao-parte-3";
 import { saldosImplantacaoParte4 } from "./nitaplast-implantacao-parte-4";
+import { saldosImplantacaoParte5 } from "./nitaplast-implantacao-parte-5";
+import { saldosImplantacaoParte6 } from "./nitaplast-implantacao-parte-6";
+import { saldosImplantacaoParte7 } from "./nitaplast-implantacao-parte-7";
 
 export type SaldoImplantacao = {
   conta: string;
@@ -13,17 +16,20 @@ export type SaldoImplantacao = {
 };
 
 // Fonte: saldo anterior do Balancete 01/06/2026 a 30/06/2026.
-// Data-base da implantação: 31/05/2026. Apenas contas analíticas com saldo diferente de zero.
+// Data-base da implantação: 31/05/2026. Plano analítico completo, inclusive contas com saldo zero.
 export const saldosImplantacao: SaldoImplantacao[] = [
   ...saldosImplantacaoParte1,
   ...saldosImplantacaoParte2,
   ...saldosImplantacaoParte3,
   ...saldosImplantacaoParte4,
+  ...saldosImplantacaoParte5,
+  ...saldosImplantacaoParte6,
+  ...saldosImplantacaoParte7,
 ];
 
 export const resumoImplantacao = {
   dataBase: "31/05/2026",
-  quantidadeContas: 338,
+  quantidadeContas: 529,
   ativo: 40828008.01,
   passivoPatrimonioLiquido: 40252789.33,
   receitasAcumuladas: 8163769.32,
