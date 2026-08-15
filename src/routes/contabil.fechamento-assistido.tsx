@@ -120,7 +120,7 @@ function FechamentoAssistidoPage() {
             {fontes.map(([nome, detalhe, status]) => (
               <div key={nome} className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
                 <div className="min-w-0"><p className="text-sm font-medium">{nome}</p><p className="text-xs text-muted-foreground">{detalhe}</p></div>
-                <Badge variant={status === "validado" ? "default" : "outline"}>{status}</Badge>
+                <Badge variant={status === "validado" ? "default" : status === "pendente" ? "destructive" : "outline"}>{status}</Badge>
               </div>
             ))}
           </div>
