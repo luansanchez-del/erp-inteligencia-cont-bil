@@ -8,6 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 import { cadastroFiscalNitaplast, dreCompletaJunho, receitaBrutaJunho } from "@/data/nitaplast-dre-completa";
 import { composicaoDrePorConta, depreciacaoContaAConta, totalDepreciacaoPrevisto } from "@/data/nitaplast-dre-contas";
+import { depreciacoes } from "@/data/nitaplast-razao-integrado";
+
+const valoresComCodigo = new Set(depreciacaoContaAConta.map((conta) => conta.valor));
+const depreciacaoSemCodigo = depreciacoes.filter(([, , valor]) => !valoresComCodigo.has(valor));
 
 export const Route = createFileRoute("/contabil/dre")({ component: DrePage });
 
