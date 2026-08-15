@@ -64,6 +64,11 @@ const bancarios: LancamentoIntegrado[] = movimentosFinanceiros.flatMap((moviment
   const bancoCodigo = contaPorBanco[movimento.banco];
   if (!bancoCodigo) return [];
   const bancoContrapartida = movimento.codigo === "96" ? contaPorBanco[outroBanco(movimento.historico, movimento.banco) ?? ""] : undefined;
+
+  // Transferências entre contas próprias aparecem nos dois extratos: débito na origem e crédito no destino.
+  // Mantemos somente a ponta de débito (origem) para não contabilizar a mesma transferência duas vezes.
+  if (bancoContrapartida && movimento.tipo === "credito") return [];
+
   const especial = contrapartidaEspecial(movimento.codigo, movimento.historico);
   const contrapartidaCodigo = bancoContrapartida ?? especial ?? contrapartidaPorEvento[movimento.codigo] ?? "25221";
   const entrada = movimento.tipo === "credito";
