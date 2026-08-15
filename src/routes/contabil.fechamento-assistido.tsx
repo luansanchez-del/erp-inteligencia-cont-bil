@@ -13,7 +13,8 @@ import { PageHeader, PageShell } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";\nimport { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
+import { Progress } from "@/components/ui/progress";
+import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 
 export const Route = createFileRoute("/contabil/fechamento-assistido")({
   head: () => ({
@@ -80,7 +81,8 @@ function Metric({ label, value, tone = "default" }: { label: string; value: numb
   );
 }
 
-function FechamentoAssistidoPage() {\n  useNitaplastJunho();
+function FechamentoAssistidoPage() {
+  useNitaplastJunho();
   const [somenteRevisao, setSomenteRevisao] = useState(false);
   const [revisados, setRevisados] = useState<string[]>([]);
   const lista = lancamentos.filter((l) => !somenteRevisao || (l.status === "Revisar" && !revisados.includes(`${l.origem}-${l.debito}`)));
