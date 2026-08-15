@@ -28,6 +28,7 @@ import { Route as ContabilDiarioRouteImport } from './routes/contabil.diario'
 import { Route as ContabilDreRouteImport } from './routes/contabil.dre'
 import { Route as ContabilEncerramentoRouteImport } from './routes/contabil.encerramento'
 import { Route as ContabilFechamentoRouteImport } from './routes/contabil.fechamento'
+import { Route as ContabilFechamentoAssistidoRouteImport } from './routes/contabil.fechamento-assistido'
 import { Route as ContabilHistoricosRouteImport } from './routes/contabil.historicos'
 import { Route as ContabilLancamentosRouteImport } from './routes/contabil.lancamentos'
 import { Route as ContabilLotesRouteImport } from './routes/contabil.lotes'
@@ -133,6 +134,12 @@ const ContabilFechamentoRoute = ContabilFechamentoRouteImport.update({
   path: '/contabil/fechamento',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ContabilFechamentoAssistidoRoute =
+  ContabilFechamentoAssistidoRouteImport.update({
+    id: '/contabil/fechamento-assistido',
+    path: '/contabil/fechamento-assistido',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ContabilHistoricosRoute = ContabilHistoricosRouteImport.update({
   id: '/contabil/historicos',
   path: '/contabil/historicos',
@@ -194,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/contabil/dre': typeof ContabilDreRoute
   '/contabil/encerramento': typeof ContabilEncerramentoRoute
   '/contabil/fechamento': typeof ContabilFechamentoRoute
+  '/contabil/fechamento-assistido': typeof ContabilFechamentoAssistidoRoute
   '/contabil/historicos': typeof ContabilHistoricosRoute
   '/contabil/lancamentos': typeof ContabilLancamentosRoute
   '/contabil/lotes': typeof ContabilLotesRoute
@@ -223,6 +231,7 @@ export interface FileRoutesByTo {
   '/contabil/dre': typeof ContabilDreRoute
   '/contabil/encerramento': typeof ContabilEncerramentoRoute
   '/contabil/fechamento': typeof ContabilFechamentoRoute
+  '/contabil/fechamento-assistido': typeof ContabilFechamentoAssistidoRoute
   '/contabil/historicos': typeof ContabilHistoricosRoute
   '/contabil/lancamentos': typeof ContabilLancamentosRoute
   '/contabil/lotes': typeof ContabilLotesRoute
@@ -253,6 +262,7 @@ export interface FileRoutesById {
   '/contabil/dre': typeof ContabilDreRoute
   '/contabil/encerramento': typeof ContabilEncerramentoRoute
   '/contabil/fechamento': typeof ContabilFechamentoRoute
+  '/contabil/fechamento-assistido': typeof ContabilFechamentoAssistidoRoute
   '/contabil/historicos': typeof ContabilHistoricosRoute
   '/contabil/lancamentos': typeof ContabilLancamentosRoute
   '/contabil/lotes': typeof ContabilLotesRoute
@@ -284,6 +294,7 @@ export interface FileRouteTypes {
     | '/contabil/dre'
     | '/contabil/encerramento'
     | '/contabil/fechamento'
+    | '/contabil/fechamento-assistido'
     | '/contabil/historicos'
     | '/contabil/lancamentos'
     | '/contabil/lotes'
@@ -313,6 +324,7 @@ export interface FileRouteTypes {
     | '/contabil/dre'
     | '/contabil/encerramento'
     | '/contabil/fechamento'
+    | '/contabil/fechamento-assistido'
     | '/contabil/historicos'
     | '/contabil/lancamentos'
     | '/contabil/lotes'
@@ -342,6 +354,7 @@ export interface FileRouteTypes {
     | '/contabil/dre'
     | '/contabil/encerramento'
     | '/contabil/fechamento'
+    | '/contabil/fechamento-assistido'
     | '/contabil/historicos'
     | '/contabil/lancamentos'
     | '/contabil/lotes'
@@ -372,6 +385,7 @@ export interface RootRouteChildren {
   ContabilDreRoute: typeof ContabilDreRoute
   ContabilEncerramentoRoute: typeof ContabilEncerramentoRoute
   ContabilFechamentoRoute: typeof ContabilFechamentoRoute
+  ContabilFechamentoAssistidoRoute: typeof ContabilFechamentoAssistidoRoute
   ContabilHistoricosRoute: typeof ContabilHistoricosRoute
   ContabilLancamentosRoute: typeof ContabilLancamentosRoute
   ContabilLotesRoute: typeof ContabilLotesRoute
@@ -517,6 +531,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContabilFechamentoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/contabil/fechamento-assistido': {
+      id: '/contabil/fechamento-assistido'
+      path: '/contabil/fechamento-assistido'
+      fullPath: '/contabil/fechamento-assistido'
+      preLoaderRoute: typeof ContabilFechamentoAssistidoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/contabil/historicos': {
       id: '/contabil/historicos'
       path: '/contabil/historicos'
@@ -596,6 +617,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContabilDreRoute: ContabilDreRoute,
   ContabilEncerramentoRoute: ContabilEncerramentoRoute,
   ContabilFechamentoRoute: ContabilFechamentoRoute,
+  ContabilFechamentoAssistidoRoute: ContabilFechamentoAssistidoRoute,
   ContabilHistoricosRoute: ContabilHistoricosRoute,
   ContabilLancamentosRoute: ContabilLancamentosRoute,
   ContabilLotesRoute: ContabilLotesRoute,
