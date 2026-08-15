@@ -12,6 +12,7 @@ import { PageHeader, PageShell } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useErp } from "@/context/erp-context";
+import { empresas } from "@/data/mock";
 
 export const Route = createFileRoute("/")({
   head: () => ({
