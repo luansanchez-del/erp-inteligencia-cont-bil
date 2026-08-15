@@ -58,30 +58,68 @@ function gerarProvisao(params: {
   }));
 }
 
+function provisaoFilial(params: {
+  id: string;
+  debitoCodigo: string;
+  creditoCodigo: string;
+  valor: number;
+  historico: string;
+  fonte: string;
+}): LancamentoIntegrado {
+  return {
+    id: params.id,
+    data: "30/06/2026",
+    origem: "PROVISÃO FOLHA FILIAL 06/2026",
+    debitoCodigo: params.debitoCodigo,
+    debito: nomeConta(params.debitoCodigo),
+    creditoCodigo: params.creditoCodigo,
+    credito: nomeConta(params.creditoCodigo),
+    historico: params.historico,
+    documento: "PROVISÃO FÉRIAS FILIAL 06/2026",
+    cc: "502",
+    centroCusto: "COMERCIAL SP",
+    valor: params.valor,
+    status: "validado",
+    observacao: "Valor mensal conforme relatório específico da filial; integrado ao mesmo balancete consolidado da Nitaplast.",
+    rastreio: "documento",
+    fonte: params.fonte,
+  };
+}
+
 const provisoesFolha: LancamentoIntegrado[] = [
   ...gerarProvisao({
-    prefixo: "REC-PROV-FER", debitoCodigo: "25057", creditoCodigo: "25237", total: 4530.99,
-    historico: "Provisão mensal de férias de junho", documento: "FOLHA PROVISÃO FÉRIAS 06/2026", status: "validado",
-    observacao: "Total extraído da folha mensal de junho; rateio por CC segue a mesma base de salários já integrada no fechamento.",
-    fonte: "EXTRATO FOLHA MENSAL - 06.2026 - MATRIZ(4).pdf",
+    prefixo: "REC-PROV-FER", debitoCodigo: "25057", creditoCodigo: "25237", total: 4618.54,
+    historico: "Provisão mensal de férias + 1/3 de junho - matriz", documento: "PROVISÃO FÉRIAS MATRIZ 06/2026", status: "validado",
+    observacao: "Relatório específico de provisão: férias R$ 3.463,91 + 1/3 R$ 1.154,63 = R$ 4.618,54. Rateio por CC mantém a base de salários da matriz.",
+    fonte: "PROVISÃO DE FÉRIAS - MATRIZ - 06.2026 1 (1).pdf",
   }),
   ...gerarProvisao({
     prefixo: "REC-PROV-13", debitoCodigo: "25059", creditoCodigo: "25238", total: 3389.28,
-    historico: "Provisão mensal de 13º salário de junho", documento: "FOLHA PROVISÃO 13 06/2026", status: "validado",
-    observacao: "Total extraído da folha mensal de junho; rateio por CC segue a mesma base de salários já integrada no fechamento.",
+    historico: "Provisão mensal de 13º salário de junho - matriz", documento: "FOLHA PROVISÃO 13 06/2026", status: "revisar",
+    observacao: "Mantido provisoriamente a partir da folha já integrada. A provisão de 13º da filial ainda não foi apresentada e este valor não deve ser tratado como consolidado definitivo.",
     fonte: "EXTRATO FOLHA MENSAL - 06.2026 - MATRIZ(4).pdf",
   }),
   ...gerarProvisao({
-    prefixo: "REC-ENC-FER", debitoCodigo: "25058", creditoCodigo: "25230", total: 1575.08,
-    historico: "Encargos sobre provisão de férias de junho", documento: "ENC PROV FÉRIAS 06/2026", status: "revisar",
-    observacao: "Estimativa pela mesma relação contábil usada pela contabilidade anterior em maio (R$ 2.122,10 / R$ 6.104,60). Confirmar contra resumo/DCTFWeb antes da exportação definitiva.",
-    fonte: "Balancete 05/2026 da contabilidade anterior + folha atual 06/2026",
+    prefixo: "REC-ENC-FER", debitoCodigo: "25058", creditoCodigo: "25230", total: 1630.36,
+    historico: "INSS + FGTS sobre provisão de férias de junho - matriz", documento: "PROVISÃO FÉRIAS MATRIZ 06/2026", status: "validado",
+    observacao: "Relatório específico: INSS R$ 1.260,86 + FGTS R$ 369,50 = R$ 1.630,36.",
+    fonte: "PROVISÃO DE FÉRIAS - MATRIZ - 06.2026 1 (1).pdf",
   }),
   ...gerarProvisao({
     prefixo: "REC-ENC-13", debitoCodigo: "25060", creditoCodigo: "25229", total: 1196.40,
-    historico: "Encargos sobre provisão de 13º salário de junho", documento: "ENC PROV 13 06/2026", status: "revisar",
-    observacao: "Estimativa pela mesma relação contábil usada pela contabilidade anterior em maio (R$ 1.597,94 / R$ 4.526,81). Confirmar contra resumo/DCTFWeb antes da exportação definitiva.",
+    historico: "Encargos sobre provisão de 13º salário de junho - matriz", documento: "ENC PROV 13 06/2026", status: "revisar",
+    observacao: "Estimativa pela mesma relação contábil usada pela contabilidade anterior em maio. Confirmar com relatório específico de provisão de 13º antes da exportação definitiva.",
     fonte: "Balancete 05/2026 da contabilidade anterior + folha atual 06/2026",
+  }),
+  provisaoFilial({
+    id: "FIL-PROV-FER-001", debitoCodigo: "25057", creditoCodigo: "25237", valor: 1064.75,
+    historico: "Provisão mensal de férias + 1/3 de junho - filial SP",
+    fonte: "PROVISÃO DE FÉRIAS - FILIAL - 06.2026 1(1).pdf",
+  }),
+  provisaoFilial({
+    id: "FIL-ENC-FER-001", debitoCodigo: "25058", creditoCodigo: "25230", valor: 370.53,
+    historico: "INSS + FGTS sobre provisão de férias de junho - filial SP",
+    fonte: "PROVISÃO DE FÉRIAS - FILIAL - 06.2026 1(1).pdf",
   }),
 ];
 
@@ -98,7 +136,7 @@ const amortizacao: LancamentoIntegrado[] = [
     debitoCodigo: "25085", debito: nomeConta("25085"), creditoCodigo: "1166", credito: nomeConta("1166"),
     historico: "Amortização de marcas e patentes - ADM GERAL", documento: "AMORT 06/2026", cc: "304", centroCusto: "ADM GERAL", valor: 33.67,
     status: "revisar", observacao: "Recorrência reproduzida do padrão mensal de maio; confirmar relatório de amortização de junho.", rastreio: "derivado",
-    fonte: "BALANCETE POR CENTRO DE CUSTOS 05.2026 - NITAPLAST",
+    fonte: "BALANCETE POR CENTRO DE CUSTOS 05/2026 - NITAPLAST",
   },
 ];
 
@@ -123,9 +161,9 @@ const controlesIndustrializacao: LancamentoIntegrado[] = [
 
 export const pendenciasPadraoMaioJunho = [
   {
-    item: "Transferências matriz/filial - CFOP 6151",
+    item: "Transferências matriz/filial - CFOP 6151/2152",
     valorFiscal: 138885.12,
-    motivo: "O documento fiscal existe, mas a reclassificação de estoque deve ser pelo custo. Não usar o valor fiscal como custo sem suporte.",
+    motivo: "As transferências estão documentadas, mas a composição do estoque/CPV consolidado deve seguir custo contábil. Não usar o valor fiscal como CPV sem reconciliar estoque inicial, compras, créditos e estoque final da filial.",
   },
   {
     item: "Água e esgoto",
@@ -137,10 +175,14 @@ export const pendenciasPadraoMaioJunho = [
 export const recorrenciasJunho: LancamentoIntegrado[] = [...provisoesFolha, ...amortizacao, ...controlesIndustrializacao];
 
 export const resumoRecorrenciasJunho = {
-  provisaoFerias: 4530.99,
-  provisao13: 3389.28,
-  encargosFerias: 1575.08,
-  encargos13: 1196.40,
+  provisaoFeriasMatriz: 4618.54,
+  provisaoFeriasFilial: 1064.75,
+  provisaoFeriasConsolidada: 5683.29,
+  provisao13MatrizEmRevisao: 3389.28,
+  encargosFeriasMatriz: 1630.36,
+  encargosFeriasFilial: 370.53,
+  encargosFeriasConsolidado: 2000.89,
+  encargos13MatrizEmRevisao: 1196.40,
   amortizacao: 133.73,
   remessasIndustrializacao: 1003019.30,
   retornosIndustrializacao: 804272.15,
