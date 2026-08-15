@@ -3,6 +3,7 @@ import { saldosImplantacao } from "./nitaplast-implantacao";
 import { lancamentosFiscaisJunho } from "./nitaplast-lancamentos-fiscais-junho";
 import { recorrenciasJunho } from "./nitaplast-recorrencias-junho";
 import { ajustesFilialJunho } from "./nitaplast-filial-junho";
+import { ajustesAplicacoesJunho } from "./nitaplast-aplicacoes-junho";
 
 export type LancamentoIntegrado = {
   id: string;
@@ -54,6 +55,7 @@ function outroBanco(historico: string, atual: string) {
 
 function contrapartidaEspecial(codigo: string, historico: string) {
   const h = historico.toLocaleUpperCase("pt-BR");
+  if (codigo === "96" && h.includes("NITA P/ MVS")) return "25129";
   if (codigo === "101" && h.includes("COPEL")) return "25218";
   return undefined;
 }
@@ -67,7 +69,10 @@ const bancarios: LancamentoIntegrado[] = movimentosFinanceiros.flatMap((moviment
   const entrada = movimento.tipo === "credito";
   const contrapartidaMapeada = Boolean(bancoContrapartida) || Boolean(especial) || movimento.codigo in contrapartidaPorEvento;
   const contrapartidaGenerica = contrapartidaCodigo === "25221";
-  const revisar = ["131", "132", "203"].includes(movimento.codigo) || (!bancoContrapartida && movimento.codigo === "96");
+  const revisar = ["131", "132", "203"].includes(movimento.codigo) || (!bancoContrapartida && !especial && movimento.codigo === "96");
+  const observacaoEspecial = especial === "25129"
+    ? "Transferência Nitaplast para MVS classificada na Conta Corrente Marcos Victor Siedel, conciliada com o extrato bancário da MVS."
+    : "Pagamento de energia classificado na conta específica Energia Elétrica a Pagar, seguindo o padrão de maio.";
   return [{
     id: `BAN-${String(index + 1).padStart(5, "0")}`,
     data: movimento.data,
@@ -82,7 +87,7 @@ const bancarios: LancamentoIntegrado[] = movimentosFinanceiros.flatMap((moviment
     centroCusto: cdc("0"),
     valor: movimento.valor,
     status: revisar ? "revisar" : "validado",
-    observacao: especial ? "Pagamento de energia classificado na conta específica Energia Elétrica a Pagar, seguindo o padrão de maio." : revisar ? "Contrapartida sugerida; confirmar antes da exportação." : "Vinculado pelo código do evento e pela conta bancária de origem.",
+    observacao: especial ? observacaoEspecial : revisar ? "Contrapartida sugerida; confirmar antes da exportação." : "Vinculado pelo código do evento e pela conta bancária de origem.",
     rastreio: contrapartidaMapeada && !contrapartidaGenerica ? "documento" : "sugerido",
     fonte: `Extrato/movimento financeiro 06/2026 - banco ${movimento.banco}, evento ${movimento.codigo}, linha ${index + 1}`,
   }];
@@ -135,6 +140,7 @@ const folha: LancamentoIntegrado[] = [
 
 export const lancamentosIntegrados: LancamentoIntegrado[] = [
   ...bancarios,
+  ...ajustesAplicacoesJunho,
   ...folha,
   ...pontuais,
   ...recorrenciasJunho,
