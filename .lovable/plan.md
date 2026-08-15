@@ -1,6 +1,11 @@
 # Revisão da DRE — o que ficou pela metade
 
-Auditoria dos dados já existentes no projeto (nenhum arquivo foi alterado). Boa notícia: a DRE **não está quebrada**. A aritmética fecha; o que falta é classificação contábil de alguns valores.
+Auditoria dos dados já existentes no projeto (nenhum arquivo foi alterado). A aritmética da DRE fecha; o que ficou pela metade são erros de tipagem que quebram o build e classificações contábeis faltantes.
+
+## Urgente: o build está quebrado
+
+Os arquivos gerados na última rodada (`src/data/nitaplast-movimento-financeiro.ts` e `src/data/nitaplast-razao-integrado.ts`) fazem buscas em tabelas de/para que podem não encontrar o item, e o TypeScript rejeita o resultado. São 13 erros, todos do mesmo tipo (valor possivelmente ausente onde se espera texto). Correção: usar valor padrão nas buscas de data/banco/código/histórico e de centro de custo, mantendo os dados como estão. Isso precisa ser feito antes de qualquer ajuste na DRE.
+
 
 ## O que está correto
 
