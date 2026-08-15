@@ -142,25 +142,25 @@ function BalancetePage() {
 
   return <PageShell>
     <PageHeader
-      titulo="Balancete completo - Nitaplast"
-      descricao="Estrutura sintética e analítica do plano contábil, com saldo de implantação em 31/05 e movimento integrado de junho. Contas totalmente zeradas ficam ocultas por padrão."
-      acoes={<Badge variant="outline">Matriz - 06/2026</Badge>}
+      titulo="Balancete consolidado - Nitaplast"
+      descricao="Visão única consolidada da Nitaplast: saldo anterior de 31/05 e movimento integrado de junho da matriz e da filial na mesma estrutura contábil. Contas totalmente zeradas ficam ocultas por padrão."
+      acoes={<Badge variant="outline">Consolidado - 06/2026</Badge>}
     />
 
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-      <Metric label="Ativo em 31/05" value={resumoImplantacao.ativo} />
-      <Metric label="Passivo + PL em 31/05" value={resumoImplantacao.passivoPatrimonioLiquido} />
+      <Metric label="Ativo consolidado em 31/05" value={resumoImplantacao.ativo} />
+      <Metric label="Passivo + PL consolidado em 31/05" value={resumoImplantacao.passivoPatrimonioLiquido} />
       <Metric label="Linhas do balancete" value={linhasCalculadas.filter((linha) => mostrarZeradas || !linhaZerada(linha)).length} />
-      <Metric label="Débitos integrados 06" value={totalDebitosIntegrados} />
-      <Metric label="Créditos integrados 06" value={totalCreditosIntegrados} />
+      <Metric label="Débitos consolidados 06" value={totalDebitosIntegrados} />
+      <Metric label="Créditos consolidados 06" value={totalCreditosIntegrados} />
     </div>
 
     <Card className="border-emerald-500/40 bg-emerald-500/5">
       <CardContent className="flex items-start gap-3 pt-6">
         <CheckCircle2 className="size-5 shrink-0 text-emerald-700" />
         <div>
-          <p className="font-medium">Balancete hierárquico implantado</p>
-          <p className="text-sm text-muted-foreground">As linhas S acumulam as contas A abaixo delas. Débitos {brl.format(totalDebitosIntegrados)} e créditos {brl.format(totalCreditosIntegrados)} permanecem equilibrados.</p>
+          <p className="font-medium">Balancete consolidado</p>
+          <p className="text-sm text-muted-foreground">Matriz e filial são apresentadas no mesmo balancete. As linhas S acumulam as contas A abaixo delas. Débitos {brl.format(totalDebitosIntegrados)} e créditos {brl.format(totalCreditosIntegrados)} permanecem equilibrados.</p>
         </div>
       </CardContent>
     </Card>
@@ -169,7 +169,7 @@ function BalancetePage() {
       <CardHeader>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <CardTitle className="text-base">Balancete - Débito, Crédito e Movimento</CardTitle>
+            <CardTitle className="text-base">Balancete consolidado - Débito, Crédito e Movimento</CardTitle>
             <CardDescription>Por padrão, não exibe contas sem saldo anterior, sem débito/crédito no período e com saldo atual zero.</CardDescription>
           </div>
           <div className="relative w-full sm:w-96">
