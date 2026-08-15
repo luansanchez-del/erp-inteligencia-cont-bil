@@ -95,7 +95,7 @@ const bancarios: LancamentoIntegrado[] = movimentosFinanceiros.flatMap((moviment
   }];
 });
 
-const depreciacoes = [
+export const depreciacoes = [
   ["25078", "1147", 26745.98, "Depreciação de máquinas"],
   ["25080", "25183", 1916.57, "Depreciação de instalações industriais"],
   ["25081", "25184", 3110.24, "Depreciação de móveis e utensílios ADM"],
