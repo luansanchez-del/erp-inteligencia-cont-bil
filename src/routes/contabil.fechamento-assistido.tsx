@@ -1,193 +1,168 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   AlertTriangle,
-  BookOpen,
   Boxes,
-  Building,
-  FileSpreadsheet,
-  FileText,
+  CheckCircle2,
+  FileCheck2,
   Landmark,
-  Receipt,
-  ScrollText,
-  Users,
-  Wallet,
+  ReceiptText,
+  Scale,
 } from "lucide-react";
 import { PageHeader, PageShell } from "@/components/page-header";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
-import { useErp } from "@/context/erp-context";
 
 export const Route = createFileRoute("/contabil/fechamento-assistido")({
   head: () => ({
     meta: [
-      { title: "Fechamento Assistido — ERP Contábil" },
-      {
-        name: "description",
-        content:
-          "Fechamento contábil assistido: cobertura documental, leitura, mapeamento, conciliação e aprovação da competência.",
-      },
-      { property: "og:title", content: "Fechamento Assistido — ERP Contábil" },
-      {
-        property: "og:description",
-        content: "Preparação da competência, fontes documentais e fluxo assistido de fechamento contábil.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { title: "Nitaplast 06/2026 - Fechamento Assistido" },
+      { name: "description", content: "Fechamento contábil da Nitaplast para junho de 2026." },
     ],
   }),
   component: FechamentoAssistidoPage,
 });
 
+const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+
 const fontes = [
-  { nome: "Plano de contas", icon: BookOpen, obs: "Estrutura vigente da empresa" },
-  { nome: "Balancete anterior", icon: FileSpreadsheet, obs: "Saldos de abertura da competência" },
-  { nome: "Entradas", icon: Receipt, obs: "Documentos fiscais de compra" },
-  { nome: "Saídas", icon: Receipt, obs: "Documentos fiscais de venda" },
-  { nome: "Contas a pagar / receber", icon: Wallet, obs: "Títulos e baixas do período" },
-  { nome: "Extratos bancários", icon: Landmark, obs: "Movimento para conciliação" },
-  { nome: "Folha e provisões", icon: Users, obs: "Encargos, férias e 13º" },
-  { nome: "Estoque", icon: Boxes, obs: "Inventário e custo do período" },
-  { nome: "Imobilizado", icon: Building, obs: "Aquisições, baixas e depreciação" },
-];
+  ["Saldo de implantação", "Saldo anterior do balancete de junho usado como 31/05/2026", "validado"],
+  ["Entradas e saídas", "Planilhas fiscais da matriz e relatórios de apuração", "validado"],
+  ["Movimentação bancária", "Extrato completo de 01/06 a 30/06/2026", "validado"],
+  ["Folha mensal", "Folha 06/2026 da matriz, 12 colaboradores", "validado"],
+  ["Inventário", "Estoque atualizado com data-base 30/06/2026", "validado"],
+  ["Cartões", "Despesas classificadas por conta e centro de custo", "em revisão"],
+  ["Depreciação", "Cálculo conta a conta conforme padrão do razão de maio", "em revisão"],
+  ["JCP", "Cálculo de junho mantido conforme maio", "validado"],
+] as const;
 
-const etapas = [
-  { nome: "Documentos", desc: "Recepção e conferência da cobertura documental da competência." },
-  { nome: "Leitura", desc: "Extração estruturada do conteúdo dos arquivos recebidos." },
-  { nome: "Mapeamento", desc: "Vínculo entre origens, contas contábeis e históricos padrão." },
-  { nome: "Lançamentos", desc: "Geração das partidas propostas a partir do mapeamento." },
-  { nome: "Conciliação", desc: "Confronto de saldos bancários, títulos e contas de controle." },
-  { nome: "Balancete", desc: "Verificação de saldos e consistência antes das demonstrações." },
-  { nome: "DRE", desc: "Apuração do resultado do período para revisão." },
-  { nome: "Aprovação", desc: "Revisão final do responsável e liberação da competência." },
-];
+const dre = [
+  ["Receita operacional bruta", 3402624.71],
+  ["(-) Deduções da receita", -811074.77],
+  ["(-) Custo total", -1188509.5],
+  ["Lucro bruto", 1403040.44],
+  ["(-) Despesas operacionais líquidas", -1188001.43],
+  ["Resultado operacional", 215039.01],
+] as const;
 
-const saidas = [
-  { nome: "Lançamentos contábeis", desc: "Partidas geradas e revisadas da competência." },
-  { nome: "Razão e Diário", desc: "Livros analíticos e cronológicos do período." },
-  { nome: "Balancete e DRE", desc: "Peças de verificação e resultado do exercício." },
-  { nome: "Arquivo Questor", desc: "Exportação de movimento para contingência no Questor." },
-];
+const bancos = [
+  ["Saldo inicial", 2554571.6],
+  ["Entradas", 6394811.91],
+  ["Saídas", 6137166.1],
+  ["Saldo final", 2812217.41],
+] as const;
+
+const estoque = [
+  ["Matéria-prima", 1422698.1],
+  ["Produto acabado", 4351381.88],
+  ["Produto intermediário", 165787.06],
+  ["Refugo, retalho e lixo", 29965.54],
+] as const;
+
+const lancamentos = [
+  { origem: "JCP", debito: "6181 - Juros sobre capital próprio", credito: "6180 - Marcos Victor Siedel - JCP", valor: 140469.22, status: "Validado" },
+  { origem: "Depreciação", debito: "5193 - Depreciação de máquinas", credito: "612 - Máquinas e equipamentos", valor: 26745.98, status: "Revisar" },
+  { origem: "Depreciação", debito: "5207 - Depreciação de instalações", credito: "620 - Instalações industriais", valor: 1916.57, status: "Revisar" },
+  { origem: "Depreciação", debito: "5215 - Depreciação de móveis e utensílios", credito: "639 - Móveis e utensílios ADM", valor: 3110.24, status: "Revisar" },
+  { origem: "Depreciação", debito: "5223 - Depreciação de informática", credito: "655 - Equipamentos de informática", valor: 2780.09, status: "Revisar" },
+  { origem: "Depreciação", debito: "5231 - Depreciação de veículos", credito: "663 - Veículos", valor: 19762.52, status: "Revisar" },
+  { origem: "Grupo", debito: "Despesa com serviços - NPLog", credito: "Fornecedor NPLog / partes relacionadas", valor: 115364.37, status: "Validado" },
+] as const;
+
+function Metric({ label, value, tone = "default" }: { label: string; value: number; tone?: "default" | "success" }) {
+  return (
+    <div className="rounded-lg border bg-card p-4">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className={`mt-1 text-xl font-semibold tabular-nums ${tone === "success" ? "text-emerald-700" : ""}`}>{brl.format(value)}</p>
+    </div>
+  );
+}
 
 function FechamentoAssistidoPage() {
-  const { empresa, competencia } = useErp();
+  const [somenteRevisao, setSomenteRevisao] = useState(false);
+  const [revisados, setRevisados] = useState<string[]>([]);
+  const lista = lancamentos.filter((l) => !somenteRevisao || (l.status === "Revisar" && !revisados.includes(`${l.origem}-${l.debito}`)));
+  const validas = fontes.filter((f) => f[2] === "validado").length;
 
   return (
     <PageShell>
       <PageHeader
-        titulo="Fechamento Assistido"
-        descricao={`Preparação assistida da competência ${competencia.label} — ${empresa.nomeFantasia}. Estrutura visual; nenhum processamento contábil é executado nesta etapa.`}
-        acoes={
-          <Button size="sm" disabled>
-            Iniciar preparação
-          </Button>
-        }
+        titulo="Fechamento Assistido - Nitaplast"
+        descricao="Competência 06/2026 • CNPJ 82.295.817/0001-07 • Questor 1184 • fechamento reconstruído por documentos, razão anterior e conciliação."
+        acoes={<Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">Em revisão contábil</Badge>}
       />
 
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Metric label="Resultado operacional - DRE controle" value={215039.01} tone="success" />
+        <Metric label="Estoque final em 30/06" value={5969832.58} />
+        <Metric label="Saldo bancário final" value={2812217.41} />
+        <Metric label="JCP de junho" value={140469.22} />
+      </div>
+
       <Card>
-        <CardHeader className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-          <div className="min-w-0">
-            <CardTitle className="text-base">Preparação da competência</CardTitle>
-            <CardDescription>
-              Cobertura documental necessária antes de iniciar a escrituração assistida.
-            </CardDescription>
+        <CardHeader>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-base"><FileCheck2 className="size-4" /> Cobertura documental</CardTitle>
+              <CardDescription>Fontes efetivamente recebidas e vinculadas ao fechamento.</CardDescription>
+            </div>
+            <span className="font-mono text-xs text-muted-foreground">{validas} de {fontes.length} validadas</span>
           </div>
-          <Badge variant="outline">Competência {competencia.label}</Badge>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <div className="grid gap-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Cobertura documental</span>
-              <span className="font-mono text-xs text-muted-foreground">
-                0 de {fontes.length} fontes recebidas
-              </span>
-            </div>
-            <Progress value={0} />
-          </div>
-          <Separator />
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            {fontes.map((f) => (
-              <div
-                key={f.nome}
-                className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-dashed px-3 py-2"
-              >
-                <f.icon className="size-4 shrink-0 text-muted-foreground" />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{f.nome}</p>
-                  <p className="truncate text-xs text-muted-foreground">{f.obs}</p>
-                </div>
-                <Badge variant="outline" className="shrink-0 text-[10px] uppercase">
-                  pendente
-                </Badge>
+          <Progress value={(validas / fontes.length) * 100} />
+          <div className="grid gap-2 md:grid-cols-2">
+            {fontes.map(([nome, detalhe, status]) => (
+              <div key={nome} className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+                <div className="min-w-0"><p className="text-sm font-medium">{nome}</p><p className="text-xs text-muted-foreground">{detalhe}</p></div>
+                <Badge variant={status === "validado" ? "default" : "outline"}>{status}</Badge>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
 
-      <Card className="border-amber-500/40 bg-amber-500/5">
-        <CardHeader className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" />
-          <div className="min-w-0">
-            <CardTitle className="text-base">Classificações ausentes não são inventadas</CardTitle>
-            <CardDescription>
-              Quando faltar documento, histórico ou definição de conta, o item fica retido como
-              pendência para decisão humana. O sistema não presume classificação contábil nem
-              completa lacunas por estimativa.
-            </CardDescription>
+      <div className="grid gap-4 xl:grid-cols-3">
+        <Card className="xl:col-span-2">
+          <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Scale className="size-4" /> DRE de conferência</CardTitle><CardDescription>Meta oficial enviada ao cliente; cada linha será explicada por lançamentos.</CardDescription></CardHeader>
+          <CardContent className="grid gap-2">
+            {dre.map(([nome, valor]) => <div key={nome} className={`flex justify-between border-b py-2 text-sm last:border-0 ${nome === "Resultado operacional" ? "font-semibold text-emerald-700" : ""}`}><span>{nome}</span><span className="tabular-nums">{brl.format(valor)}</span></div>)}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Landmark className="size-4" /> Conciliação bancária</CardTitle><CardDescription>Movimento completo dos bancos da competência.</CardDescription></CardHeader>
+          <CardContent className="grid gap-2">
+            {bancos.map(([nome, valor]) => <div key={nome} className="flex justify-between border-b py-2 text-sm last:border-0"><span>{nome}</span><span className="tabular-nums">{brl.format(valor)}</span></div>)}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Boxes className="size-4" /> Inventário em 30/06/2026</CardTitle><CardDescription>Total validado de {brl.format(5969832.58)}.</CardDescription></CardHeader>
+        <CardContent className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          {estoque.map(([nome, valor]) => <div key={nome} className="rounded-md border p-3"><p className="text-xs text-muted-foreground">{nome}</p><p className="mt-1 font-semibold tabular-nums">{brl.format(valor)}</p></div>)}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div><CardTitle className="flex items-center gap-2 text-base"><ReceiptText className="size-4" /> Lançamentos pontuais identificados</CardTitle><CardDescription>Conta a conta, sem ajuste genérico e sem duplicar pagamentos como despesa.</CardDescription></div>
+            <Button size="sm" variant={somenteRevisao ? "default" : "outline"} onClick={() => setSomenteRevisao((v) => !v)}>{somenteRevisao ? "Exibir todos" : "Mostrar pendentes"}</Button>
           </div>
         </CardHeader>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Fluxo assistido</CardTitle>
-          <CardDescription>Etapas sequenciais da competência, sem execução nesta etapa.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3">
-          {etapas.map((e, i) => (
-            <div
-              key={e.nome}
-              className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md border px-3 py-3"
-            >
-              <span className="grid size-8 shrink-0 place-items-center rounded-full border font-mono text-sm">
-                {i + 1}
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{e.nome}</p>
-                <p className="text-xs text-muted-foreground">{e.desc}</p>
-              </div>
-              <Badge variant="outline">Não iniciado</Badge>
-            </div>
-          ))}
+        <CardContent className="overflow-x-auto">
+          <table className="w-full min-w-[900px] text-sm">
+            <thead><tr className="border-b text-left text-xs text-muted-foreground"><th className="py-2 pr-3">Origem</th><th className="py-2 pr-3">Débito</th><th className="py-2 pr-3">Crédito</th><th className="py-2 pr-3 text-right">Valor</th><th className="py-2 text-right">Situação</th></tr></thead>
+            <tbody>{lista.map((l) => { const key = `${l.origem}-${l.debito}`; const ok = l.status === "Validado" || revisados.includes(key); return <tr key={key} className="border-b last:border-0"><td className="py-3 pr-3"><Badge variant="outline">{l.origem}</Badge></td><td className="py-3 pr-3">{l.debito}</td><td className="py-3 pr-3">{l.credito}</td><td className="py-3 pr-3 text-right tabular-nums">{brl.format(l.valor)}</td><td className="py-3 text-right">{ok ? <span className="inline-flex items-center gap-1 text-emerald-700"><CheckCircle2 className="size-4" /> Validado</span> : <Button size="sm" variant="outline" onClick={() => setRevisados((r) => [...r, key])}>Validar</Button>}</td></tr>; })}</tbody>
+          </table>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Saídas previstas</CardTitle>
-          <CardDescription>Entregáveis ao final do fechamento assistido.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-2 sm:grid-cols-2">
-          {saidas.map((s) => (
-            <div
-              key={s.nome}
-              className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 rounded-md border border-dashed px-3 py-3"
-            >
-              {s.nome === "Arquivo Questor" ? (
-                <ScrollText className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-              ) : (
-                <FileText className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-              )}
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{s.nome}</p>
-                <p className="text-xs text-muted-foreground">{s.desc}</p>
-              </div>
-            </div>
-          ))}
-        </CardContent>
+      <Card className="border-amber-500/40 bg-amber-500/5">
+        <CardContent className="flex gap-3 pt-6"><AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" /><div><p className="text-sm font-medium">Critério do fechamento</p><p className="text-xs text-muted-foreground">Fornecedores são reconstruídos pelo saldo de 31/05, notas da competência e baixas bancárias. NPLog/NPL permanecem em contas analíticas de partes relacionadas. Contas identificadas como filial SP não são misturadas à matriz.</p></div></CardContent>
       </Card>
     </PageShell>
   );
