@@ -197,8 +197,8 @@ export const composicaoDrePorConta: ContaDre[] = [
     "descricao": "RECEITA S/ APLICAÇÃO FINANCEIRA",
     "centroCusto": "901",
     "centroCustoDescricao": "RECEITAS FINANCEIRAS",
-    "valor": 44915.98,
-    "origem": "Movimentação bancária + complemento DRE",
+    "valor": -44915.98,
+    "origem": "Movimentação bancária + complemento DRE (crédito, mesmo sinal da linha da DRE)",
     "situacao": "localizada"
   },
   {
