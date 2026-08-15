@@ -12,6 +12,7 @@ import { PageHeader, PageShell } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useErp } from "@/context/erp-context";
+import { empresas } from "@/data/mock";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -35,7 +36,11 @@ const indicadores = [
   { label: "Lançamentos na competência", valor: "—", nota: "aguardando motor contábil" },
   { label: "Lotes pendentes", valor: "—", nota: "sem processamento nesta etapa" },
   { label: "Itens a conciliar", valor: "—", nota: "conciliação não implementada" },
-  { label: "Empresas ativas", valor: "2", nota: "cadastro base" },
+  {
+    label: "Estabelecimentos ativos",
+    valor: String(empresas.filter((e) => e.ativa).length),
+    nota: "grupo NITAPLAST — matriz e filial SP",
+  },
 ];
 
 const atalhos = [

@@ -78,8 +78,14 @@ export function Topbar() {
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-t bg-muted/40 px-3 py-1.5">
         <div className="flex min-w-0 items-center gap-2">
           <span className="truncate text-xs font-medium">{empresa.razaoSocial}</span>
+          <Badge variant="outline" className="shrink-0 text-[10px] uppercase">
+            {empresa.tipo === "matriz" ? "Matriz" : "Filial"}
+          </Badge>
           <span className="hidden truncate font-mono text-xs text-muted-foreground sm:inline">
             {empresa.cnpj}
+          </span>
+          <span className="hidden truncate text-xs text-muted-foreground md:inline">
+            {empresa.municipio ? `${empresa.municipio}/${empresa.uf}` : empresa.uf}
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-2">

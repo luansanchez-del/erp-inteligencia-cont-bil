@@ -1,5 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CircleAlert } from "lucide-react";
+import { regimeTexto } from "@/lib/empresa";
 import { PageHeader, PageShell } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -41,7 +42,7 @@ function EmpresaDetalhe() {
     <PageShell>
       <PageHeader
         titulo={empresa.razaoSocial}
-        descricao={`${empresa.cnpj} · ${empresa.uf}`}
+        descricao={`${empresa.cnpj} · ${empresa.municipio ? `${empresa.municipio}/` : ""}${empresa.uf} · ${empresa.tipo === "matriz" ? "Matriz" : "Filial"}`}
         acoes={
           <Button variant="outline" size="sm" asChild>
             <Link to="/empresas" className="gap-2">
@@ -68,9 +69,21 @@ function EmpresaDetalhe() {
               <Campo rotulo="Código" valor={empresa.codigo} />
               <Campo rotulo="Nome fantasia" valor={empresa.nomeFantasia} />
               <Campo rotulo="CNPJ" valor={empresa.cnpj} />
-              <Campo rotulo="UF" valor={empresa.uf} />
-              <Campo rotulo="Regime" valor={empresa.regime} />
+              <Campo
+                rotulo="Município / UF"
+                valor={empresa.municipio ? `${empresa.municipio}/${empresa.uf}` : empresa.uf}
+              />
+              <Campo rotulo="Estabelecimento" valor={empresa.tipo === "matriz" ? "Matriz" : "Filial"} />
+              <Campo rotulo="Atividade" valor={empresa.atividade ?? "A confirmar"} />
+              <Campo rotulo="Regime" valor={regimeTexto(empresa)} />
               <Campo rotulo="Situação" valor={empresa.ativa ? "Ativa" : "Inativa"} />
+              {regimeTexto(empresa) === "A confirmar" && (
+                <p className="col-span-full flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-muted-foreground">
+                  <CircleAlert className="mt-0.5 size-4 shrink-0 text-amber-600" />
+                  Pendência cadastral: regime tributário ainda não confirmado com o cliente. Nenhum
+                  regime é presumido pelo sistema.
+                </p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { CircleAlert, Plus } from "lucide-react";
 import { PageHeader, PageShell } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { empresas, grupos } from "@/data/mock";
+import { regimeTexto } from "@/lib/empresa";
 import type { Empresa } from "@/types/erp";
 
 export const Route = createFileRoute("/empresas/")({
@@ -19,12 +20,6 @@ export const Route = createFileRoute("/empresas/")({
   component: EmpresasPage,
 });
 
-const regimeLabel: Record<Empresa["regime"], string> = {
-  simples: "Simples Nacional",
-  presumido: "Lucro Presumido",
-  real: "Lucro Real",
-  imune: "Imune / Isenta",
-};
 
 function EmpresasPage() {
   const navigate = useNavigate();
@@ -55,12 +50,38 @@ function EmpresasPage() {
       render: (e) => e.cnpj,
       valor: (e) => e.cnpj,
     },
-    { key: "uf", header: "UF", className: "w-16", render: (e) => e.uf, valor: (e) => e.uf },
+    {
+      key: "local",
+      header: "Município / UF",
+      className: "whitespace-nowrap",
+      render: (e) => (e.municipio ? `${e.municipio}/${e.uf}` : e.uf),
+      valor: (e) => `${e.municipio ?? ""} ${e.uf}`,
+    },
+    {
+      key: "tipo",
+      header: "Estabelecimento",
+      className: "w-32",
+      render: (e) => (
+        <Badge variant={e.tipo === "matriz" ? "default" : "outline"}>
+          {e.tipo === "matriz" ? "Matriz" : "Filial"}
+        </Badge>
+      ),
+      valor: (e) => e.tipo,
+    },
     {
       key: "regime",
       header: "Regime",
-      render: (e) => regimeLabel[e.regime],
-      valor: (e) => regimeLabel[e.regime],
+      render: (e) => {
+        const texto = regimeTexto(e);
+        return texto === "A confirmar" ? (
+          <span className="inline-flex items-center gap-1 text-muted-foreground">
+            <CircleAlert className="size-3.5 text-amber-600" /> A confirmar
+          </span>
+        ) : (
+          texto
+        );
+      },
+      valor: (e) => regimeTexto(e),
     },
     {
       key: "grupo",
