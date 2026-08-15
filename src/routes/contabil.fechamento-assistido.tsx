@@ -30,10 +30,11 @@ const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" 
 
 const fontes = [
   ["Saldo de implantação", "Saldo anterior do balancete de junho usado como 31/05/2026", "validado"],
-  ["Entradas e saídas", "Planilhas fiscais da matriz e relatórios de apuração", "validado"],
+  ["Entradas e saídas", "Totais fiscais recebidos; notas por centro de custo ainda não carregadas no razão", "pendente"],
   ["Movimentação bancária", "Extrato completo de 01/06 a 30/06/2026", "validado"],
   ["Folha mensal", "Folha 06/2026 da matriz, 12 colaboradores", "validado"],
-  ["Inventário", "Estoque atualizado com data-base 30/06/2026", "validado"],
+  ["Inventário", "Saldos informados; movimento de estoque de junho não lançado no razão", "pendente"],
+  ["Despesas a apropriar", "Seguros, IPTU e IPVA (contas 25141/25142/25143) sem apropriação em junho", "pendente"],
   ["Cartões", "Despesas classificadas por conta e centro de custo", "em revisão"],
   ["Depreciação", "Cálculo conta a conta conforme padrão do razão de maio", "em revisão"],
   ["JCP", "Cálculo de junho mantido conforme maio", "validado"],
