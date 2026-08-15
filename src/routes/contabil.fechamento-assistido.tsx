@@ -143,7 +143,7 @@ function FechamentoAssistidoPage() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Boxes className="size-4" /> Inventário em 30/06/2026</CardTitle><CardDescription>Total validado de {brl.format(5969832.58)}.</CardDescription></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Boxes className="size-4" /> Inventário em 30/06/2026</CardTitle><CardDescription>Saldos informados somando {brl.format(5969832.58)}. Ainda sem contrapartida no razão de junho: falta o movimento de estoque (entradas, consumo/CPV e produção) vinculado às notas.</CardDescription></CardHeader>
         <CardContent className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
           {estoque.map(([nome, valor]) => <div key={nome} className="rounded-md border p-3"><p className="text-xs text-muted-foreground">{nome}</p><p className="mt-1 font-semibold tabular-nums">{brl.format(valor)}</p></div>)}
         </CardContent>
