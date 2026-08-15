@@ -24,8 +24,8 @@ function DrePage() {
   const resultadoOperacional = dreCompletaJunho.find((linha) => linha.id === "resultado-op")!.valor;
   const lucroLiquido = dreCompletaJunho.find((linha) => linha.id === "lucro-liq")!.valor;
   const diferencas = composicaoDrePorConta.filter((conta) => conta.situacao === "a_distribuir");
-  const totalDepreciacaoLocalizado = depreciacaoContaAConta.reduce((total, conta) => total + conta.valor, 0);
-  const diferencaDepreciacao = totalDepreciacaoPrevisto - totalDepreciacaoLocalizado;
+  const totalDepreciacaoLocalizado = depreciacaoContaAConta.reduce((total, conta) => total + conta.valor, 0) + depreciacaoSemCodigo.reduce((total, [, , valor]) => total + valor, 0);
+  const diferencaDepreciacao = Math.round((totalDepreciacaoPrevisto - totalDepreciacaoLocalizado) * 100) / 100;
 
   const porGrupo = useMemo(() => {
     const grupos = new Map<string, typeof composicaoDrePorConta>();
