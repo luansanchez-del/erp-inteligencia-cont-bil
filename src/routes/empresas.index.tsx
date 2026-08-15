@@ -19,12 +19,17 @@ export const Route = createFileRoute("/empresas/")({
   component: EmpresasPage,
 });
 
-const regimeLabel: Record<Empresa["regime"], string> = {
+const regimeLabel: Record<string, string> = {
   simples: "Simples Nacional",
   presumido: "Lucro Presumido",
   real: "Lucro Real",
   imune: "Imune / Isenta",
 };
+
+export function regimeTexto(e: Empresa) {
+  if (!e.regime || e.regimeConfirmado === false) return "A confirmar";
+  return regimeLabel[e.regime] ?? "A confirmar";
+}
 
 function EmpresasPage() {
   const navigate = useNavigate();
