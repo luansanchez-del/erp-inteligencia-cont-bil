@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, FileCheck2 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -52,6 +52,32 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Fechamento em andamento</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive("/contabil/fechamento-assistido")}
+                  tooltip="Nitaplast 06/2026"
+                  className="border border-primary/20 bg-primary/5"
+                >
+                  <Link to="/contabil/fechamento-assistido" className="flex items-center gap-2">
+                    <FileCheck2 className="size-4 shrink-0 text-primary" />
+                    <span className="truncate font-medium">Nitaplast 06/2026</span>
+                    {!collapsed && (
+                      <span className="ml-auto rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
+                        revisão
+                      </span>
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         <SidebarGroup>
           <SidebarGroupLabel>Operação</SidebarGroupLabel>
           <SidebarGroupContent>
