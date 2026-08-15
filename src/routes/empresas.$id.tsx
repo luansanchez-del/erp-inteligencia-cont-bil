@@ -41,7 +41,7 @@ function EmpresaDetalhe() {
     <PageShell>
       <PageHeader
         titulo={empresa.razaoSocial}
-        descricao={`${empresa.cnpj} · ${empresa.uf}`}
+        descricao={`${empresa.cnpj} · ${empresa.municipio ? `${empresa.municipio}/` : ""}${empresa.uf} · ${empresa.tipo === "matriz" ? "Matriz" : "Filial"}`}
         acoes={
           <Button variant="outline" size="sm" asChild>
             <Link to="/empresas" className="gap-2">
