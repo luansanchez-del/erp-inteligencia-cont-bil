@@ -3,7 +3,8 @@ import { BookOpenText, ChartNoAxesCombined, FileCheck2, Scale, TriangleAlert } f
 import { PageHeader, PageShell } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";\nimport { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
+import { Badge } from "@/components/ui/badge";
+import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 
 export const Route = createFileRoute("/contabil/fechamento")({
   head: () => ({
@@ -49,7 +50,8 @@ const acessos = [
   },
 ];
 
-function FechamentoPage() {\n  useNitaplastJunho();
+function FechamentoPage() {
+  useNitaplastJunho();
   return (
     <PageShell>
       <PageHeader
