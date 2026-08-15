@@ -2,6 +2,7 @@ import { movimentosFinanceiros } from "./nitaplast-movimento-financeiro";
 import { saldosImplantacao } from "./nitaplast-implantacao";
 import { lancamentosFiscaisJunho } from "./nitaplast-lancamentos-fiscais-junho";
 import { recorrenciasJunho } from "./nitaplast-recorrencias-junho";
+import { ajustesFilialJunho } from "./nitaplast-filial-junho";
 
 export type LancamentoIntegrado = {
   id: string;
@@ -43,7 +44,7 @@ const contrapartidaPorEvento: Record<string, string> = {
 
 const centroCusto: Record<string, string> = {
   "0": "SEM CENTRO DE CUSTO", "201": "VENDAS", "203": "FATURAMENTO", "206": "EXPORTAÇÃO",
-  "210": "MARKETING", "301": "RECEPÇÃO", "302": "FINANCEIRO", "304": "ADM GERAL", "902": "DESPESAS FINANCEIRAS",
+  "210": "MARKETING", "301": "RECEPÇÃO", "302": "FINANCEIRO", "304": "ADM GERAL", "502": "COMERCIAL SP", "902": "DESPESAS FINANCEIRAS",
 };
 const cdc = (codigo: string) => centroCusto[codigo] ?? "SEM CENTRO DE CUSTO";
 
@@ -132,7 +133,14 @@ const folha: LancamentoIntegrado[] = [
   { id: "FOL-FGTS-RCT", data: "30/06/2026", origem: "FOLHA MENSAL 06/2026", debitoCodigo: "25941", debito: nomeConta("25941"), creditoCodigo: "4885", credito: nomeConta("4885"), historico: "FGTS rescisório de junho", documento: "FGTS RCT 06/2026", cc: "304", centroCusto: cdc("304"), valor: 141.98, status: "validado", observacao: "Funcionária desligada alocada no CC 304 conforme folha anterior.", rastreio: "documento", fonte: "Guia de FGTS rescisório 06/2026" },
 ];
 
-export const lancamentosIntegrados: LancamentoIntegrado[] = [...bancarios, ...folha, ...pontuais, ...recorrenciasJunho, ...lancamentosFiscaisJunho];
+export const lancamentosIntegrados: LancamentoIntegrado[] = [
+  ...bancarios,
+  ...folha,
+  ...pontuais,
+  ...recorrenciasJunho,
+  ...lancamentosFiscaisJunho,
+  ...ajustesFilialJunho,
+];
 export const totalDebitosIntegrados = lancamentosIntegrados.reduce((total, linha) => total + linha.valor, 0);
 export const totalCreditosIntegrados = totalDebitosIntegrados;
 export const lancamentosPorRastreio = {
