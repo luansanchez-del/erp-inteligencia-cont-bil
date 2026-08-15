@@ -1,43 +1,41 @@
 import type { Empresa, GrupoEmpresa, Funcao, Usuario, Integracao } from "@/types/erp";
 
 export const grupos: GrupoEmpresa[] = [
-  { id: "g1", nome: "Grupo Aurora", responsavel: "Luan Sanchez", empresasIds: ["e1", "e2"] },
-  { id: "g2", nome: "Grupo Meridiano", responsavel: "Equipe Contábil", empresasIds: ["e3"] },
+  {
+    id: "g-nitaplast",
+    nome: "NITAPLAST",
+    responsavel: "Luan Sanchez",
+    empresasIds: ["nitaplast-matriz", "nitaplast-sp"],
+  },
 ];
 
 export const empresas: Empresa[] = [
   {
-    id: "e1",
-    codigo: "0001",
-    razaoSocial: "Aurora Comércio de Alimentos Ltda",
-    nomeFantasia: "Aurora Alimentos",
-    cnpj: "12.345.678/0001-90",
-    uf: "SP",
-    regime: "presumido",
-    grupoId: "g1",
-    ativa: true,
-  },
-  {
-    id: "e2",
-    codigo: "0002",
-    razaoSocial: "Aurora Logística S.A.",
-    nomeFantasia: "Aurora Log",
-    cnpj: "12.345.678/0002-71",
-    uf: "SP",
-    regime: "real",
-    grupoId: "g1",
-    ativa: true,
-  },
-  {
-    id: "e3",
-    codigo: "0003",
-    razaoSocial: "Meridiano Serviços Contábeis ME",
-    nomeFantasia: "Meridiano",
-    cnpj: "98.765.432/0001-10",
+    id: "nitaplast-matriz",
+    codigo: "1184",
+    razaoSocial: "NITAPLAST IND E COM DE PLASTICOS INDUSTRIAIS LTDA",
+    nomeFantasia: "NITAPLAST — Matriz",
+    cnpj: "82.295.817/0001-07",
+    municipio: "Pinhais",
     uf: "PR",
-    regime: "simples",
-    grupoId: "g2",
-    ativa: false,
+    atividade: "Indústria",
+    tipo: "matriz",
+    regimeConfirmado: false,
+    grupoId: "g-nitaplast",
+    ativa: true,
+  },
+  {
+    id: "nitaplast-sp",
+    codigo: "1184",
+    razaoSocial: "NITAPLAST IND E COM DE PLASTICOS INDUSTRIAIS LTDA",
+    nomeFantasia: "NITAPLAST — Filial SP",
+    cnpj: "82.295.817/0003-60",
+    municipio: "São Paulo",
+    uf: "SP",
+    tipo: "filial",
+    regimeConfirmado: false,
+    grupoId: "g-nitaplast",
+    ativa: true,
   },
 ];
 
