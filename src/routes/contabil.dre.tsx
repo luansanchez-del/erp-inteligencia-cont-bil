@@ -3,7 +3,7 @@ import { CheckCircle2, ExternalLink, TriangleAlert } from "lucide-react";
 import { PageHeader, PageShell } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";\nimport { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 import {
   cadastroFiscalNitaplast,
   dreCompletaJunho,
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/contabil/dre")({ component: DrePage });
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
-function DrePage() {
+function DrePage() {\n  useNitaplastJunho();
   const resultadoOperacional = dreCompletaJunho.find((linha) => linha.id === "resultado-op")!.valor;
   const lucroLiquido = dreCompletaJunho.find((linha) => linha.id === "lucro-liq")!.valor;
   const pendentes = dreCompletaJunho.filter((linha) => linha.composicaoPendente).length;
