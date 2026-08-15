@@ -1,6 +1,7 @@
 import { movimentosFinanceiros } from "./nitaplast-movimento-financeiro";
 import { saldosImplantacao } from "./nitaplast-implantacao";
 import { lancamentosFiscaisJunho } from "./nitaplast-lancamentos-fiscais-junho";
+import { recorrenciasJunho } from "./nitaplast-recorrencias-junho";
 
 export type LancamentoIntegrado = {
   id: string;
@@ -17,16 +18,13 @@ export type LancamentoIntegrado = {
   valor: number;
   status: "validado" | "revisar";
   observacao: string;
-  /** documento = lastro em arquivo recebido; derivado = calculado a partir de arquivo recebido; sugerido = classificação proposta, sem lastro documental. */
   rastreio: "documento" | "derivado" | "sugerido";
-  /** Arquivo/relatório de origem que comprova o lançamento. */
   fonte: string;
 };
 
 const descricaoPorConta = new Map(saldosImplantacao.map((linha) => [linha.conta, linha.descricao]));
 const nomeConta = (codigo: string) => `${codigo} - ${descricaoPorConta.get(codigo) ?? "Conta a revisar"}`;
 
-// De/para entre os códigos bancários do movimento financeiro de junho e o plano contábil do balancete.
 export const contaPorBanco: Record<string, string> = {
   B00002: "25035",
   B00003: "25110",
@@ -38,52 +36,37 @@ export const contaPorBanco: Record<string, string> = {
 };
 
 const contrapartidaPorEvento: Record<string, string> = {
-  "1": "25111",
-  "7": "2859",
-  "12": "1712",
-  "101": "1496",
-  "104": "25104",
-  "110": "1634",
-  "111": "312",
-  "125": "1634",
-  "127": "1496",
-  "131": "25221",
-  "132": "25221",
-  "190": "4885",
-  "199": "1496",
-  "203": "25221",
-  "204": "25116",
-  "242": "25219",
-  "251": "25221",
+  "1": "25111", "7": "2859", "12": "1712", "101": "1496", "104": "25104",
+  "110": "1634", "111": "312", "125": "1634", "127": "1496", "131": "25221",
+  "132": "25221", "190": "4885", "199": "1496", "203": "25221", "204": "25116", "242": "25219", "251": "25221",
 };
 
 const centroCusto: Record<string, string> = {
-  "0": "SEM CENTRO DE CUSTO",
-  "201": "VENDAS",
-  "203": "FATURAMENTO",
-  "206": "EXPORTAÇÃO",
-  "210": "MARKETING",
-  "301": "RECEPÇÃO",
-  "302": "FINANCEIRO",
-  "304": "ADM GERAL",
-  "902": "DESPESAS FINANCEIRAS",
+  "0": "SEM CENTRO DE CUSTO", "201": "VENDAS", "203": "FATURAMENTO", "206": "EXPORTAÇÃO",
+  "210": "MARKETING", "301": "RECEPÇÃO", "302": "FINANCEIRO", "304": "ADM GERAL", "902": "DESPESAS FINANCEIRAS",
 };
-
 const cdc = (codigo: string) => centroCusto[codigo] ?? "SEM CENTRO DE CUSTO";
 
 function outroBanco(historico: string, atual: string) {
   return historico.match(/B\d{5}/g)?.find((codigo) => codigo !== atual);
 }
 
+function contrapartidaEspecial(codigo: string, historico: string) {
+  const h = historico.toLocaleUpperCase("pt-BR");
+  if (codigo === "101" && h.includes("COPEL")) return "25218";
+  return undefined;
+}
+
 const bancarios: LancamentoIntegrado[] = movimentosFinanceiros.flatMap((movimento, index) => {
   const bancoCodigo = contaPorBanco[movimento.banco];
   if (!bancoCodigo) return [];
   const bancoContrapartida = movimento.codigo === "96" ? contaPorBanco[outroBanco(movimento.historico, movimento.banco) ?? ""] : undefined;
-  const contrapartidaCodigo = bancoContrapartida ?? contrapartidaPorEvento[movimento.codigo] ?? "25221";
+  const especial = contrapartidaEspecial(movimento.codigo, movimento.historico);
+  const contrapartidaCodigo = bancoContrapartida ?? especial ?? contrapartidaPorEvento[movimento.codigo] ?? "25221";
   const entrada = movimento.tipo === "credito";
-  const contrapartidaMapeada = Boolean(bancoContrapartida) || movimento.codigo in contrapartidaPorEvento;
+  const contrapartidaMapeada = Boolean(bancoContrapartida) || Boolean(especial) || movimento.codigo in contrapartidaPorEvento;
   const contrapartidaGenerica = contrapartidaCodigo === "25221";
-  const revisar = ["131", "132", "203"].includes(movimento.codigo) || !bancoContrapartida && movimento.codigo === "96";
+  const revisar = ["131", "132", "203"].includes(movimento.codigo) || (!bancoContrapartida && movimento.codigo === "96");
   return [{
     id: `BAN-${String(index + 1).padStart(5, "0")}`,
     data: movimento.data,
@@ -97,9 +80,9 @@ const bancarios: LancamentoIntegrado[] = movimentosFinanceiros.flatMap((moviment
     cc: "0",
     centroCusto: cdc("0"),
     valor: movimento.valor,
-    status: revisar ? "revisar" as const : "validado" as const,
-    observacao: revisar ? "Contrapartida sugerida; confirmar antes da exportação." : "Vinculado pelo código do evento e pela conta bancária de origem.",
-    rastreio: contrapartidaMapeada && !contrapartidaGenerica ? "documento" as const : "sugerido" as const,
+    status: revisar ? "revisar" : "validado",
+    observacao: especial ? "Pagamento de energia classificado na conta específica Energia Elétrica a Pagar, seguindo o padrão de maio." : revisar ? "Contrapartida sugerida; confirmar antes da exportação." : "Vinculado pelo código do evento e pela conta bancária de origem.",
+    rastreio: contrapartidaMapeada && !contrapartidaGenerica ? "documento" : "sugerido",
     fonte: `Extrato/movimento financeiro 06/2026 - banco ${movimento.banco}, evento ${movimento.codigo}, linha ${index + 1}`,
   }];
 });
@@ -124,36 +107,14 @@ const pontuais: LancamentoIntegrado[] = [
     id: "PON-JCP-001", data: "30/06/2026", origem: "PADRÃO DO RAZÃO ANTERIOR", debitoCodigo: "25107", debito: nomeConta("25107"), creditoCodigo: "25253", credito: nomeConta("25253"), historico: "Juros remuneratórios sobre capital próprio - junho/2026", documento: "JCP 06/2026", cc: "902", centroCusto: cdc("902"), valor: 140469.22, status: "validado", observacao: "Valor de junho; contas convertidas para o plano do balancete enviado.", rastreio: "derivado", fonte: "Cálculo de JCP replicado do razão de maio/2026 - falta ata/memória de cálculo de junho",
   },
   ...depreciacoes.map(([debitoCodigo, creditoCodigo, valor, historico], index) => ({
-    id: `PON-DEP-${String(index + 1).padStart(3, "0")}`,
-    data: "30/06/2026",
-    origem: "PADRÃO DO RAZÃO ANTERIOR",
-    debitoCodigo,
-    debito: nomeConta(debitoCodigo),
-    creditoCodigo,
-    credito: nomeConta(creditoCodigo),
-    historico: `${historico} - junho/2026`,
-    documento: "DEP 06/2026",
-    cc: "0",
-    centroCusto: cdc("0"),
-    valor,
-    status: "validado" as const,
-    observacao: "Padrão conta a conta do razão anterior; códigos convertidos para o plano do balancete.",
-    rastreio: "derivado" as const,
-    fonte: "Razão de maio/2026, lançamento de depreciação conta a conta - falta ficha de bens de junho",
+    id: `PON-DEP-${String(index + 1).padStart(3, "0")}`, data: "30/06/2026", origem: "PADRÃO DO RAZÃO ANTERIOR",
+    debitoCodigo, debito: nomeConta(debitoCodigo), creditoCodigo, credito: nomeConta(creditoCodigo), historico: `${historico} - junho/2026`, documento: "DEP 06/2026", cc: "0", centroCusto: cdc("0"), valor,
+    status: "validado" as const, observacao: "Padrão conta a conta do razão anterior; códigos convertidos para o plano do balancete.", rastreio: "derivado" as const, fonte: "Razão de maio/2026, lançamento de depreciação conta a conta - falta ficha de bens de junho",
   })),
 ];
 
-const folhaPorCc = [
-  ["301", 2200.00],
-  ["206", 4141.46],
-  ["201", 14975.94],
-  ["210", 8638.58],
-  ["203", 4600.00],
-  ["304", 5720.00],
-  ["302", 3250.00],
-] as const;
+const folhaPorCc = [["301",2200.00],["206",4141.46],["201",14975.94],["210",8638.58],["203",4600.00],["304",5720.00],["302",3250.00]] as const;
 const totalFolha = folhaPorCc.reduce((total, [, valor]) => total + valor, 0);
-
 function rateio(valor: number, parcela: number, index: number) {
   if (index < folhaPorCc.length - 1) return Math.round(valor * parcela / totalFolha * 100) / 100;
   const anteriores = folhaPorCc.slice(0, -1).reduce((total, [, base]) => total + Math.round(valor * base / totalFolha * 100) / 100, 0);
@@ -171,7 +132,7 @@ const folha: LancamentoIntegrado[] = [
   { id: "FOL-FGTS-RCT", data: "30/06/2026", origem: "FOLHA MENSAL 06/2026", debitoCodigo: "25941", debito: nomeConta("25941"), creditoCodigo: "4885", credito: nomeConta("4885"), historico: "FGTS rescisório de junho", documento: "FGTS RCT 06/2026", cc: "304", centroCusto: cdc("304"), valor: 141.98, status: "validado", observacao: "Funcionária desligada alocada no CC 304 conforme folha anterior.", rastreio: "documento", fonte: "Guia de FGTS rescisório 06/2026" },
 ];
 
-export const lancamentosIntegrados: LancamentoIntegrado[] = [...bancarios, ...folha, ...pontuais, ...lancamentosFiscaisJunho];
+export const lancamentosIntegrados: LancamentoIntegrado[] = [...bancarios, ...folha, ...pontuais, ...recorrenciasJunho, ...lancamentosFiscaisJunho];
 export const totalDebitosIntegrados = lancamentosIntegrados.reduce((total, linha) => total + linha.valor, 0);
 export const totalCreditosIntegrados = totalDebitosIntegrados;
 export const lancamentosPorRastreio = {
