@@ -10,14 +10,21 @@ export interface GrupoEmpresa {
   empresasIds: string[];
 }
 
+export type TipoEstabelecimento = "matriz" | "filial";
+
 export interface Empresa {
   id: string;
   codigo: string;
   razaoSocial: string;
   nomeFantasia: string;
   cnpj: string;
+  municipio?: string;
   uf: string;
-  regime: RegimeTributario;
+  /** Ausente quando ainda não confirmado com o cliente — não presumir. */
+  regime?: RegimeTributario;
+  regimeConfirmado?: boolean;
+  atividade?: string;
+  tipo: TipoEstabelecimento;
   grupoId?: string;
   ativa: boolean;
 }
