@@ -1,5 +1,6 @@
 import { movimentosFinanceiros } from "./nitaplast-movimento-financeiro";
 import { saldosImplantacao } from "./nitaplast-implantacao";
+import { lancamentosFiscaisJunho } from "./nitaplast-lancamentos-fiscais-junho";
 
 export type LancamentoIntegrado = {
   id: string;
@@ -170,7 +171,7 @@ const folha: LancamentoIntegrado[] = [
   { id: "FOL-FGTS-RCT", data: "30/06/2026", origem: "FOLHA MENSAL 06/2026", debitoCodigo: "25941", debito: nomeConta("25941"), creditoCodigo: "4885", credito: nomeConta("4885"), historico: "FGTS rescisório de junho", documento: "FGTS RCT 06/2026", cc: "304", centroCusto: cdc("304"), valor: 141.98, status: "validado", observacao: "Funcionária desligada alocada no CC 304 conforme folha anterior.", rastreio: "documento", fonte: "Guia de FGTS rescisório 06/2026" },
 ];
 
-export const lancamentosIntegrados: LancamentoIntegrado[] = [...bancarios, ...folha, ...pontuais];
+export const lancamentosIntegrados: LancamentoIntegrado[] = [...bancarios, ...folha, ...pontuais, ...lancamentosFiscaisJunho];
 export const totalDebitosIntegrados = lancamentosIntegrados.reduce((total, linha) => total + linha.valor, 0);
 export const totalCreditosIntegrados = totalDebitosIntegrados;
 export const lancamentosPorRastreio = {
