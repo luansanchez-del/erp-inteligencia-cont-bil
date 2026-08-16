@@ -80,7 +80,7 @@ export const dreCompletaJunho: LinhaDre[] = [
   { id: "equiv", descricao: "Resultado da Equivalência Patrimonial", valor: 0, nivel: 1, tipo: "detalhe", origem: "DRE ENVIADA 06/2026" },
   { id: "lucro-liq", descricao: "LUCRO LÍQUIDO", valor: 222334.87, nivel: 0, tipo: "resultado", origem: "DRE ENVIADA 06/2026" },
   { id: "base-ir", descricao: "LUCRO APURADO PARA IRPJ E CSLL", valor: 132502.91, nivel: 0, tipo: "informativo", origem: "DRE ENVIADA 06/2026" },
-  { id: "ajuste-jun", descricao: "Ajuste operacional informado no período 06/2026", valor: 82536.10, nivel: 0, tipo: "informativo", origem: "DRE ENVIADA 06/2026 — observação de conferência; não contabilizar automaticamente" },
+  { id: "ajuste-jul", descricao: "Ajuste operacional informado no período 06/2026", valor: 82536.10, nivel: 0, tipo: "informativo", origem: "DRE ENVIADA 06/2026 — observação de conferência; não contabilizar automaticamente" },
 ];
 
 export const idsDespesasOperacionais = [
