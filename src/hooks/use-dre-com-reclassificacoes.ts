@@ -143,6 +143,16 @@ export function useDreComReclassificacoes() {
       composicao: linha.composicao.map((item) => ({ ...item })),
     }));
     const map = new Map(linhas.map((linha) => [linha.id, linha]));
+
+    // O identificador interno foi preservado por compatibilidade com a versão anterior,
+    // mas a referência recebida do cliente informa que este ajuste pertence ao próprio 06/2026.
+    const ajusteJunho = map.get("ajuste-jul");
+    if (ajusteJunho) {
+      ajusteJunho.descricao = "Ajuste operacional informado no período 06/2026";
+      ajusteJunho.criterio = "Observação da DRE enviada de junho para conferência do resultado/base fiscal. Não pertence a 07/2026 e não gera lançamento automático no Razão.";
+      ajusteJunho.diferenca = arred(ajusteJunho.calculado - ajusteJunho.enviado);
+    }
+
     const ajustes = gerarLancamentosReclassificacao(lancamentosIntegrados, reclassificacoes);
 
     for (const ajuste of ajustes) {
