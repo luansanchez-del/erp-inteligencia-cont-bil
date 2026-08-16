@@ -97,7 +97,17 @@ function totaisPorCategoria(base: LancamentoIntegrado[]) {
     if (categoriaDebito) totais.set(categoriaDebito, arred((totais.get(categoriaDebito) ?? 0) + linha.valor));
 
     const categoriaCredito = resolverCategoria(linha.creditoCodigo, linha);
-    if (categoriaCredito) totais.set(categoriaCredito, arred((totais.get(categoriaCredito) ?? 0) - linha.valor));
+
+    // A DRE final apresenta PIS/COFINS sobre despesas em linhas redutoras próprias.
+    // Portanto estes créditos NÃO podem reduzir os buckets usados para fechar
+    // Administrativas/Comerciais/Produção/etc. aqui e depois serem abatidos de novo.
+    const creditoFederalSeparado =
+      (linha.origem === "APURAÇÃO PIS 06/2026" || linha.origem === "APURAÇÃO COFINS 06/2026")
+      && Boolean(categoriaCredito);
+
+    if (categoriaCredito && !creditoFederalSeparado) {
+      totais.set(categoriaCredito, arred((totais.get(categoriaCredito) ?? 0) - linha.valor));
+    }
   }
   return totais;
 }
