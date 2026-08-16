@@ -28,7 +28,8 @@ const descricaoPorConta = new Map(saldosImplantacao.map((linha) => [linha.conta,
 const nomeConta = (codigo: string) => `${codigo} - ${descricaoPorConta.get(codigo) ?? "Conta a revisar"}`;
 
 export const contaPorBanco: Record<string, string> = {
-  B00002: "25035",
+  // B00002 é a conta corrente Greencred. A conta 25035 é integralização de capital e não deve receber giro bancário.
+  B00002: "21",
   B00003: "25110",
   B00100: "10",
   B23700: "9",
