@@ -104,6 +104,85 @@ function soma(map: Map<string, LinhaComparacaoDre>, ids: string[]) {
   return arred(ids.reduce((total, id) => total + (map.get(id)?.calculado ?? 0), 0));
 }
 
+/**
+ * DRE de deduções usa o débito do imposto incidente nas SAÍDAS.
+ * Créditos de entrada/aquisição, energia, ativo, devoluções e outros créditos
+ * permanecem no Razão/Balancete, mas não reduzem a linha de imposto sobre vendas.
+ *
+ * A DRE enviada de junho apresenta PIS/COFINS da matriz na base consolidada da
+ * apuração da empresa. A abertura gerencial da filial é demonstrada separadamente
+ * nota a nota; não subtraímos a filial novamente da linha de controle da matriz.
+ */
+function aplicarDebitosDeSaidaNasDeducoes(map: Map<string, LinhaComparacaoDre>) {
+  const regras = [
+    {
+      linhaId: "ipi-m",
+      lancamentoIds: ["TAX-SAI-IPI"],
+      criterio: "IPI sobre vendas: débito das saídas. Créditos fiscais e estornos permanecem no Razão, mas não reduzem esta linha da DRE.",
+    },
+    {
+      linhaId: "icms-m",
+      lancamentoIds: ["TAX-SAI-ICMS"],
+      criterio: "ICMS sobre vendas da matriz: débito das saídas. Créditos de entradas, energia, ativo ou créditos presumidos não reduzem esta linha da DRE.",
+    },
+    {
+      linhaId: "pis-m",
+      lancamentoIds: ["TAX-SAI-PIS"],
+      criterio: "PIS da linha de controle da matriz: débito consolidado das saídas da empresa. A parcela gerencial da filial é aberta nota a nota e não é subtraída novamente desta linha.",
+    },
+    {
+      linhaId: "cofins-m",
+      lancamentoIds: ["TAX-SAI-COF"],
+      criterio: "COFINS da linha de controle da matriz: débito consolidado das saídas da empresa. A parcela gerencial da filial é aberta nota a nota e não é subtraída novamente desta linha.",
+    },
+    {
+      linhaId: "icms-st",
+      lancamentoIds: ["TAX-SAI-ICMSST"],
+      criterio: "ICMS-ST da DRE: débito incidente nas saídas, sem compensar créditos fiscais de outras naturezas.",
+    },
+    {
+      linhaId: "icms-f",
+      lancamentoIds: ["FIL-TAX-ICMS"],
+      criterio: "ICMS da filial: débito das saídas da filial. Créditos de entradas e transferências não reduzem esta linha da DRE.",
+    },
+    {
+      linhaId: "ipi-f",
+      lancamentoIds: ["FIL-TAX-IPI"],
+      criterio: "IPI da filial: débito das saídas da filial. Créditos fiscais permanecem no Razão/Balancete e não reduzem esta linha da DRE.",
+    },
+  ] as const;
+
+  for (const regra of regras) {
+    const linha = map.get(regra.linhaId);
+    if (!linha) continue;
+
+    const lancamentos = lancamentosIntegrados.filter((item) => regra.lancamentoIds.includes(item.id as never));
+    if (!lancamentos.length) continue;
+
+    const valor = arred(lancamentos.reduce((total, item) => total + item.valor, 0));
+    linha.calculado = valor;
+    linha.diferenca = arred(valor - linha.enviado);
+    linha.criterio = regra.criterio;
+    linha.composicao = lancamentos.map((item) => {
+      const conta = plano.get(item.debitoCodigo);
+      return {
+        chave: `${item.debitoCodigo}|${item.cc}|${item.id}|debito-saida`,
+        codigo: item.debitoCodigo,
+        classificacao: conta?.classificacao ?? "",
+        descricao: conta?.descricao ?? item.debito,
+        cc: item.cc,
+        centroCusto: item.centroCusto,
+        debitos: arred(item.valor),
+        creditos: 0,
+        valorLinha: arred(item.valor),
+        lancamentos: 1,
+        fonte: `${item.origem} · ${item.fonte}`,
+        observacao: "Valor da DRE calculado pelo débito das saídas. Créditos fiscais são conciliados no Razão/Balancete, sem reduzir a dedução da receita.",
+      };
+    });
+  }
+}
+
 function recalcularDerivadas(map: Map<string, LinhaComparacaoDre>) {
   const set = (id: string, valor: number) => {
     const linha = map.get(id);
@@ -189,6 +268,9 @@ export function useDreComReclassificacoes() {
       }
     }
 
+    // Regra final da DRE: imposto sobre vendas usa o débito das saídas.
+    // Assim créditos fiscais não criam falsa divergência na dedução da receita.
+    aplicarDebitosDeSaidaNasDeducoes(map);
     recalcularDerivadas(map);
 
     const comparacaoDreDetalhada = linhas;
