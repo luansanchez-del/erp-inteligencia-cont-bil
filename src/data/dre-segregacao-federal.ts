@@ -1,16 +1,16 @@
 export type ValorTributoGerencial = {
-  debito: number;
-  credito: number;
-  liquido: number;
+  debitoSobreVendas: number;
+  reversaoDre: number;
+  liquidoDre: number;
 };
 
 export type ConciliacaoTributoGerencial = {
   tributo: "PIS" | "COFINS";
-  consolidadoFiscal: ValorTributoGerencial;
+  consolidadoGerencial: ValorTributoGerencial;
   matrizGerencial: ValorTributoGerencial;
   filialGerencial: ValorTributoGerencial;
   diferencaDebito: number;
-  diferencaCredito: number;
+  diferencaReversao: number;
   diferencaLiquida: number;
   confere: boolean;
   regra: string;
@@ -18,61 +18,80 @@ export type ConciliacaoTributoGerencial = {
 
 const arred = (valor: number) => Math.round(valor * 100) / 100;
 
-function normalizar(debito: number, credito: number): ValorTributoGerencial {
-  const d = arred(debito);
-  const c = arred(credito);
-  return { debito: d, credito: c, liquido: arred(d - c) };
+function normalizar(debitoSobreVendas: number, reversaoDre: number): ValorTributoGerencial {
+  const debito = arred(debitoSobreVendas);
+  const reversao = arred(reversaoDre);
+  return {
+    debitoSobreVendas: debito,
+    reversaoDre: reversao,
+    liquidoDre: arred(debito - reversao),
+  };
 }
 
 /**
  * Regra permanente da DRE gerencial:
- * - PIS/COFINS continuam com UMA apuração fiscal consolidada por empresa;
- * - a abertura Matriz x Filial é GERENCIAL e nasce do documento/nota a nota;
- * - a soma das parcelas gerenciais precisa reconciliar com a apuração consolidada;
- * - nenhuma diferença é empurrada para uma filial para "bater" a DRE.
+ * - PIS/COFINS possuem UMA apuração fiscal consolidada por empresa;
+ * - a abertura Matriz x Filial da DRE nasce do documento/nota a nota;
+ * - o débito sobre vendas segregado deve reconciliar com o débito consolidado;
+ * - reversões de DRE (ex.: imposto de devoluções) são segregadas pela origem;
+ * - CRÉDITOS FISCAIS DE AQUISIÇÃO não entram nesta conta: permanecem no ativo
+ *   recuperável/compensação e são conciliados separadamente na apuração fiscal;
+ * - nenhuma diferença é empurrada para uma filial para "bater" a DRE enviada.
  *
  * Quando apenas a filial está identificada nota a nota, a matriz é obtida como
- * residual de conciliação do consolidado fiscal. Isso NÃO cria uma segunda
+ * residual de conciliação do débito consolidado. Isso NÃO cria uma segunda
  * apuração fiscal e NÃO gera lançamento contábil adicional.
  */
 export function conciliarTributoGerencial(params: {
   tributo: "PIS" | "COFINS";
-  consolidadoDebito: number;
-  consolidadoCredito: number;
+  consolidadoDebitoSobreVendas: number;
+  consolidadoReversaoDre: number;
   filialDebitoNotaANota: number;
-  filialCreditoNotaANota: number;
+  filialReversaoNotaANota: number;
   tolerancia?: number;
 }): ConciliacaoTributoGerencial {
   const tolerancia = params.tolerancia ?? 0.01;
-  const consolidadoFiscal = normalizar(params.consolidadoDebito, params.consolidadoCredito);
-  const filialGerencial = normalizar(params.filialDebitoNotaANota, params.filialCreditoNotaANota);
+  const consolidadoGerencial = normalizar(
+    params.consolidadoDebitoSobreVendas,
+    params.consolidadoReversaoDre,
+  );
+  const filialGerencial = normalizar(
+    params.filialDebitoNotaANota,
+    params.filialReversaoNotaANota,
+  );
   const matrizGerencial = normalizar(
-    consolidadoFiscal.debito - filialGerencial.debito,
-    consolidadoFiscal.credito - filialGerencial.credito,
+    consolidadoGerencial.debitoSobreVendas - filialGerencial.debitoSobreVendas,
+    consolidadoGerencial.reversaoDre - filialGerencial.reversaoDre,
   );
 
   const diferencaDebito = arred(
-    matrizGerencial.debito + filialGerencial.debito - consolidadoFiscal.debito,
+    matrizGerencial.debitoSobreVendas
+      + filialGerencial.debitoSobreVendas
+      - consolidadoGerencial.debitoSobreVendas,
   );
-  const diferencaCredito = arred(
-    matrizGerencial.credito + filialGerencial.credito - consolidadoFiscal.credito,
+  const diferencaReversao = arred(
+    matrizGerencial.reversaoDre
+      + filialGerencial.reversaoDre
+      - consolidadoGerencial.reversaoDre,
   );
   const diferencaLiquida = arred(
-    matrizGerencial.liquido + filialGerencial.liquido - consolidadoFiscal.liquido,
+    matrizGerencial.liquidoDre
+      + filialGerencial.liquidoDre
+      - consolidadoGerencial.liquidoDre,
   );
 
   return {
     tributo: params.tributo,
-    consolidadoFiscal,
+    consolidadoGerencial,
     matrizGerencial,
     filialGerencial,
     diferencaDebito,
-    diferencaCredito,
+    diferencaReversao,
     diferencaLiquida,
     confere:
       Math.abs(diferencaDebito) <= tolerancia
-      && Math.abs(diferencaCredito) <= tolerancia
+      && Math.abs(diferencaReversao) <= tolerancia
       && Math.abs(diferencaLiquida) <= tolerancia,
-    regra: "Apuração fiscal consolidada; segregação Matriz x Filial pelo nota a nota; soma gerencial obrigatoriamente conciliada ao consolidado.",
+    regra: "Apuração fiscal consolidada; segregação gerencial Matriz x Filial pelo nota a nota; créditos de aquisição ficam fora da dedução sobre vendas.",
   };
 }
