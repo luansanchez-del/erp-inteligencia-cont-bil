@@ -41,6 +41,12 @@ function persistir(itens: ReclassificacaoInteligente[]) {
   window.dispatchEvent(new Event(EVENTO));
 }
 
+export function removerReclassificacaoPersistida(id: string) {
+  const proxima = carregar().filter((item) => item.id !== id);
+  persistir(proxima);
+  return proxima;
+}
+
 export function gerarLancamentosReclassificacao(
   base: LancamentoIntegrado[],
   reclassificacoes: ReclassificacaoInteligente[],
@@ -117,8 +123,7 @@ export function useReclassificacoesInteligentes(competencia = "2026-06") {
   }, [competencia]);
 
   const remover = useCallback((id: string) => {
-    const proxima = carregar().filter((item) => item.id !== id);
-    persistir(proxima);
+    const proxima = removerReclassificacaoPersistida(id);
     setTodas(proxima);
   }, []);
 
