@@ -174,13 +174,18 @@ const folha: LancamentoIntegrado[] = [
   { id: "FOL-FGTS-RCT", data: "30/06/2026", origem: "FOLHA MENSAL 06/2026", debitoCodigo: "25941", debito: nomeConta("25941"), creditoCodigo: "4885", credito: nomeConta("4885"), historico: "FGTS rescisório de junho", documento: "FGTS RCT 06/2026", cc: "304", centroCusto: cdc("304"), valor: 141.98, status: "validado", observacao: "Funcionária desligada alocada no CC 304 conforme folha anterior.", rastreio: "documento", fonte: "Guia de FGTS rescisório 06/2026" },
 ];
 
+// O lote fiscal legado continha linhas FIL-* criadas a partir da DRE de controle e,
+// depois, lançamentos de reversão para neutralizar duplicidades. Isso não é fato contábil.
+// A filial entra no razão somente pelos lançamentos documentados em ajustesFilialJunho.
+const lancamentosFiscaisSemFilialLegada = lancamentosFiscaisJunho.filter((linha) => !linha.id.startsWith("FIL-"));
+
 export const lancamentosIntegrados: LancamentoIntegrado[] = [
   ...bancarios,
   ...ajustesAplicacoesJunho,
   ...folha,
   ...pontuais,
   ...recorrenciasJunho,
-  ...lancamentosFiscaisJunho,
+  ...lancamentosFiscaisSemFilialLegada,
   ...ajustesFilialJunho,
 ];
 export const totalDebitosIntegrados = lancamentosIntegrados.reduce((total, linha) => total + linha.valor, 0);
