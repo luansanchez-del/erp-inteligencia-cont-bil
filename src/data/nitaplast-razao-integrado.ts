@@ -37,10 +37,13 @@ export const contaPorBanco: Record<string, string> = {
   B34101: "25002",
 };
 
+// 25221 - Contas a pagar NÃO é conta de pendência.
+// Eventos sem contrapartida documental segura ficam na 4859 - Conta Transitória
+// até a abertura analítica, evitando inverter artificialmente uma obrigação do passivo.
 const contrapartidaPorEvento: Record<string, string> = {
   "1": "25111", "7": "2859", "12": "1712", "101": "1496", "104": "25104",
-  "110": "1634", "111": "312", "125": "1634", "127": "1496", "131": "25221",
-  "132": "25221", "190": "4885", "199": "1496", "203": "25221", "204": "25116", "242": "25219", "251": "25221",
+  "110": "1634", "111": "312", "125": "1634", "127": "1496", "131": "4859",
+  "132": "4859", "190": "4885", "199": "1496", "203": "4859", "204": "25116", "242": "25219", "251": "4859",
 };
 
 const centroCusto: Record<string, string> = {
@@ -57,6 +60,13 @@ function contrapartidaEspecial(codigo: string, historico: string) {
   const h = historico.toLocaleUpperCase("pt-BR");
   if (codigo === "96" && h.includes("NITA P/ MVS")) return "25129";
   if (codigo === "101" && h.includes("COPEL")) return "25218";
+
+  // Débitos automáticos que estavam contaminando 25221.
+  if (codigo === "203" && h.includes("BANCO BRADESCO SA")) return "25104";
+  if (codigo === "203" && (h.includes("ENERGIA RESERVA") || h.includes("ENERGIA NUCLEAR") || h.includes("RESERVA DE CAPACIDADE"))) return "25218";
+  if (codigo === "203" && h.includes("ENVALIOR")) return "1496";
+  if (codigo === "204" && h.includes("ENVALIOR")) return "1496";
+  if (codigo === "203" && h.includes("ITAU UNIBANCO SA")) return "1496";
   return undefined;
 }
 
@@ -75,16 +85,20 @@ const bancarios: LancamentoIntegrado[] = movimentosFinanceiros.flatMap((moviment
 
   const especialBradesco895 = movimento.banco === "B23702" && movimento.codigo === "7" && movimento.tipo === "debito" ? "25104" : undefined;
   const especial = especialBradesco895 ?? contrapartidaEspecial(movimento.codigo, movimento.historico);
-  const contrapartidaCodigo = bancoContrapartida ?? especial ?? contrapartidaPorEvento[movimento.codigo] ?? "25221";
+  const contrapartidaCodigo = bancoContrapartida ?? especial ?? contrapartidaPorEvento[movimento.codigo] ?? "4859";
   const entrada = movimento.tipo === "credito";
   const contrapartidaMapeada = Boolean(bancoContrapartida) || Boolean(especial) || movimento.codigo in contrapartidaPorEvento;
-  const contrapartidaGenerica = contrapartidaCodigo === "25221";
-  const revisar = ["131", "132", "203"].includes(movimento.codigo) || (!bancoContrapartida && !especial && movimento.codigo === "96");
+  const contrapartidaGenerica = contrapartidaCodigo === "25221" || contrapartidaCodigo === "4859";
+  const revisar = ["131", "132", "203", "251"].includes(movimento.codigo) || (!bancoContrapartida && !especial && movimento.codigo === "96");
   const observacaoEspecial = especial === "25129"
     ? "Transferência Nitaplast para MVS classificada na Conta Corrente Marcos Victor Siedel, conciliada com o extrato bancário da MVS."
     : especial === "25104"
-      ? "Tarifa de R$ 48,21 do Bradesco 895 mantida na conta corrente; o resgate correspondente do Invest Fácil é contabilizado separadamente."
-      : "Pagamento de energia classificado na conta específica Energia Elétrica a Pagar, seguindo o padrão de maio.";
+      ? "Débito bancário classificado como despesa/tarifa bancária; não utilizar Contas a pagar como conta de pendência."
+      : especial === "25218"
+        ? "Pagamento de energia classificado na conta específica Energia Elétrica a Pagar, seguindo o padrão contábil do período anterior."
+        : especial === "1496"
+          ? "Favorecido identificado no histórico bancário. Retirado de Contas a pagar genérica e mantido em Fornecedores Diversos até confirmar a conta analítica específica."
+          : "Contrapartida identificada pelo documento.";
   return [{
     id: `BAN-${String(index + 1).padStart(5, "0")}`,
     data: movimento.data,
@@ -99,7 +113,7 @@ const bancarios: LancamentoIntegrado[] = movimentosFinanceiros.flatMap((moviment
     centroCusto: cdc("0"),
     valor: movimento.valor,
     status: revisar ? "revisar" : "validado",
-    observacao: especial ? observacaoEspecial : revisar ? "Contrapartida sugerida; confirmar antes da exportação." : "Vinculado pelo código do evento e pela conta bancária de origem.",
+    observacao: especial ? observacaoEspecial : revisar ? "Movimento ainda sem conta analítica segura; mantido na Conta Transitória 4859 para revisão, sem contaminar Contas a pagar." : "Vinculado pelo código do evento e pela conta bancária de origem.",
     rastreio: contrapartidaMapeada && !contrapartidaGenerica ? "documento" : "sugerido",
     fonte: `Extrato/movimento financeiro 06/2026 - banco ${movimento.banco}, evento ${movimento.codigo}, linha ${index + 1}`,
   }];
