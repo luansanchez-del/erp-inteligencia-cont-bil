@@ -86,7 +86,15 @@ const bancarios: LancamentoIntegrado[] = movimentosFinanceiros.flatMap((moviment
   const especialBradesco895 = movimento.banco === "B23702" && movimento.codigo === "7" && movimento.tipo === "debito" ? "25104" : undefined;
   const especial = especialBradesco895 ?? contrapartidaEspecial(movimento.codigo, movimento.historico);
   const contrapartidaCodigo = bancoContrapartida ?? especial ?? contrapartidaPorEvento[movimento.codigo] ?? "4859";
-  const entrada = movimento.tipo === "credito";
+
+  // No extrato interno B23700 algumas tarifas (evento 104) vieram com indicador C,
+  // embora no extrato bancário oficial sejam débitos. Para o Bradesco 6349,
+  // evento 104 é sempre saída da conta corrente. Isso corrige R$ 71,33 de tarifas
+  // que estavam aumentando o banco e reduzindo a despesa em vez do contrário.
+  const entrada = movimento.banco === "B23700" && movimento.codigo === "104"
+    ? false
+    : movimento.tipo === "credito";
+
   const contrapartidaMapeada = Boolean(bancoContrapartida) || Boolean(especial) || movimento.codigo in contrapartidaPorEvento;
   const contrapartidaGenerica = contrapartidaCodigo === "25221" || contrapartidaCodigo === "4859";
   const revisar = ["131", "132", "203", "251"].includes(movimento.codigo) || (!bancoContrapartida && !especial && movimento.codigo === "96");
