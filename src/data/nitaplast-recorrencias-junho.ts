@@ -64,40 +64,50 @@ function provisaoFilial(params: {
   creditoCodigo: string;
   valor: number;
   historico: string;
+  documento: string;
   fonte: string;
 }): LancamentoIntegrado {
   return {
     id: params.id,
     data: "30/06/2026",
-    origem: "PROVISÃO FOLHA FILIAL 06/2026",
+    origem: "PROVISÕES FOLHA FILIAL 06/2026",
     debitoCodigo: params.debitoCodigo,
     debito: nomeConta(params.debitoCodigo),
     creditoCodigo: params.creditoCodigo,
     credito: nomeConta(params.creditoCodigo),
     historico: params.historico,
-    documento: "PROVISÃO FÉRIAS FILIAL 06/2026",
+    documento: params.documento,
     cc: "502",
     centroCusto: "COMERCIAL SP",
     valor: params.valor,
     status: "validado",
-    observacao: "Valor mensal conforme relatório específico da filial; integrado ao mesmo balancete consolidado da Nitaplast.",
+    observacao: "Valor mensal conforme relatório específico da filial; integrado ao balancete consolidado da Nitaplast sem misturar a identificação da filial.",
     rastreio: "documento",
     fonte: params.fonte,
   };
 }
 
+/**
+ * Regra para os relatórios contínuos de provisão:
+ * - contabilizamos a PROVISÃO DO MÊS de junho;
+ * - as colunas "Ajuste" dos relatórios não são lançadas como nova despesa de junho,
+ *   pois representam recomposição do saldo contínuo do sistema de folha e os saldos
+ *   de abertura contábeis de 31/05 já trazem provisões reconhecidas pela contabilidade anterior;
+ * - valores efetivamente marcados como "Pago"/"Diferença Pgto" são baixados da provisão
+ *   e reclassificados para a obrigação corrente correspondente, sem novo efeito no resultado.
+ */
 const provisoesFolha: LancamentoIntegrado[] = [
   ...gerarProvisao({
     prefixo: "REC-PROV-FER", debitoCodigo: "25057", creditoCodigo: "25237", total: 4618.54,
     historico: "Provisão mensal de férias + 1/3 de junho - matriz", documento: "PROVISÃO FÉRIAS MATRIZ 06/2026", status: "validado",
-    observacao: "Relatório específico de provisão: férias R$ 3.463,91 + 1/3 R$ 1.154,63 = R$ 4.618,54. Rateio por CC mantém a base de salários da matriz.",
+    observacao: "Relatório específico: férias R$ 3.463,91 + 1/3 R$ 1.154,63 = R$ 4.618,54. Rateio por CC mantém a base da folha da matriz.",
     fonte: "PROVISÃO DE FÉRIAS - MATRIZ - 06.2026 1 (1).pdf",
   }),
   ...gerarProvisao({
-    prefixo: "REC-PROV-13", debitoCodigo: "25059", creditoCodigo: "25238", total: 3389.28,
-    historico: "Provisão mensal de 13º salário de junho - matriz", documento: "FOLHA PROVISÃO 13 06/2026", status: "revisar",
-    observacao: "Mantido provisoriamente a partir da folha já integrada. A provisão de 13º da filial ainda não foi apresentada e este valor não deve ser tratado como consolidado definitivo.",
-    fonte: "EXTRATO FOLHA MENSAL - 06.2026 - MATRIZ(4).pdf",
+    prefixo: "REC-PROV-13", debitoCodigo: "25059", creditoCodigo: "25238", total: 3451.74,
+    historico: "Provisão mensal de 13º salário de junho - matriz", documento: "PROVISÃO 13º MATRIZ 06/2026", status: "validado",
+    observacao: "Valor da coluna Provisão Mês do relatório contínuo do 13º da filial 1/matriz: R$ 3.451,74.",
+    fonte: "Relatorios_Funcionarios_Provisoes_Provisao_13o_Salario_-_Continuo.pdf",
   }),
   ...gerarProvisao({
     prefixo: "REC-ENC-FER", debitoCodigo: "25058", creditoCodigo: "25230", total: 1630.36,
@@ -106,21 +116,67 @@ const provisoesFolha: LancamentoIntegrado[] = [
     fonte: "PROVISÃO DE FÉRIAS - MATRIZ - 06.2026 1 (1).pdf",
   }),
   ...gerarProvisao({
-    prefixo: "REC-ENC-13", debitoCodigo: "25060", creditoCodigo: "25229", total: 1196.40,
-    historico: "Encargos sobre provisão de 13º salário de junho - matriz", documento: "ENC PROV 13 06/2026", status: "revisar",
-    observacao: "Estimativa pela mesma relação contábil usada pela contabilidade anterior em maio. Confirmar com relatório específico de provisão de 13º antes da exportação definitiva.",
-    fonte: "Balancete 05/2026 da contabilidade anterior + folha atual 06/2026",
+    prefixo: "REC-ENC-13", debitoCodigo: "25060", creditoCodigo: "25229", total: 1218.41,
+    historico: "INSS + FGTS sobre provisão de 13º salário de junho - matriz", documento: "PROVISÃO 13º MATRIZ 06/2026", status: "validado",
+    observacao: "Relatório contínuo do 13º: INSS R$ 942,25 + FGTS R$ 276,16 = R$ 1.218,41.",
+    fonte: "Relatorios_Funcionarios_Provisoes_Provisao_13o_Salario_-_Continuo.pdf",
   }),
   provisaoFilial({
     id: "FIL-PROV-FER-001", debitoCodigo: "25057", creditoCodigo: "25237", valor: 1064.75,
-    historico: "Provisão mensal de férias + 1/3 de junho - filial SP",
+    historico: "Provisão mensal de férias + 1/3 de junho - filial SP", documento: "PROVISÃO FÉRIAS FILIAL 06/2026",
     fonte: "PROVISÃO DE FÉRIAS - FILIAL - 06.2026 1(1).pdf",
   }),
   provisaoFilial({
     id: "FIL-ENC-FER-001", debitoCodigo: "25058", creditoCodigo: "25230", valor: 370.53,
-    historico: "INSS + FGTS sobre provisão de férias de junho - filial SP",
+    historico: "INSS + FGTS sobre provisão de férias de junho - filial SP", documento: "PROVISÃO FÉRIAS FILIAL 06/2026",
     fonte: "PROVISÃO DE FÉRIAS - FILIAL - 06.2026 1(1).pdf",
   }),
+  provisaoFilial({
+    id: "FIL-PROV-13-001", debitoCodigo: "25059", creditoCodigo: "25238", valor: 798.65,
+    historico: "Provisão mensal de 13º salário de junho - filial SP", documento: "PROVISÃO 13º FILIAL 06/2026",
+    fonte: "Relatorios_Funcionarios_Provisoes_Provisao_13o_Salario_-_Continuo.pdf",
+  }),
+  provisaoFilial({
+    id: "FIL-ENC-13-001", debitoCodigo: "25060", creditoCodigo: "25229", valor: 277.91,
+    historico: "INSS + FGTS sobre provisão de 13º salário de junho - filial SP", documento: "PROVISÃO 13º FILIAL 06/2026",
+    fonte: "Relatorios_Funcionarios_Provisoes_Provisao_13o_Salario_-_Continuo.pdf",
+  }),
+];
+
+// Baixas/reclassificações informadas nos relatórios contínuos. Não geram nova despesa.
+const baixasProvisoes: LancamentoIntegrado[] = [
+  {
+    id: "REC-BAIXA-FER-001", data: "30/06/2026", origem: "PROVISÃO FÉRIAS MATRIZ 06/2026",
+    debitoCodigo: "25237", debito: nomeConta("25237"), creditoCodigo: "1634", credito: nomeConta("1634"),
+    historico: "Baixa de férias + 1/3 marcadas como pagas no relatório contínuo", documento: "BAIXA PROV FÉRIAS 06/2026",
+    cc: "304", centroCusto: "ADM GERAL", valor: 400.00, status: "validado", rastreio: "documento",
+    observacao: "Relatório da matriz informa Pago: férias R$ 300,00 + 1/3 R$ 100,00. Reclassificação da provisão para a obrigação corrente, sem efeito adicional no resultado.",
+    fonte: "PROVISÃO DE FÉRIAS - MATRIZ - 06.2026 1 (1).pdf",
+  },
+  {
+    id: "REC-BAIXA-FER-FGTS-001", data: "30/06/2026", origem: "PROVISÃO FÉRIAS MATRIZ 06/2026",
+    debitoCodigo: "25230", debito: nomeConta("25230"), creditoCodigo: "25228", credito: nomeConta("25228"),
+    historico: "Diferença de pagamento de FGTS sobre férias", documento: "BAIXA PROV FÉRIAS FGTS 06/2026",
+    cc: "304", centroCusto: "ADM GERAL", valor: 32.00, status: "validado", rastreio: "documento",
+    observacao: "Diferença Pgto de FGTS de R$ 32,00 reduz a provisão e é reclassificada para FGTS a recolher.",
+    fonte: "PROVISÃO DE FÉRIAS - MATRIZ - 06.2026 1 (1).pdf",
+  },
+  {
+    id: "REC-BAIXA-13-001", data: "30/06/2026", origem: "PROVISÃO 13º MATRIZ 06/2026",
+    debitoCodigo: "25238", debito: nomeConta("25238"), creditoCodigo: "1634", credito: nomeConta("1634"),
+    historico: "Baixa de 13º salário marcado como pago no relatório contínuo", documento: "BAIXA PROV 13º 06/2026",
+    cc: "304", centroCusto: "ADM GERAL", valor: 300.00, status: "validado", rastreio: "documento",
+    observacao: "Relatório contínuo do 13º da matriz informa R$ 300,00 pagos. Reclassificação da provisão para a obrigação corrente.",
+    fonte: "Relatorios_Funcionarios_Provisoes_Provisao_13o_Salario_-_Continuo.pdf",
+  },
+  {
+    id: "REC-BAIXA-13-FGTS-001", data: "30/06/2026", origem: "PROVISÃO 13º MATRIZ 06/2026",
+    debitoCodigo: "25229", debito: nomeConta("25229"), creditoCodigo: "25228", credito: nomeConta("25228"),
+    historico: "FGTS sobre 13º marcado como pago no relatório contínuo", documento: "BAIXA PROV 13º FGTS 06/2026",
+    cc: "304", centroCusto: "ADM GERAL", valor: 24.00, status: "validado", rastreio: "documento",
+    observacao: "Relatório contínuo do 13º da matriz informa FGTS pago de R$ 24,00; reclassificação para FGTS a recolher.",
+    fonte: "Relatorios_Funcionarios_Provisoes_Provisao_13o_Salario_-_Continuo.pdf",
+  },
 ];
 
 const amortizacao: LancamentoIntegrado[] = [
@@ -136,7 +192,7 @@ const amortizacao: LancamentoIntegrado[] = [
     debitoCodigo: "25085", debito: nomeConta("25085"), creditoCodigo: "1166", credito: nomeConta("1166"),
     historico: "Amortização de marcas e patentes - ADM GERAL", documento: "AMORT 06/2026", cc: "304", centroCusto: "ADM GERAL", valor: 33.67,
     status: "revisar", observacao: "Recorrência reproduzida do padrão mensal de maio; confirmar relatório de amortização de junho.", rastreio: "derivado",
-    fonte: "BALANCETE POR CENTRO DE CUSTOS 05/2026 - NITAPLAST",
+    fonte: "BALANCETE POR CENTRO DE CUSTOS 05.2026 - NITAPLAST",
   },
 ];
 
@@ -159,6 +215,20 @@ const controlesIndustrializacao: LancamentoIntegrado[] = [
   },
 ];
 
+export const conciliacaoProvisoesJunho = {
+  ferias: {
+    matriz: { ajusteRelatorio: 10188.53, provisaoMes: 6248.90, pago: 400.00, diferencaPagamento: 32.00 },
+    filial: { ajusteRelatorio: 2305.69, provisaoMes: 1435.28, pago: 0.00 },
+    criterioAjuste: "A coluna Ajuste do relatório contínuo não é reconhecida novamente como despesa de junho; comparar com os saldos de abertura herdados da contabilidade anterior.",
+  },
+  decimoTerceiro: {
+    matriz: { ajusteRelatorio: 4643.92, principalMes: 3451.74, encargosMes: 1218.41, totalMes: 4670.15, pagoPrincipal: 300.00, pagoFgts: 24.00 },
+    filial: { ajusteRelatorio: 1094.03, principalMes: 798.65, encargosMes: 277.91, totalMes: 1076.56 },
+    consolidado: { principalMes: 4250.39, encargosMes: 1496.32, totalMes: 5746.71 },
+    criterioAjuste: "A coluna Ajuste do relatório contínuo não é reconhecida novamente como despesa de junho; a abertura contábil já contém provisões de 31/05.",
+  },
+} as const;
+
 export const pendenciasPadraoMaioJunho = [
   {
     item: "Transferências matriz/filial - CFOP 6151/2152",
@@ -172,17 +242,24 @@ export const pendenciasPadraoMaioJunho = [
   },
 ] as const;
 
-export const recorrenciasJunho: LancamentoIntegrado[] = [...provisoesFolha, ...amortizacao, ...controlesIndustrializacao];
+export const recorrenciasJunho: LancamentoIntegrado[] = [...provisoesFolha, ...baixasProvisoes, ...amortizacao, ...controlesIndustrializacao];
 
 export const resumoRecorrenciasJunho = {
   provisaoFeriasMatriz: 4618.54,
   provisaoFeriasFilial: 1064.75,
   provisaoFeriasConsolidada: 5683.29,
-  provisao13MatrizEmRevisao: 3389.28,
+  provisao13Matriz: 3451.74,
+  provisao13Filial: 798.65,
+  provisao13Consolidada: 4250.39,
   encargosFeriasMatriz: 1630.36,
   encargosFeriasFilial: 370.53,
   encargosFeriasConsolidado: 2000.89,
-  encargos13MatrizEmRevisao: 1196.40,
+  encargos13Matriz: 1218.41,
+  encargos13Filial: 277.91,
+  encargos13Consolidado: 1496.32,
+  total13MesConsolidado: 5746.71,
+  baixasFerias: 432.00,
+  baixas13: 324.00,
   amortizacao: 133.73,
   remessasIndustrializacao: 1003019.30,
   retornosIndustrializacao: 804272.15,
