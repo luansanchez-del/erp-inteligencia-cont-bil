@@ -3,7 +3,7 @@ import { ArrowRightLeft, RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { saldosImplantacao } from "@/data/nitaplast-implantacao";
 import type { LancamentoIntegrado } from "@/data/nitaplast-razao-integrado";
-import { useReclassificacoesInteligentes, type LadoReclassificacao } from "@/hooks/use-reclassificacoes-inteligentes";
+import { removerReclassificacaoPersistida, type LadoReclassificacao } from "@/hooks/use-reclassificacoes-inteligentes";
 
 const centros = [
   ["0", "SEM CENTRO DE CUSTO"],
@@ -36,7 +36,6 @@ export function ReclassificacaoInteligente({
   }) => void;
   onRemover?: (id: string) => void;
 }) {
-  const { remover } = useReclassificacoesInteligentes("2026-06");
   const [aberto, setAberto] = useState(false);
   const [lado, setLado] = useState<LadoReclassificacao>("debito");
   const [contaDestino, setContaDestino] = useState("");
@@ -71,7 +70,7 @@ export function ReclassificacaoInteligente({
 
   if (lancamento.origem === "RECLASSIFICAÇÃO INTELIGENTE") {
     const id = lancamento.id.replace(/^RCL-/, "");
-    const desfazer = onRemover ?? remover;
+    const desfazer = onRemover ?? removerReclassificacaoPersistida;
     return (
       <Button type="button" variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-rose-700" title="Desfazer reclassificação" onClick={() => desfazer(id)}>
         <RotateCcw className="size-4" />
