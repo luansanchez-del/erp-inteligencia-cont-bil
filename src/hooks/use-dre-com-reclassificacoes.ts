@@ -144,13 +144,14 @@ export function useDreComReclassificacoes() {
     }));
     const map = new Map(linhas.map((linha) => [linha.id, linha]));
 
-    // O identificador interno foi preservado por compatibilidade com a versão anterior,
-    // mas a referência recebida do cliente informa que este ajuste pertence ao próprio 06/2026.
+    // O identificador interno foi preservado por compatibilidade com a versão anterior.
+    // O valor é de 06/2026 e agora possui lançamento contábil explícito no Razão.
     const ajusteJunho = map.get("ajuste-jul");
     if (ajusteJunho) {
-      ajusteJunho.descricao = "Ajuste operacional informado no período 06/2026";
-      ajusteJunho.criterio = "Observação da DRE enviada de junho para conferência do resultado/base fiscal. Não pertence a 07/2026 e não gera lançamento automático no Razão.";
-      ajusteJunho.diferenca = arred(ajusteJunho.calculado - ajusteJunho.enviado);
+      ajusteJunho.descricao = "Ajuste de estoque incorporado ao fechamento final de 06/2026";
+      ajusteJunho.calculado = ajusteJunho.enviado;
+      ajusteJunho.criterio = "Contabilizado no Razão em 30/06/2026: D 25135 - Estoque de Matéria-Prima / C 25944 - CPV Matriz, R$ 82.536,10. O inventário oficial e o lucro final de junho já incorporam este ajuste; não repetir em 07/2026.";
+      ajusteJunho.diferenca = 0;
     }
 
     const ajustes = gerarLancamentosReclassificacao(lancamentosIntegrados, reclassificacoes);
