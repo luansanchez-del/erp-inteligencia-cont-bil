@@ -14,32 +14,42 @@ export { contaPorBanco, depreciacoes } from "./nitaplast-razao-base";
  *
  * Ordem contábil obrigatória:
  * 1. fatos/documentos de junho;
- * 2. fechamento de CPV e ajuste de estoque já validado;
- * 3. fechamento financeiro validado no próprio Razão;
- * 4. correções de mapeamento comprovadas;
- * 5. fechamento físico final das contas de estoque;
- * 6. reconciliação final do CPV ao Razão real Questor + ajuste autorizado.
+ * 2. saneamento de fontes duplicadas/provisórias;
+ * 3. fechamento de CPV e ajuste de estoque já validado;
+ * 4. fechamento financeiro validado no próprio Razão;
+ * 5. correções de mapeamento comprovadas;
+ * 6. fechamento físico final das contas de estoque;
+ * 7. reconciliação final do CPV ao Razão real Questor + ajuste autorizado.
  *
  * Balancete e DRE leem este mesmo conjunto. Portanto nenhuma linha da DRE é
  * alterada manualmente para "bater": o resultado nasce dos lançamentos.
  */
 
 /**
- * A apuração de ICMS da matriz anteriormente carregada com créditos de
- * R$ 151.322,32 foi invalidada no fechamento. O registro atualizado confirmou
- * o débito de ICMS das SAÍDAS em R$ 239.206,46, mas os créditos daquela versão
- * antiga não podem permanecer gerando lançamentos no Razão/Balancete.
+ * Fontes retiradas do fechamento oficial:
  *
- * Mantemos exclusivamente TAX-SAI-ICMS (débito das saídas). Todos os demais
- * lançamentos cuja origem seja a apuração ICMS antiga são descartados desta
- * base definitiva até serem reconstruídos pelo registro atualizado/documentos.
+ * - APURAÇÃO ICMS antiga da matriz: os créditos daquela versão foram invalidados;
+ *   permanece somente TAX-SAI-ICMS, débito das saídas de R$ 239.206,46.
+ *
+ * - CAR-LOTE: a planilha de cartão é meio de pagamento/conciliação. As despesas
+ *   fiscais correspondentes já estão registradas pelas notas/entradas. Somar o
+ *   cartão novamente criava R$ 48.548,03 de despesa em duplicidade. O cartão deve
+ *   ser usado na baixa da obrigação, não para reconhecer uma segunda despesa.
+ *
+ * - PON-DEP: depreciações replicadas do padrão do Razão de maio, sem ficha de bens
+ *   de junho. O lote somava R$ 57.861,02 e estava sendo tratado como fato de junho
+ *   mesmo com a própria fonte marcada como "falta ficha de bens de junho". Sai do
+ *   fechamento oficial até existir suporte do período.
  */
-const lancamentosBaseSemApuracaoIcmsObsoleta = lancamentosBase.filter((linha) =>
-  linha.origem !== "APURAÇÃO ICMS 06/2026" || linha.id === "TAX-SAI-ICMS",
-);
+const lancamentosBaseSaneados = lancamentosBase.filter((linha) => {
+  const icmsAntigoValido = linha.origem !== "APURAÇÃO ICMS 06/2026" || linha.id === "TAX-SAI-ICMS";
+  const naoEhCartaoDuplicado = !linha.id.startsWith("CAR-LOTE-");
+  const naoEhDepreciacaoProvisoria = !linha.id.startsWith("PON-DEP-");
+  return icmsAntigoValido && naoEhCartaoDuplicado && naoEhDepreciacaoProvisoria;
+});
 
 const baseComFechamentoFinanceiro = aplicarFechamentoFinanceiroJunho([
-  ...lancamentosBaseSemApuracaoIcmsObsoleta,
+  ...lancamentosBaseSaneados,
   ...fechamentoCpvJunho,
   ajusteEstoqueResultadoJunho,
 ]);
