@@ -12,6 +12,11 @@ const nomeConta = (codigo: string) => `${codigo} - ${descricaoPorConta.get(codig
  * Estoque Final Matéria Prima. Os créditos fiscais vinculados à mesma base precisam acompanhar
  * a conta de estoque para não deixar um CMV credor artificial.
  *
+ * 11.01.002 - MATERIAIS INDIRETOS do CC 201 também foi carregado inicialmente na 3244,
+ * o que fazia R$ 202.086,80 aparecer como despesa comercial só por causa do centro de custo.
+ * A conciliação contábil 06/07 mostra esses documentos na 25135. Portanto a natureza é estoque;
+ * o CC 201 permanece apenas como rastreio gerencial e não transforma a compra em despesa comercial.
+ *
  * A camada é aplicada no Razão definitivo sem apagar os IDs, fontes ou documentos originais.
  */
 export function corrigirMapeamentosJunho(base: LancamentoIntegrado[]): LancamentoIntegrado[] {
@@ -27,6 +32,23 @@ export function corrigirMapeamentosJunho(base: LancamentoIntegrado[]): Lancament
         debitoCodigo: "25135",
         debito: nomeConta("25135"),
         observacao: `${linha.observacao} Correção de mapeamento: 11.01.001 pertence ao estoque 25135, conforme conciliação de entradas 06/07; não reconhecer diretamente em CMV.`,
+        fonte: `${linha.fonte} + CONCILIACAO_ENTRADAS_CC_CONTABIL_NITAPLAST_06_07_2026.xlsx`,
+      };
+    }
+
+    const materiaisIndiretosCc201EmDespesa =
+      linha.origem === "ENTRADAS CLIENTE POR CENTRO DE CUSTO 06/2026"
+      && linha.documento === "11.01.002"
+      && linha.cc === "201"
+      && linha.debitoCodigo === "3244"
+      && Math.abs(linha.valor - 202086.80) < 0.005;
+
+    if (materiaisIndiretosCc201EmDespesa) {
+      return {
+        ...linha,
+        debitoCodigo: "25135",
+        debito: nomeConta("25135"),
+        observacao: `${linha.observacao} Correção de mapeamento: materiais indiretos 11.01.002 do CC 201 são aquisição para estoque 25135 conforme conciliação 06/07. O CC Vendas não altera a natureza patrimonial da compra.`,
         fonte: `${linha.fonte} + CONCILIACAO_ENTRADAS_CC_CONTABIL_NITAPLAST_06_07_2026.xlsx`,
       };
     }
