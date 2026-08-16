@@ -6,9 +6,14 @@ import { gerarFechamentoEstoqueMatrizJunho } from "./nitaplast-fechamento-estoqu
 import { aplicarFechamentoFinanceiroJunho } from "./nitaplast-fechamento-financeiro-junho";
 import { aplicarFechamentoCpvFinalJunho } from "./nitaplast-fechamento-cpv-final-junho";
 import { aplicarFechamentoFolhaJunho } from "./nitaplast-fechamento-folha-junho";
+import { garantirPlanoFechamentoJunho } from "./nitaplast-plano-fechamento-junho";
 
 export type { LancamentoIntegrado } from "./nitaplast-razao-base";
 export { contaPorBanco, depreciacoes } from "./nitaplast-razao-base";
+
+// Garante que contas oficiais usadas nos ajustes apareçam também no plano exibido
+// pelo Razão/Balancete, antes do cálculo das movimentações.
+garantirPlanoFechamentoJunho();
 
 /**
  * Razão definitivo de junho/2026.
