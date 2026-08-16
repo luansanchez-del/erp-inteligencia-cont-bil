@@ -6,6 +6,7 @@ import { gerarFechamentoEstoqueMatrizJunho } from "./nitaplast-fechamento-estoqu
 import { aplicarFechamentoFinanceiroJunho } from "./nitaplast-fechamento-financeiro-junho";
 import { aplicarFechamentoCpvFinalJunho } from "./nitaplast-fechamento-cpv-final-junho";
 import { aplicarFechamentoFolhaJunho } from "./nitaplast-fechamento-folha-junho";
+import { aplicarFechamentoDespesasJunho } from "./nitaplast-fechamento-despesas-junho";
 import { garantirPlanoFechamentoJunho } from "./nitaplast-plano-fechamento-junho";
 
 export type { LancamentoIntegrado } from "./nitaplast-razao-base";
@@ -25,8 +26,9 @@ garantirPlanoFechamentoJunho();
  * 4. fechamento de CPV e ajuste de estoque já validado;
  * 5. fechamento financeiro validado no próprio Razão;
  * 6. correções de mapeamento comprovadas;
- * 7. fechamento físico final das contas de estoque;
- * 8. reconciliação final do CPV ao Razão real Questor + ajuste autorizado.
+ * 7. ajuste contábil REMANESCENTE das despesas contra 25020;
+ * 8. fechamento físico final das contas de estoque;
+ * 9. reconciliação final do CPV ao Razão real Questor + ajuste autorizado.
  *
  * Balancete e DRE leem este mesmo conjunto. Portanto nenhuma linha da DRE é
  * alterada manualmente para "bater": o resultado nasce dos lançamentos.
@@ -66,14 +68,18 @@ const baseComFechamentoFinanceiro = aplicarFechamentoFinanceiroJunho([
 ]);
 
 const baseCorrigida = corrigirMapeamentosJunho(baseComFechamentoFinanceiro);
-const fechamentoEstoqueMatriz = gerarFechamentoEstoqueMatrizJunho(baseCorrigida);
+
+// Recalcula os buckets após TODA a limpeza acima e contabiliza somente a diferença
+// ainda necessária por categoria. Os antigos FECH-* não são repetidos cegamente.
+const baseComDespesasFechadas = aplicarFechamentoDespesasJunho(baseCorrigida);
+const fechamentoEstoqueMatriz = gerarFechamentoEstoqueMatrizJunho(baseComDespesasFechadas);
 
 // Primeiro fechamos o patrimônio ao inventário físico oficial. Só depois
 // reconciliamos o movimento das contas de CPV com o Razão real do Questor e
 // registramos o ajuste autorizado de R$ 150 mil. Assim o estoque oficial não é
 // usado como contrapartida artificial para forçar a DRE.
 const baseComEstoqueFechado = [
-  ...baseCorrigida,
+  ...baseComDespesasFechadas,
   ...fechamentoEstoqueMatriz,
 ];
 
