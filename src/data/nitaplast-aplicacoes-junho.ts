@@ -18,8 +18,8 @@ const nomeConta = (codigo: string) => `${codigo} - ${descricaoPorConta.get(codig
  * - IRRF retido: 1.416,13
  * - saldo bruto final conciliado: 456.764,42
  *
- * Não há lançamento de ajuste de saldo. Os três lançamentos abaixo reproduzem
- * exclusivamente componentes identificados no extrato da aplicação.
+ * Não há lançamento de ajuste de saldo. Os lançamentos abaixo reproduzem
+ * exclusivamente componentes identificados nos extratos das aplicações.
  */
 export const ajustesAplicacoesJunho: LancamentoIntegrado[] = [
   {
