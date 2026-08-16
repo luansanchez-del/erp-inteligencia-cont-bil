@@ -3,29 +3,31 @@ import { fechamentoCpvJunho } from "./nitaplast-cpv-junho";
 import { corrigirMapeamentosJunho } from "./nitaplast-correcoes-mapeamento-junho";
 import { ajusteEstoqueResultadoJunho } from "./nitaplast-ajuste-estoque-junho";
 import { gerarFechamentoEstoqueMatrizJunho } from "./nitaplast-fechamento-estoque-matriz-junho";
+import { aplicarFechamentoFinanceiroJunho } from "./nitaplast-fechamento-financeiro-junho";
 
 export type { LancamentoIntegrado } from "./nitaplast-razao-base";
 export { contaPorBanco, depreciacoes } from "./nitaplast-razao-base";
 
 /**
  * Razão definitivo de junho/2026.
- * A base contém documentos, bancos, folha, provisões, fiscal e filial já reconciliados.
- * O fechamento de CPV é acrescentado uma única vez aqui, depois dos fatos de junho.
- * O ajuste operacional de estoque de R$ 82.536,10 aparece explicitamente no Razão,
- * antes do fechamento físico, para preservar a trilha contábil do fechamento final.
- * Antes da exposição aos relatórios, aplicamos somente correções de mapeamento comprovadas,
- * preservando IDs, documentos e fontes para auditoria.
- * Por fim, as contas de estoque da matriz são ajustadas ao inventário físico OFICIAL de 30/06,
- * considerando todos os movimentos anteriores — inclusive o ajuste de R$ 82.536,10 —
- * para evitar dupla contagem.
- * Razão, Balancete e DRE passam a ler exatamente o mesmo conjunto corrigido.
+ *
+ * Ordem contábil obrigatória:
+ * 1. fatos/documentos de junho;
+ * 2. fechamento de CPV e ajuste de estoque já validado;
+ * 3. fechamento financeiro validado no próprio Razão;
+ * 4. correções de mapeamento comprovadas;
+ * 5. fechamento físico final das contas de estoque.
+ *
+ * Balancete e DRE leem este mesmo conjunto. Portanto nenhuma linha da DRE é
+ * alterada manualmente para "bater": o resultado nasce dos lançamentos.
  */
-const baseCorrigida = corrigirMapeamentosJunho([
+const baseComFechamentoFinanceiro = aplicarFechamentoFinanceiroJunho([
   ...lancamentosBase,
   ...fechamentoCpvJunho,
   ajusteEstoqueResultadoJunho,
 ]);
 
+const baseCorrigida = corrigirMapeamentosJunho(baseComFechamentoFinanceiro);
 const fechamentoEstoqueMatriz = gerarFechamentoEstoqueMatrizJunho(baseCorrigida);
 
 export const lancamentosIntegrados = [
