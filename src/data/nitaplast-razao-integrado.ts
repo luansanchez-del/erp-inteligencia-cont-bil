@@ -5,6 +5,7 @@ import { ajusteEstoqueResultadoJunho } from "./nitaplast-ajuste-estoque-junho";
 import { gerarFechamentoEstoqueMatrizJunho } from "./nitaplast-fechamento-estoque-matriz-junho";
 import { aplicarFechamentoFinanceiroJunho } from "./nitaplast-fechamento-financeiro-junho";
 import { aplicarFechamentoCpvFinalJunho } from "./nitaplast-fechamento-cpv-final-junho";
+import { aplicarFechamentoFolhaJunho } from "./nitaplast-fechamento-folha-junho";
 
 export type { LancamentoIntegrado } from "./nitaplast-razao-base";
 export { contaPorBanco, depreciacoes } from "./nitaplast-razao-base";
@@ -15,11 +16,12 @@ export { contaPorBanco, depreciacoes } from "./nitaplast-razao-base";
  * Ordem contábil obrigatória:
  * 1. fatos/documentos de junho;
  * 2. saneamento de fontes duplicadas/provisórias;
- * 3. fechamento de CPV e ajuste de estoque já validado;
- * 4. fechamento financeiro validado no próprio Razão;
- * 5. correções de mapeamento comprovadas;
- * 6. fechamento físico final das contas de estoque;
- * 7. reconciliação final do CPV ao Razão real Questor + ajuste autorizado.
+ * 3. reconstrução da folha oficial de junho por CC;
+ * 4. fechamento de CPV e ajuste de estoque já validado;
+ * 5. fechamento financeiro validado no próprio Razão;
+ * 6. correções de mapeamento comprovadas;
+ * 7. fechamento físico final das contas de estoque;
+ * 8. reconciliação final do CPV ao Razão real Questor + ajuste autorizado.
  *
  * Balancete e DRE leem este mesmo conjunto. Portanto nenhuma linha da DRE é
  * alterada manualmente para "bater": o resultado nasce dos lançamentos.
@@ -48,8 +50,12 @@ const lancamentosBaseSaneados = lancamentosBase.filter((linha) => {
   return icmsAntigoValido && naoEhCartaoDuplicado && naoEhDepreciacaoProvisoria;
 });
 
+// A função remove a montagem FOL-* anterior e substitui por uma apropriação que
+// fecha em R$ 72.685,80 conforme o relatório real de junho, inclusive CC 502.
+const baseComFolhaOficial = aplicarFechamentoFolhaJunho(lancamentosBaseSaneados);
+
 const baseComFechamentoFinanceiro = aplicarFechamentoFinanceiroJunho([
-  ...lancamentosBaseSaneados,
+  ...baseComFolhaOficial,
   ...fechamentoCpvJunho,
   ajusteEstoqueResultadoJunho,
 ]);
