@@ -1,4 +1,5 @@
 import { lancamentosIntegrados as lancamentosBase } from "./nitaplast-razao-base";
+import { saldosImplantacao } from "./nitaplast-implantacao";
 import { fechamentoCpvJunho } from "./nitaplast-cpv-junho";
 import { corrigirMapeamentosJunho } from "./nitaplast-correcoes-mapeamento-junho";
 import { ajusteEstoqueResultadoJunho } from "./nitaplast-ajuste-estoque-junho";
@@ -13,27 +14,15 @@ import { garantirPlanoFechamentoJunho } from "./nitaplast-plano-fechamento-junho
 export type { LancamentoIntegrado } from "./nitaplast-razao-base";
 export { contaPorBanco, depreciacoes } from "./nitaplast-razao-base";
 
-// Garante que contas oficiais usadas nos ajustes apareçam também no plano exibido
-// pelo Razão/Balancete, antes do cálculo das movimentações.
 garantirPlanoFechamentoJunho();
 
 /**
  * Razão definitivo de junho/2026.
  *
- * Ordem contábil obrigatória:
- * 1. fatos/documentos de junho;
- * 2. saneamento de fontes não validadas/obsoletas;
- * 3. fechamento de CPV e ajuste de estoque já validado;
- * 4. fechamento financeiro validado no próprio Razão;
- * 5. correções de mapeamento comprovadas;
- * 6. reclassificação PIS/COFINS entre compras e despesas, sem criar crédito novo;
- * 7. ajuste contábil REMANESCENTE das despesas contra 25020;
- * 8. fechamento físico final das contas de estoque;
- * 9. reconciliação final do CPV ao Razão real Questor + ajuste autorizado;
- * 10. alienações do imobilizado e ganho líquido de R$ 7.295,86.
- *
- * Balancete e DRE leem este mesmo conjunto. Portanto nenhuma linha da DRE é
- * alterada manualmente para "bater": o resultado nasce dos lançamentos.
+ * REGRA DE GOVERNANÇA:
+ * Razão -> Balancete -> DRE.
+ * A DRE enviada é somente controle de comparação e jamais pode gerar receita,
+ * custo ou despesa usada pela própria DRE calculada.
  */
 
 /**
@@ -42,65 +31,124 @@ garantirPlanoFechamentoJunho();
  * - APURAÇÃO ICMS antiga da matriz: os créditos daquela versão foram invalidados;
  *   permanece somente TAX-SAI-ICMS, débito das saídas de R$ 239.206,46.
  *
- * - CAR-LOTE: os lançamentos agregados do cartão estão marcados para revisão e não
- *   possuem, nesta base, vínculo documento a documento que permita separar gasto
- *   exclusivo de eventual nota já contabilizada. Eles não entram no fechamento
- *   oficial até a conciliação individual; os pagamentos bancários permanecem no
- *   Razão. Assim não presumimos que todo cartão seja despesa nova nem duplicada.
+ * - CAR-LOTE: lançamentos agregados do cartão ficam fora até conciliação individual.
  *
- * - PON-DEP: depreciações replicadas do padrão do Razão de maio, sem ficha de bens
- *   de junho. O lote não é usado como fato de junho até existir suporte do período.
+ * - PON-DEP: depreciações replicadas de maio ficam fora até existir ficha de bens de junho.
  *
- * A folha documental FOL-* permanece como veio da base de junho. Não substituímos
- * por valores de planilhas provisórias geradas durante a conferência.
+ * - FIL-DOC-PROD-001: lançamento da filial que jogava R$ 350.173,08 integralmente em
+ *   Produção com base na apresentação da DRE enviada. Ele é excluído e substituído
+ *   abaixo pela composição fiscal real das saídas da filial.
  */
 const lancamentosBaseSaneados = lancamentosBase.filter((linha) => {
   const icmsAntigoValido = linha.origem !== "APURAÇÃO ICMS 06/2026" || linha.id === "TAX-SAI-ICMS";
   const cartaoIndividualAindaNaoValidado = linha.id.startsWith("CAR-LOTE-");
   const depreciacaoProvisoriaSemFichaJunho = linha.id.startsWith("PON-DEP-");
-  return icmsAntigoValido && !cartaoIndividualAindaNaoValidado && !depreciacaoProvisoriaSemFichaJunho;
+  const receitaFilialCircular = linha.id === "FIL-DOC-PROD-001";
+
+  return icmsAntigoValido
+    && !cartaoIndividualAindaNaoValidado
+    && !depreciacaoProvisoriaSemFichaJunho
+    && !receitaFilialCircular;
 });
 
+/**
+ * Receita FILIAL 06/2026 reconstruída exclusivamente pelas saídas fiscais:
+ * - CFOP 5123: R$ 15.294,75 -> Produção / operação triangular;
+ * - CFOP 5102 + 6102: R$ 334.878,33 -> Revenda;
+ * - Total externo: R$ 350.173,08.
+ *
+ * A DRE enviada apresenta os R$ 350.173,08 integralmente como Produção Filial.
+ * Essa apresentação permanece como controle, mas NÃO altera o Razão calculado.
+ */
+const receitasFilialDocumentadas = [
+  {
+    id: "FIL-REC-PROD-FISCAL-062026",
+    data: "30/06/2026",
+    origem: "SAÍDAS FISCAIS FILIAL 06/2026",
+    debitoCodigo: "25111",
+    debito: "25111 - Clientes Diversos",
+    creditoCodigo: "2606",
+    credito: "2606 - Vendas de Produtos a Prazo",
+    historico: "Receita de produção/operação triangular da filial - CFOP 5123",
+    documento: "CFOP 5123 - FILIAL 06/2026",
+    cc: "502",
+    centroCusto: "COMERCIAL SP",
+    valor: 15294.75,
+    status: "validado" as const,
+    observacao: "Valor apurado diretamente nas notas fiscais da filial. Não utiliza a DRE enviada como fonte.",
+    rastreio: "documento" as const,
+    fonte: "SAIDAS FILIAL(2).xlsx + RESUMO NOTAS FISCAIS SAIDA(2).pdf",
+  },
+  {
+    id: "FIL-REC-REV-FISCAL-062026",
+    data: "30/06/2026",
+    origem: "SAÍDAS FISCAIS FILIAL 06/2026",
+    debitoCodigo: "25111",
+    debito: "25111 - Clientes Diversos",
+    creditoCodigo: "2655",
+    credito: "2655 - Vendas de Mercadorias a Prazo",
+    historico: "Receita de revenda da filial - CFOP 5102/6102",
+    documento: "CFOP 5102/6102 - FILIAL 06/2026",
+    cc: "502",
+    centroCusto: "COMERCIAL SP",
+    valor: 334878.33,
+    status: "validado" as const,
+    observacao: "CFOP 5102 R$ 290.427,01 + CFOP 6102 R$ 44.451,32. Não utiliza a DRE enviada como fonte.",
+    rastreio: "documento" as const,
+    fonte: "SAIDAS FILIAL(2).xlsx + RESUMO NOTAS FISCAIS SAIDA(2).pdf",
+  },
+];
+
 // Duas reclassificações antigas do CPV Matriz dependiam diretamente dos créditos
-// da apuração de ICMS invalidada. Elas também saem da base oficial. Os demais fatos
-// de estoque/transferência permanecem e o CPV final é reconciliado depois.
+// da apuração de ICMS invalidada. Elas também saem da base oficial.
 const fechamentoCpvSemIcmsMatrizObsoleto = fechamentoCpvJunho.filter(
   (linha) => !["CPV-ICMS-M-OUT", "CPV-ICMS-M-IN"].includes(linha.id),
 );
 
 const baseComFechamentoFinanceiro = aplicarFechamentoFinanceiroJunho([
   ...lancamentosBaseSaneados,
+  ...receitasFilialDocumentadas,
   ...fechamentoCpvSemIcmsMatrizObsoleto,
   ajusteEstoqueResultadoJunho,
 ]);
 
 const baseCorrigida = corrigirMapeamentosJunho(baseComFechamentoFinanceiro);
 
-// A parcela PIS/COFINS sobre despesas é reclassificada dentro do MESMO crédito
-// fiscal consolidado. Não existe aumento do crédito da apuração.
+// A parcela PIS/COFINS sobre despesas é reclassificada dentro do MESMO crédito fiscal.
 const baseComCreditosFederaisFechados = aplicarFechamentoCreditosFederaisJunho(baseCorrigida);
 
-// Recalcula os buckets após TODA a limpeza acima e contabiliza somente a diferença
-// ainda necessária por categoria. Quando um documento definitivo for incluído no
-// Razão, a diferença contra 25020 diminui automaticamente.
+// Ajuste contábil remanescente das despesas. A DRE é controle; o lançamento nasce no Razão.
 const baseComDespesasFechadas = aplicarFechamentoDespesasJunho(baseComCreditosFederaisFechados);
 const fechamentoEstoqueMatriz = gerarFechamentoEstoqueMatrizJunho(baseComDespesasFechadas);
 
-// Primeiro fechamos o patrimônio ao inventário físico oficial. Só depois
-// reconciliamos o movimento das contas de CPV com o Razão real do Questor e
-// registramos o ajuste autorizado de R$ 150 mil. Assim o estoque oficial não é
-// usado como contrapartida artificial para forçar a DRE.
 const baseComEstoqueFechado = [
   ...baseComDespesasFechadas,
   ...fechamentoEstoqueMatriz,
 ];
 
 const baseComCpvFinal = aplicarFechamentoCpvFinalJunho(baseComEstoqueFechado);
+const lancamentosIntegradosFinais = aplicarFechamentoAlienacaoJunho(baseComCpvFinal);
 
-// A última camada reconhece as vendas de ativo, baixa patrimonial conhecida do
-// compressor e o custo contábil agregado das alienações. O ganho líquido nasce
-// no próprio Razão (R$ 15.000,00 - R$ 7.704,14 = R$ 7.295,86).
-export const lancamentosIntegrados = aplicarFechamentoAlienacaoJunho(baseComCpvFinal);
+/**
+ * Trava anticircularidade.
+ * Nenhuma conta de receita bruta (4.1.01) pode ser alimentada por lançamento cuja
+ * origem/fonte mencione DRE. Se isso ocorrer, o fechamento para antes do Balancete/DRE.
+ */
+const classificacaoPorConta = new Map(saldosImplantacao.map((conta) => [conta.conta, conta.classificacao]));
+const receitaCircular = lancamentosIntegradosFinais.find((linha) => {
+  const classificacaoCredito = classificacaoPorConta.get(linha.creditoCodigo) ?? "";
+  if (!classificacaoCredito.startsWith("4.1.01")) return false;
+  const proveniencia = `${linha.origem} ${linha.fonte}`.toLocaleUpperCase("pt-BR");
+  return proveniencia.includes("DRE");
+});
+
+if (receitaCircular) {
+  throw new Error(
+    `Fechamento bloqueado: receita ${receitaCircular.id} está sendo alimentada pela própria DRE (${receitaCircular.fonte}).`,
+  );
+}
+
+export const lancamentosIntegrados = lancamentosIntegradosFinais;
 
 export const totalDebitosIntegrados = lancamentosIntegrados.reduce((total, linha) => total + linha.valor, 0);
 export const totalCreditosIntegrados = totalDebitosIntegrados;
