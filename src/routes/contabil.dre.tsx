@@ -22,6 +22,14 @@ function DrePage() {
   useNitaplastJunho();
   const [abertas, setAbertas] = useState<Set<string>>(new Set(["receita", "deducoes", "custos"]));
 
+  const receitaResumo = comparacaoDreDetalhada.find((linha) => linha.id === "receita");
+  const deducoesResumo = comparacaoDreDetalhada.find((linha) => linha.id === "deducoes");
+  const pisFilialEnviado = comparacaoDreDetalhada.find((linha) => linha.id === "pis-f")?.enviado ?? 0;
+  const cofinsFilialEnviado = comparacaoDreDetalhada.find((linha) => linha.id === "cofins-f")?.enviado ?? 0;
+  const duplicidadeFederaisFilial = Math.round((pisFilialEnviado + cofinsFilialEnviado) * 100) / 100;
+  const diferencaDeducoes = Math.abs(deducoesResumo?.diferenca ?? 0);
+  const creditosReversoesDeducoes = Math.max(0, Math.round((diferencaDeducoes - duplicidadeFederaisFilial) * 100) / 100);
+
   function alternar(id: string) {
     setAbertas((atual) => {
       const proximo = new Set(atual);
@@ -33,17 +41,35 @@ function DrePage() {
   return (
     <PageShell>
       <PageHeader
-        titulo="DRE calculada x DRE enviada — Nitaplast 06/2026"
-        descricao="A coluna DRE Calculada nasce do Razão/Balancete. A DRE Enviada é somente referência de controle. Diferenças não geram lançamento automático: elas ficam abertas para análise conta a conta."
+        titulo="DRE enviada x DRE calculada — Nitaplast 06/2026"
+        descricao="A DRE Enviada é a referência de controle do cliente. A DRE Calculada nasce do Razão/Balancete. As duas ficam sempre lado a lado; diferenças permanecem abertas para investigação conta a conta."
         acoes={<Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Consolidado Matriz + Filial</Badge>}
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <Metric label="Receita calculada" value={resumoDreDetalhada.receitaCalculada} />
-        <Metric label="Deduções calculadas" value={resumoDreDetalhada.deducoesCalculadas} />
-        <Metric label="Resultado calculado" value={resumoDreDetalhada.resultadoLiquidoCalculado} success={resumoDreDetalhada.resultadoLiquidoCalculado >= 0} />
-        <Metric label="Resultado DRE enviada" value={resumoDreDetalhada.resultadoLiquidoEnviado} success={resumoDreDetalhada.resultadoLiquidoEnviado >= 0} />
-        <Metric label="Diferença do resultado" value={resumoDreDetalhada.diferencaResultado} alert={Math.abs(resumoDreDetalhada.diferencaResultado) > tolerancia} />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <CompareMetric
+          label="Receita Operacional Bruta"
+          enviada={receitaResumo?.enviado ?? 0}
+          calculada={receitaResumo?.calculado ?? resumoDreDetalhada.receitaCalculada}
+        />
+        <CompareMetric
+          label="Deduções da Receita Bruta"
+          enviada={deducoesResumo?.enviado ?? 0}
+          calculada={deducoesResumo?.calculado ?? resumoDreDetalhada.deducoesCalculadas}
+          alert={Math.abs(deducoesResumo?.diferenca ?? 0) > tolerancia}
+        />
+        <CompareMetric
+          label="Lucro Líquido"
+          enviada={resumoDreDetalhada.resultadoLiquidoEnviado}
+          calculada={resumoDreDetalhada.resultadoLiquidoCalculado}
+          success={resumoDreDetalhada.resultadoLiquidoCalculado >= 0}
+          alert={Math.abs(resumoDreDetalhada.diferencaResultado) > tolerancia}
+        />
+        <Metric
+          label="Diferença do resultado"
+          value={resumoDreDetalhada.diferencaResultado}
+          alert={Math.abs(resumoDreDetalhada.diferencaResultado) > tolerancia}
+        />
       </div>
 
       <Card className="border-blue-500/30 bg-blue-500/5">
@@ -51,7 +77,7 @@ function DrePage() {
           <div>
             <p className="font-medium">Regra de fechamento aplicada</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Razão → Balancete → DRE calculada → comparação com a DRE enviada. Nenhuma diferença abaixo é preenchida com plug, reversão técnica ou valor copiado da DRE de controle.
+              Razão → Balancete → DRE calculada → comparação com a DRE enviada. Nenhuma diferença é preenchida com plug, reversão técnica ou valor copiado da DRE de controle.
             </p>
           </div>
           <Button asChild variant="outline" size="sm"><Link to="/contabil/balancete">Abrir Balancete <ExternalLink className="ml-2 size-4" /></Link></Button>
@@ -65,15 +91,36 @@ function DrePage() {
             <div>
               <p className="font-medium">Filial São Paulo incluída na análise do Balancete</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Receita, ICMS, IPI, folha, provisões e estoque utilizam os documentos identificados como filial. PIS e COFINS permanecem contabilizados pelo total consolidado das contas 2829/2830; a abertura Matriz x Filial abaixo é apenas analítica e documental, sem duplicar lançamento.
+                Receita, ICMS, IPI, folha, provisões e estoque utilizam os documentos identificados como filial. PIS e COFINS permanecem contabilizados pelo total consolidado das contas 2829/2830; a abertura Matriz x Filial abaixo é analítica e documental, sem duplicar lançamento.
               </p>
               <p className="mt-2 text-xs text-muted-foreground">
-                PIS documental da filial: {brl.format(tributosFederaisFilialDocumentados.pisDebitoFilial)} · COFINS documental da filial: {brl.format(tributosFederaisFilialDocumentados.cofinsDebitoFilial)}. Créditos de devoluções identificados nos arquivos da filial: PIS {brl.format(tributosFederaisFilialDocumentados.pisCreditoDevolucoesFilialIdentificado)} e COFINS {brl.format(tributosFederaisFilialDocumentados.cofinsCreditoDevolucoesFilialIdentificado)} — exibidos para investigação, sem lançamento artificial.
+                PIS documental da filial: {brl.format(tributosFederaisFilialDocumentados.pisDebitoFilial)} · COFINS documental da filial: {brl.format(tributosFederaisFilialDocumentados.cofinsDebitoFilial)}. Créditos de devoluções identificados nos arquivos da filial: PIS {brl.format(tributosFederaisFilialDocumentados.pisCreditoDevolucoesFilialIdentificado)} e COFINS {brl.format(tributosFederaisFilialDocumentados.cofinsCreditoDevolucoesFilialIdentificado)}.
               </p>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {deducoesResumo && Math.abs(deducoesResumo.diferenca) > tolerancia ? (
+        <Card className="border-amber-500/40 bg-amber-50/60">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <CircleAlert className="mt-0.5 size-5 shrink-0 text-amber-700" />
+              <div className="w-full">
+                <p className="font-medium">Diagnóstico da diferença nas deduções</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  A DRE enviada soma PIS/COFINS da filial em linhas próprias, embora as apurações federais estejam consolidadas nas contas 2829/2830. A DRE calculada também abate créditos e reversões fiscais registrados no Razão. Por isso o total calculado não deve ser forçado para o valor enviado.
+                </p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <MiniMetric label="Diferença total" value={diferencaDeducoes} />
+                  <MiniMetric label="PIS/COFINS filial somados por fora" value={duplicidadeFederaisFilial} />
+                  <MiniMetric label="Créditos/reversões abatidos" value={creditosReversoesDeducoes} />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>
@@ -81,7 +128,7 @@ function DrePage() {
             <div>
               <CardTitle className="text-base">DRE enviada x DRE calculada — detalhamento completo</CardTitle>
               <CardDescription>
-                Todas as linhas inferiores seguem a mesma regra. Clique na seta para abrir as contas e centros de custo que formam o valor calculado e localizar a discrepância.
+                Todas as linhas seguem a mesma ordem: primeiro a DRE Enviada, depois a DRE Calculada pelo Balancete. Clique na seta para abrir as contas e centros de custo que formam o valor calculado.
               </CardDescription>
             </div>
             <Badge variant="outline">{resumoDreDetalhada.linhasComDiferenca} linhas com diferença</Badge>
@@ -93,8 +140,8 @@ function DrePage() {
             <thead>
               <tr className="border-b bg-muted/50 text-left text-xs">
                 <th className="p-2">Linha da DRE</th>
-                <th className="p-2 text-right">DRE Calculada (Balancete)</th>
                 <th className="p-2 text-right">DRE Enviada</th>
+                <th className="p-2 text-right">DRE Calculada (Balancete)</th>
                 <th className="p-2 text-right">Diferença</th>
                 <th className="p-2 text-center">Análise</th>
               </tr>
@@ -126,8 +173,8 @@ function DrePage() {
                         {diagnostico ? <Badge variant="outline" className="ml-2 border-amber-400 text-[10px] text-amber-800">Sem linha na enviada</Badge> : null}
                       </button>
                     </td>
-                    <Money value={linha.calculado} strong={linha.tipo !== "detalhe"} />
                     <Money value={linha.enviado} />
+                    <Money value={linha.calculado} strong={linha.tipo !== "detalhe"} />
                     <td className={`p-2 text-right font-semibold tabular-nums ${ok ? "text-emerald-700" : "text-amber-700"}`}>{brl.format(linha.diferenca)}</td>
                     <td className="p-2 text-center">
                       {ok
@@ -189,6 +236,52 @@ function TabelaComposicao({ contas }: { contas: ComposicaoDre[] }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function CompareMetric({
+  label,
+  enviada,
+  calculada,
+  success = false,
+  alert = false,
+}: {
+  label: string;
+  enviada: number;
+  calculada: number;
+  success?: boolean;
+  alert?: boolean;
+}) {
+  const diferenca = Math.round((calculada - enviada) * 100) / 100;
+  const ok = Math.abs(diferenca) <= tolerancia;
+  return (
+    <Card className={alert && !ok ? "border-amber-400/60" : undefined}>
+      <CardContent className="pt-5">
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">DRE Enviada</p>
+            <p className="mt-1 text-base font-semibold tabular-nums">{brl.format(enviada)}</p>
+          </div>
+          <div className="border-l pl-3">
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">DRE Calculada</p>
+            <p className={`mt-1 text-base font-semibold tabular-nums ${success ? "text-emerald-700" : ""}`}>{brl.format(calculada)}</p>
+          </div>
+        </div>
+        <p className={`mt-3 text-xs font-medium tabular-nums ${ok ? "text-emerald-700" : "text-amber-700"}`}>
+          Diferença: {brl.format(diferenca)}
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MiniMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-md border bg-background/80 p-3">
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="mt-1 font-semibold tabular-nums">{brl.format(value)}</p>
     </div>
   );
 }
