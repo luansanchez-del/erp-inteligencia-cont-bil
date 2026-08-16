@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { estruturaBalanceteNitaplast, type LinhaEstruturaBalancete } from "@/data/nitaplast-balancete-estrutura";
-import { lancamentosIntegrados, totalCreditosIntegrados, totalDebitosIntegrados } from "@/data/nitaplast-razao-integrado";
+import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
 import { resumoImplantacao, saldosImplantacao } from "@/data/nitaplast-implantacao";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
+import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
 
 export const Route = createFileRoute("/contabil/balancete")({ component: BalancetePage });
 
@@ -48,17 +49,22 @@ function linhaZerada(linha: LinhaCalculada) {
 
 function BalancetePage() {
   useNitaplastJunho();
+  const { reclassificacoes, aplicar } = useReclassificacoesInteligentes("2026-06");
   const [busca, setBusca] = useState("");
   const [grupo, setGrupo] = useState<(typeof grupos)[number]>("Todos");
   const [somenteMovimento, setSomenteMovimento] = useState(false);
   const [mostrarZeradas, setMostrarZeradas] = useState(false);
   const [pagina, setPagina] = useState(1);
 
+  const lancamentosComAjustes = useMemo(() => aplicar(lancamentosIntegrados), [aplicar]);
+  const totalDebitosIntegrados = useMemo(() => lancamentosComAjustes.reduce((total, linha) => total + linha.valor, 0), [lancamentosComAjustes]);
+  const totalCreditosIntegrados = totalDebitosIntegrados;
+
   const linhasCalculadas = useMemo<LinhaCalculada[]>(() => {
     const saldos = new Map(saldosImplantacao.map((linha) => [linha.conta, linha]));
     const movimentos = new Map<string, { debitos: number; creditos: number; lancamentos: number }>();
 
-    for (const lancamento of lancamentosIntegrados) {
+    for (const lancamento of lancamentosComAjustes) {
       const debito = movimentos.get(lancamento.debitoCodigo) ?? { debitos: 0, creditos: 0, lancamentos: 0 };
       debito.debitos += lancamento.valor;
       debito.lancamentos += 1;
@@ -110,7 +116,7 @@ function BalancetePage() {
       }
       return { ...linha, ...acumulado };
     });
-  }, []);
+  }, [lancamentosComAjustes]);
 
   const linhas = useMemo(() => {
     const q = busca.toLocaleLowerCase("pt-BR").trim();
@@ -143,24 +149,25 @@ function BalancetePage() {
   return <PageShell>
     <PageHeader
       titulo="Balancete consolidado - Nitaplast"
-      descricao="Visão única consolidada da Nitaplast: saldo anterior de 31/05 e movimento integrado de junho da matriz e da filial na mesma estrutura contábil. Contas totalmente zeradas ficam ocultas por padrão."
+      descricao="Saldo anterior de 31/05 + movimento integrado de junho, incluindo reclassificações inteligentes contabilizadas pelo usuário."
       acoes={<Badge variant="outline">Consolidado - 06/2026</Badge>}
     />
 
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
       <Metric label="Ativo consolidado em 31/05" value={resumoImplantacao.ativo} />
       <Metric label="Passivo + PL consolidado em 31/05" value={resumoImplantacao.passivoPatrimonioLiquido} />
       <Metric label="Linhas do balancete" value={linhasCalculadas.filter((linha) => mostrarZeradas || !linhaZerada(linha)).length} />
       <Metric label="Débitos consolidados 06" value={totalDebitosIntegrados} />
       <Metric label="Créditos consolidados 06" value={totalCreditosIntegrados} />
+      <Metric label="Reclassificações" value={reclassificacoes.length} />
     </div>
 
     <Card className="border-emerald-500/40 bg-emerald-500/5">
       <CardContent className="flex items-start gap-3 pt-6">
         <CheckCircle2 className="size-5 shrink-0 text-emerald-700" />
         <div>
-          <p className="font-medium">Balancete consolidado</p>
-          <p className="text-sm text-muted-foreground">Matriz e filial são apresentadas no mesmo balancete. As linhas S acumulam as contas A abaixo delas. Débitos {brl.format(totalDebitosIntegrados)} e créditos {brl.format(totalCreditosIntegrados)} permanecem equilibrados.</p>
+          <p className="font-medium">Balancete consolidado e recalculável</p>
+          <p className="text-sm text-muted-foreground">Matriz e filial são apresentadas no mesmo balancete. Reclassificações feitas no Razão entram como lançamentos de ajuste e recalculam automaticamente as contas analíticas e sintéticas. Débitos {brl.format(totalDebitosIntegrados)} e créditos {brl.format(totalCreditosIntegrados)} permanecem equilibrados.</p>
         </div>
       </CardContent>
     </Card>
