@@ -185,7 +185,9 @@ function DrePage() {
                   podeAbrir && aberta ? (
                     <tr key={`${linha.id}-detalhe`} className="border-b bg-slate-50/70">
                       <td colSpan={5} className="p-3 pl-8">
-                        <p className="mb-2 text-xs text-muted-foreground"><span className="font-medium text-foreground">Critério:</span> {linha.criterio}</p>
+                        <DetalheComparacao enviada={linha.enviado} calculada={linha.calculado} diferenca={linha.diferenca} />
+                        <p className="mb-2 mt-3 text-xs text-muted-foreground"><span className="font-medium text-foreground">Critério:</span> {linha.criterio}</p>
+                        <p className="mb-2 text-xs font-medium text-foreground">Composição da DRE Calculada pelo Razão/Balancete</p>
                         <TabelaComposicao contas={linha.composicao} />
                       </td>
                     </tr>
@@ -200,6 +202,26 @@ function DrePage() {
   );
 }
 
+function DetalheComparacao({ enviada, calculada, diferenca }: { enviada: number; calculada: number; diferenca: number }) {
+  const ok = Math.abs(diferenca) <= tolerancia;
+  return (
+    <div className="grid gap-2 sm:grid-cols-3">
+      <div className="rounded-md border bg-background p-3">
+        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">DRE Enviada</p>
+        <p className="mt-1 text-base font-semibold tabular-nums">{brl.format(enviada)}</p>
+      </div>
+      <div className="rounded-md border bg-background p-3">
+        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">DRE Calculada</p>
+        <p className="mt-1 text-base font-semibold tabular-nums">{brl.format(calculada)}</p>
+      </div>
+      <div className={`rounded-md border p-3 ${ok ? "bg-emerald-50" : "border-amber-300 bg-amber-50"}`}>
+        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Diferença</p>
+        <p className={`mt-1 text-base font-semibold tabular-nums ${ok ? "text-emerald-700" : "text-amber-700"}`}>{brl.format(diferenca)}</p>
+      </div>
+    </div>
+  );
+}
+
 function TabelaComposicao({ contas }: { contas: ComposicaoDre[] }) {
   return (
     <div className="overflow-x-auto rounded-md border bg-background">
@@ -210,9 +232,9 @@ function TabelaComposicao({ contas }: { contas: ComposicaoDre[] }) {
             <th className="p-2">Classificação</th>
             <th className="p-2">Descrição</th>
             <th className="p-2">CC</th>
-            <th className="p-2 text-right">Débitos</th>
-            <th className="p-2 text-right">Créditos</th>
-            <th className="p-2 text-right">Valor na linha</th>
+            <th className="p-2 text-right">Débitos no Razão</th>
+            <th className="p-2 text-right">Créditos no Razão</th>
+            <th className="p-2 text-right">Impacto na DRE Calculada</th>
             <th className="p-2 text-right">Razão</th>
           </tr>
         </thead>
