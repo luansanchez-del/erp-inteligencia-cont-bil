@@ -69,7 +69,12 @@ const bancarios: LancamentoIntegrado[] = movimentosFinanceiros.flatMap((moviment
   // Mantemos somente a ponta de débito (origem) para não contabilizar a mesma transferência duas vezes.
   if (bancoContrapartida && movimento.tipo === "credito") return [];
 
-  const especial = contrapartidaEspecial(movimento.codigo, movimento.historico);
+  // No Bradesco 895, os créditos do evento 7 são eventos internos do Invest Fácil.
+  // Rendimento, aplicações e resgates são contabilizados em ajustesAplicacoesJunho para separar C/C e aplicação.
+  if (movimento.banco === "B23702" && movimento.codigo === "7" && movimento.tipo === "credito") return [];
+
+  const especialBradesco895 = movimento.banco === "B23702" && movimento.codigo === "7" && movimento.tipo === "debito" ? "25104" : undefined;
+  const especial = especialBradesco895 ?? contrapartidaEspecial(movimento.codigo, movimento.historico);
   const contrapartidaCodigo = bancoContrapartida ?? especial ?? contrapartidaPorEvento[movimento.codigo] ?? "25221";
   const entrada = movimento.tipo === "credito";
   const contrapartidaMapeada = Boolean(bancoContrapartida) || Boolean(especial) || movimento.codigo in contrapartidaPorEvento;
@@ -77,7 +82,9 @@ const bancarios: LancamentoIntegrado[] = movimentosFinanceiros.flatMap((moviment
   const revisar = ["131", "132", "203"].includes(movimento.codigo) || (!bancoContrapartida && !especial && movimento.codigo === "96");
   const observacaoEspecial = especial === "25129"
     ? "Transferência Nitaplast para MVS classificada na Conta Corrente Marcos Victor Siedel, conciliada com o extrato bancário da MVS."
-    : "Pagamento de energia classificado na conta específica Energia Elétrica a Pagar, seguindo o padrão de maio.";
+    : especial === "25104"
+      ? "Tarifa de R$ 48,21 do Bradesco 895 mantida na conta corrente; o resgate correspondente do Invest Fácil é contabilizado separadamente."
+      : "Pagamento de energia classificado na conta específica Energia Elétrica a Pagar, seguindo o padrão de maio.";
   return [{
     id: `BAN-${String(index + 1).padStart(5, "0")}`,
     data: movimento.data,
