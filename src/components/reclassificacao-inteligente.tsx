@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowRightLeft, X } from "lucide-react";
+import { ArrowRightLeft, RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { saldosImplantacao } from "@/data/nitaplast-implantacao";
 import type { LancamentoIntegrado } from "@/data/nitaplast-razao-integrado";
@@ -22,6 +22,7 @@ const centros = [
 export function ReclassificacaoInteligente({
   lancamento,
   onRegistrar,
+  onRemover,
 }: {
   lancamento: LancamentoIntegrado;
   onRegistrar: (item: {
@@ -33,6 +34,7 @@ export function ReclassificacaoInteligente({
     centroCustoDestino: string;
     motivo: string;
   }) => void;
+  onRemover?: (id: string) => void;
 }) {
   const [aberto, setAberto] = useState(false);
   const [lado, setLado] = useState<LadoReclassificacao>("debito");
@@ -67,7 +69,13 @@ export function ReclassificacaoInteligente({
   }
 
   if (lancamento.origem === "RECLASSIFICAÇÃO INTELIGENTE") {
-    return <span className="text-xs text-muted-foreground">Ajuste</span>;
+    const id = lancamento.id.replace(/^RCL-/, "");
+    return onRemover ? (
+      <Button type="button" variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-rose-700" title="Desfazer reclassificação" onClick={() => onRemover(id)}>
+        <RotateCcw className="size-4" />
+        <span className="hidden xl:inline">Desfazer</span>
+      </Button>
+    ) : <span className="text-xs text-muted-foreground">Ajuste</span>;
   }
 
   return (
