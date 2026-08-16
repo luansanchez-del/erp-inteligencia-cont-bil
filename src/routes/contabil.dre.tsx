@@ -16,6 +16,7 @@ export const Route = createFileRoute("/contabil/dre")({ component: DrePage });
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const tolerancia = 0.01;
+const idsFederaisExplicados = new Set(["pis-m", "cofins-m", "pis-f", "cofins-f"]);
 
 function DrePage() {
   useNitaplastJunho();
@@ -28,7 +29,12 @@ function DrePage() {
   const cofinsFilialEnviado = comparacaoDreDetalhada.find((linha) => linha.id === "cofins-f")?.enviado ?? 0;
   const duplicidadeFederaisFilial = Math.round((pisFilialEnviado + cofinsFilialEnviado) * 100) / 100;
   const diferencaDeducoes = Math.abs(deducoesResumo?.diferenca ?? 0);
-  const creditosReversoesDeducoes = Math.max(0, Math.round((diferencaDeducoes - duplicidadeFederaisFilial) * 100) / 100);
+  const diferencaResidualDeducoes = Math.max(0, Math.round((diferencaDeducoes - duplicidadeFederaisFilial) * 100) / 100);
+  const linhasPendentes = comparacaoDreDetalhada.filter((linha) =>
+    Math.abs(linha.diferenca) > tolerancia
+    && !idsFederaisExplicados.has(linha.id)
+    && linha.id !== "ajuste-jul",
+  ).length;
   const todosIds = comparacaoDreDetalhada.map((linha) => linha.id);
   const todaDreAberta = todosIds.length > 0 && todosIds.every((id) => abertas.has(id));
 
@@ -70,7 +76,8 @@ function DrePage() {
           label="Deduções da Receita Bruta"
           enviada={deducoesResumo?.enviado ?? 0}
           calculada={deducoesResumo?.calculado ?? resumoDreDetalhada.deducoesCalculadas}
-          alert={Math.abs(deducoesResumo?.diferenca ?? 0) > tolerancia}
+          alert={diferencaResidualDeducoes > tolerancia}
+          diferencaPendente={diferencaResidualDeducoes}
         />
         <CompareMetric
           label="Lucro Líquido"
@@ -135,14 +142,14 @@ function DrePage() {
             <div className="flex items-start gap-3">
               <CircleAlert className="mt-0.5 size-5 shrink-0 text-amber-700" />
               <div className="w-full">
-                <p className="font-medium">Diagnóstico da diferença nas deduções</p>
+                <p className="font-medium">Conciliação das deduções</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  A DRE enviada soma PIS/COFINS da filial em linhas próprias, embora as apurações federais estejam consolidadas nas contas 2829/2830. A DRE calculada também abate créditos e reversões fiscais registrados no Razão. Por isso o total calculado não deve ser forçado para o valor enviado.
+                  A parcela de PIS/COFINS da filial que foi somada por fora na DRE enviada já está identificada e não é mais tratada como pendência. Ela permanece visível apenas para auditoria. O valor a investigar é somente o residual após essa conciliação.
                 </p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <MiniMetric label="Diferença total" value={diferencaDeducoes} />
-                  <MiniMetric label="PIS/COFINS filial somados por fora" value={duplicidadeFederaisFilial} />
-                  <MiniMetric label="Créditos/reversões abatidos" value={creditosReversoesDeducoes} />
+                  <MiniMetric label="Diferença bruta" value={diferencaDeducoes} />
+                  <MiniMetric label="Duplicidade explicada PIS/COFINS" value={duplicidadeFederaisFilial} />
+                  <MiniMetric label="Diferença residual pendente" value={diferencaResidualDeducoes} />
                 </div>
               </div>
             </div>
@@ -156,11 +163,11 @@ function DrePage() {
             <div>
               <CardTitle className="text-base">DRE enviada x DRE calculada — detalhamento completo</CardTitle>
               <CardDescription>
-                Abra qualquer linha para rever Enviada, Calculada, Diferença e Status, além do critério e da composição contábil. Ajustes inteligentes aparecem na composição da conta de destino.
+                Abra qualquer linha para rever Enviada, Calculada, Diferença e Status, além do critério e da composição contábil. Diferenças já conciliadas permanecem auditáveis, mas não contam como pendência.
               </CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">{resumoDreDetalhada.linhasComDiferenca} linhas com diferença</Badge>
+              <Badge variant="outline">{linhasPendentes} linha(s) pendente(s)</Badge>
               <Button variant="outline" size="sm" onClick={alternarTodaDre}>
                 {todaDreAberta ? "Recolher todas" : "Expandir todas"}
               </Button>
@@ -183,6 +190,8 @@ function DrePage() {
               {comparacaoDreDetalhada.map((linha) => {
                 const aberta = abertas.has(linha.id);
                 const ok = Math.abs(linha.diferenca) <= tolerancia;
+                const federalExplicada = idsFederaisExplicados.has(linha.id) && !ok;
+                const deducaoComResidual = linha.id === "deducoes" && diferencaResidualDeducoes > tolerancia;
                 const diagnostico = linha.tipo === "diagnostico";
                 const financeira = linha.id === "fin-liq" || linha.id === "fin-desp" || linha.id === "fin-rec";
                 const classe = linha.tipo === "resultado"
@@ -194,6 +203,7 @@ function DrePage() {
                       : diagnostico
                         ? "border-b bg-amber-50/60"
                         : "border-b";
+                const statusDetalhe = ok ? "confere" : federalExplicada ? "explicada" : deducaoComResidual ? "residual" : "investigar";
 
                 return [
                   <tr key={linha.id} className={classe}>
@@ -208,21 +218,30 @@ function DrePage() {
                         <span>{linha.descricao}</span>
                         {diagnostico ? <Badge variant="outline" className="ml-2 border-amber-400 text-[10px] text-amber-800">Diagnóstico</Badge> : null}
                         {financeira ? <Badge variant="outline" className="ml-2 border-sky-400 text-[10px] text-sky-800">Financeiro</Badge> : null}
+                        {federalExplicada ? <Badge variant="outline" className="ml-2 border-emerald-400 text-[10px] text-emerald-800">Conciliada</Badge> : null}
                       </button>
                     </td>
                     <Money value={linha.enviado} />
                     <Money value={linha.calculado} strong={linha.tipo !== "detalhe"} />
-                    <td className={`p-2 text-right font-semibold tabular-nums ${ok ? "text-emerald-700" : "text-amber-700"}`}>{brl.format(linha.diferenca)}</td>
+                    <td className={`p-2 text-right font-semibold tabular-nums ${ok || federalExplicada ? "text-emerald-700" : "text-amber-700"}`}>
+                      {brl.format(linha.diferenca)}
+                      {deducaoComResidual ? <div className="mt-0.5 text-[10px] font-normal text-amber-700">Pendente: {brl.format(diferencaResidualDeducoes)}</div> : null}
+                      {federalExplicada ? <div className="mt-0.5 text-[10px] font-normal text-emerald-700">Diferença de apresentação já conciliada</div> : null}
+                    </td>
                     <td className="p-2 text-center">
                       {ok
                         ? <span className="inline-flex items-center gap-1 text-emerald-700"><CheckCircle2 className="size-4" />Confere</span>
-                        : <span className="inline-flex items-center gap-1 text-amber-700"><CircleAlert className="size-4" />Investigar</span>}
+                        : federalExplicada
+                          ? <span className="inline-flex items-center gap-1 text-emerald-700"><CheckCircle2 className="size-4" />Explicada</span>
+                          : deducaoComResidual
+                            ? <span className="inline-flex items-center gap-1 text-amber-700"><CircleAlert className="size-4" />Investigar residual</span>
+                            : <span className="inline-flex items-center gap-1 text-amber-700"><CircleAlert className="size-4" />Investigar</span>}
                     </td>
                   </tr>,
                   aberta ? (
                     <tr key={`${linha.id}-detalhe`} className="border-b bg-slate-50/70">
                       <td colSpan={5} className="p-3 pl-8">
-                        <DetalheComparacao enviada={linha.enviado} calculada={linha.calculado} diferenca={linha.diferenca} />
+                        <DetalheComparacao enviada={linha.enviado} calculada={linha.calculado} diferenca={linha.diferenca} status={statusDetalhe} />
                         <p className="mb-2 mt-3 text-xs text-muted-foreground"><span className="font-medium text-foreground">Critério:</span> {linha.criterio}</p>
                         {linha.id === "despesas" ? (
                           <div className="rounded-md border border-sky-300 bg-sky-50 p-3 text-xs text-sky-900">
@@ -251,14 +270,15 @@ function DrePage() {
   );
 }
 
-function DetalheComparacao({ enviada, calculada, diferenca }: { enviada: number; calculada: number; diferenca: number }) {
-  const ok = Math.abs(diferenca) <= tolerancia;
+function DetalheComparacao({ enviada, calculada, diferenca, status }: { enviada: number; calculada: number; diferenca: number; status: "confere" | "explicada" | "residual" | "investigar" }) {
+  const resolvido = status === "confere" || status === "explicada";
+  const statusTexto = status === "confere" ? "Confere" : status === "explicada" ? "Diferença explicada" : status === "residual" ? "Investigar residual" : "Investigar";
   return (
     <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
       <div className="rounded-md border bg-background p-3"><p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">DRE Enviada</p><p className="mt-1 text-base font-semibold tabular-nums">{brl.format(enviada)}</p></div>
       <div className="rounded-md border bg-background p-3"><p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">DRE Calculada</p><p className="mt-1 text-base font-semibold tabular-nums">{brl.format(calculada)}</p></div>
-      <div className={`rounded-md border p-3 ${ok ? "bg-emerald-50" : "border-amber-300 bg-amber-50"}`}><p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Diferença</p><p className={`mt-1 text-base font-semibold tabular-nums ${ok ? "text-emerald-700" : "text-amber-700"}`}>{brl.format(diferenca)}</p></div>
-      <div className={`rounded-md border p-3 ${ok ? "border-emerald-300 bg-emerald-50" : "border-amber-300 bg-amber-50"}`}><p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Status</p><p className={`mt-1 inline-flex items-center gap-1 text-sm font-semibold ${ok ? "text-emerald-700" : "text-amber-700"}`}>{ok ? <CheckCircle2 className="size-4" /> : <CircleAlert className="size-4" />}{ok ? "Confere" : "Investigar"}</p></div>
+      <div className={`rounded-md border p-3 ${resolvido ? "bg-emerald-50" : "border-amber-300 bg-amber-50"}`}><p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Diferença</p><p className={`mt-1 text-base font-semibold tabular-nums ${resolvido ? "text-emerald-700" : "text-amber-700"}`}>{brl.format(diferenca)}</p></div>
+      <div className={`rounded-md border p-3 ${resolvido ? "border-emerald-300 bg-emerald-50" : "border-amber-300 bg-amber-50"}`}><p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Status</p><p className={`mt-1 inline-flex items-center gap-1 text-sm font-semibold ${resolvido ? "text-emerald-700" : "text-amber-700"}`}>{resolvido ? <CheckCircle2 className="size-4" /> : <CircleAlert className="size-4" />}{statusTexto}</p></div>
     </div>
   );
 }
@@ -287,18 +307,22 @@ function TabelaComposicao({ contas }: { contas: ComposicaoDre[] }) {
   );
 }
 
-function CompareMetric({ label, enviada, calculada, success = false, alert = false }: { label: string; enviada: number; calculada: number; success?: boolean; alert?: boolean }) {
+function CompareMetric({ label, enviada, calculada, success = false, alert = false, diferencaPendente }: { label: string; enviada: number; calculada: number; success?: boolean; alert?: boolean; diferencaPendente?: number }) {
   const diferenca = Math.round((calculada - enviada) * 100) / 100;
   const ok = Math.abs(diferenca) <= tolerancia;
   return (
-    <Card className={alert && !ok ? "border-amber-400/60" : undefined}>
+    <Card className={alert ? "border-amber-400/60" : undefined}>
       <CardContent className="pt-5">
         <p className="text-xs font-medium text-muted-foreground">{label}</p>
         <div className="mt-3 grid grid-cols-2 gap-3">
           <div><p className="text-[10px] uppercase tracking-wide text-muted-foreground">DRE Enviada</p><p className="mt-1 text-base font-semibold tabular-nums">{brl.format(enviada)}</p></div>
           <div className="border-l pl-3"><p className="text-[10px] uppercase tracking-wide text-muted-foreground">DRE Calculada</p><p className={`mt-1 text-base font-semibold tabular-nums ${success ? "text-emerald-700" : ""}`}>{brl.format(calculada)}</p></div>
         </div>
-        <p className={`mt-3 text-xs font-medium tabular-nums ${ok ? "text-emerald-700" : "text-amber-700"}`}>Diferença: {brl.format(diferenca)}</p>
+        {diferencaPendente !== undefined ? (
+          <p className={`mt-3 text-xs font-medium tabular-nums ${diferencaPendente <= tolerancia ? "text-emerald-700" : "text-amber-700"}`}>Diferença bruta: {brl.format(diferenca)} · Pendente após conciliação: {brl.format(diferencaPendente)}</p>
+        ) : (
+          <p className={`mt-3 text-xs font-medium tabular-nums ${ok ? "text-emerald-700" : "text-amber-700"}`}>Diferença: {brl.format(diferenca)}</p>
+        )}
       </CardContent>
     </Card>
   );
