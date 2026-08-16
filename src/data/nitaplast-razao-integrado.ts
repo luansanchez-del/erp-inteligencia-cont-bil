@@ -21,8 +21,23 @@ export { contaPorBanco, depreciacoes } from "./nitaplast-razao-base";
  * Balancete e DRE leem este mesmo conjunto. Portanto nenhuma linha da DRE é
  * alterada manualmente para "bater": o resultado nasce dos lançamentos.
  */
+
+/**
+ * A apuração de ICMS da matriz anteriormente carregada com créditos de
+ * R$ 151.322,32 foi invalidada no fechamento. O registro atualizado confirmou
+ * o débito de ICMS das SAÍDAS em R$ 239.206,46, mas os créditos daquela versão
+ * antiga não podem permanecer gerando lançamentos no Razão/Balancete.
+ *
+ * Mantemos exclusivamente TAX-SAI-ICMS (débito das saídas). Todos os demais
+ * lançamentos cuja origem seja a apuração ICMS antiga são descartados desta
+ * base definitiva até serem reconstruídos pelo registro atualizado/documentos.
+ */
+const lancamentosBaseSemApuracaoIcmsObsoleta = lancamentosBase.filter((linha) =>
+  linha.origem !== "APURAÇÃO ICMS 06/2026" || linha.id === "TAX-SAI-ICMS",
+);
+
 const baseComFechamentoFinanceiro = aplicarFechamentoFinanceiroJunho([
-  ...lancamentosBase,
+  ...lancamentosBaseSemApuracaoIcmsObsoleta,
   ...fechamentoCpvJunho,
   ajusteEstoqueResultadoJunho,
 ]);
