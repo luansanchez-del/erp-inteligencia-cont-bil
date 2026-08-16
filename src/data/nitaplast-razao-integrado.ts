@@ -5,6 +5,7 @@ import { recorrenciasJunho } from "./nitaplast-recorrencias-junho";
 import { ajustesFilialJunho } from "./nitaplast-filial-junho";
 import { ajustesAplicacoesJunho } from "./nitaplast-aplicacoes-junho";
 import { entradasCcReconciliadasJunho } from "./nitaplast-entradas-cc-reconciliadas-junho";
+import { creditosFilialJunho } from "./nitaplast-creditos-filial-junho";
 
 export type LancamentoIntegrado = {
   id: string;
@@ -177,8 +178,13 @@ const folha: LancamentoIntegrado[] = [
 
 // Linhas FIL-* antigas vieram da DRE de controle, não de fatos contábeis. ENT-LOTE foi substituído
 // pelo relatório detalhado do sistema do cliente reconciliado por centro de custo.
+// Os antigos resíduos PIS/COFINS e o crédito ICMS filial parcial foram substituídos pela abertura
+// documental em creditosFilialJunho, sem criar lançamento de reversão técnica.
+const idsFiscaisSubstituidos = new Set(["TAX-PIS-RESID", "TAX-COF-RESID", "TAX-CRED-013"]);
 const lancamentosFiscaisSemLegados = lancamentosFiscaisJunho.filter(
-  (linha) => !linha.id.startsWith("FIL-") && !linha.id.startsWith("ENT-LOTE"),
+  (linha) => !linha.id.startsWith("FIL-")
+    && !linha.id.startsWith("ENT-LOTE")
+    && !idsFiscaisSubstituidos.has(linha.id),
 );
 
 // Amortização de maio não foi autorizada como recorrência de junho. Permanecem somente as recorrências
@@ -193,6 +199,7 @@ export const lancamentosIntegrados: LancamentoIntegrado[] = [
   ...recorrenciasSemAmortizacaoNaoAutorizada,
   ...lancamentosFiscaisSemLegados,
   ...entradasCcReconciliadasJunho,
+  ...creditosFilialJunho,
   ...ajustesFilialJunho,
 ];
 export const totalDebitosIntegrados = lancamentosIntegrados.reduce((total, linha) => total + linha.valor, 0);
