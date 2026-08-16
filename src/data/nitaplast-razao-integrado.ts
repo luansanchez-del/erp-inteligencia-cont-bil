@@ -8,6 +8,7 @@ import { aplicarFechamentoCpvFinalJunho } from "./nitaplast-fechamento-cpv-final
 import { aplicarFechamentoFolhaJunho } from "./nitaplast-fechamento-folha-junho";
 import { aplicarFechamentoCreditosFederaisJunho } from "./nitaplast-fechamento-creditos-federais-junho";
 import { aplicarFechamentoDespesasJunho } from "./nitaplast-fechamento-despesas-junho";
+import { aplicarFechamentoAlienacaoJunho } from "./nitaplast-fechamento-alienacao-junho";
 import { garantirPlanoFechamentoJunho } from "./nitaplast-plano-fechamento-junho";
 
 export type { LancamentoIntegrado } from "./nitaplast-razao-base";
@@ -30,7 +31,8 @@ garantirPlanoFechamentoJunho();
  * 7. reclassificação PIS/COFINS entre compras e despesas, sem criar crédito novo;
  * 8. ajuste contábil REMANESCENTE das despesas contra 25020;
  * 9. fechamento físico final das contas de estoque;
- * 10. reconciliação final do CPV ao Razão real Questor + ajuste autorizado.
+ * 10. reconciliação final do CPV ao Razão real Questor + ajuste autorizado;
+ * 11. alienações do imobilizado e ganho líquido de R$ 7.295,86.
  *
  * Balancete e DRE leem este mesmo conjunto. Portanto nenhuma linha da DRE é
  * alterada manualmente para "bater": o resultado nasce dos lançamentos.
@@ -89,7 +91,12 @@ const baseComEstoqueFechado = [
   ...fechamentoEstoqueMatriz,
 ];
 
-export const lancamentosIntegrados = aplicarFechamentoCpvFinalJunho(baseComEstoqueFechado);
+const baseComCpvFinal = aplicarFechamentoCpvFinalJunho(baseComEstoqueFechado);
+
+// A última camada reconhece as vendas de ativo, baixa patrimonial conhecida do
+// compressor e o custo contábil agregado das alienações. O ganho líquido nasce
+// no próprio Razão (R$ 15.000,00 - R$ 7.704,14 = R$ 7.295,86).
+export const lancamentosIntegrados = aplicarFechamentoAlienacaoJunho(baseComCpvFinal);
 
 export const totalDebitosIntegrados = lancamentosIntegrados.reduce((total, linha) => total + linha.valor, 0);
 export const totalCreditosIntegrados = totalDebitosIntegrados;
