@@ -4,6 +4,7 @@ import { corrigirMapeamentosJunho } from "./nitaplast-correcoes-mapeamento-junho
 import { ajusteEstoqueResultadoJunho } from "./nitaplast-ajuste-estoque-junho";
 import { gerarFechamentoEstoqueMatrizJunho } from "./nitaplast-fechamento-estoque-matriz-junho";
 import { aplicarFechamentoFinanceiroJunho } from "./nitaplast-fechamento-financeiro-junho";
+import { aplicarFechamentoCpvFinalJunho } from "./nitaplast-fechamento-cpv-final-junho";
 
 export type { LancamentoIntegrado } from "./nitaplast-razao-base";
 export { contaPorBanco, depreciacoes } from "./nitaplast-razao-base";
@@ -16,7 +17,8 @@ export { contaPorBanco, depreciacoes } from "./nitaplast-razao-base";
  * 2. fechamento de CPV e ajuste de estoque já validado;
  * 3. fechamento financeiro validado no próprio Razão;
  * 4. correções de mapeamento comprovadas;
- * 5. fechamento físico final das contas de estoque.
+ * 5. fechamento físico final das contas de estoque;
+ * 6. reconciliação final do CPV ao Razão real Questor + ajuste autorizado.
  *
  * Balancete e DRE leem este mesmo conjunto. Portanto nenhuma linha da DRE é
  * alterada manualmente para "bater": o resultado nasce dos lançamentos.
@@ -45,10 +47,16 @@ const baseComFechamentoFinanceiro = aplicarFechamentoFinanceiroJunho([
 const baseCorrigida = corrigirMapeamentosJunho(baseComFechamentoFinanceiro);
 const fechamentoEstoqueMatriz = gerarFechamentoEstoqueMatrizJunho(baseCorrigida);
 
-export const lancamentosIntegrados = [
+// Primeiro fechamos o patrimônio ao inventário físico oficial. Só depois
+// reconciliamos o movimento das contas de CPV com o Razão real do Questor e
+// registramos o ajuste autorizado de R$ 150 mil. Assim o estoque oficial não é
+// usado como contrapartida artificial para forçar a DRE.
+const baseComEstoqueFechado = [
   ...baseCorrigida,
   ...fechamentoEstoqueMatriz,
 ];
+
+export const lancamentosIntegrados = aplicarFechamentoCpvFinalJunho(baseComEstoqueFechado);
 
 export const totalDebitosIntegrados = lancamentosIntegrados.reduce((total, linha) => total + linha.valor, 0);
 export const totalCreditosIntegrados = totalDebitosIntegrados;
