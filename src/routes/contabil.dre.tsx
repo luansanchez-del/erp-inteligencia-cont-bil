@@ -29,6 +29,8 @@ function DrePage() {
   const duplicidadeFederaisFilial = Math.round((pisFilialEnviado + cofinsFilialEnviado) * 100) / 100;
   const diferencaDeducoes = Math.abs(deducoesResumo?.diferenca ?? 0);
   const creditosReversoesDeducoes = Math.max(0, Math.round((diferencaDeducoes - duplicidadeFederaisFilial) * 100) / 100);
+  const todosIds = comparacaoDreDetalhada.map((linha) => linha.id);
+  const todaDreAberta = todosIds.length > 0 && todosIds.every((id) => abertas.has(id));
 
   function alternar(id: string) {
     setAbertas((atual) => {
@@ -38,12 +40,23 @@ function DrePage() {
     });
   }
 
+  function alternarTodaDre() {
+    setAbertas(todaDreAberta ? new Set() : new Set(todosIds));
+  }
+
   return (
     <PageShell>
       <PageHeader
         titulo="DRE enviada x DRE calculada — Nitaplast 06/2026"
-        descricao="A DRE Enviada é a referência de controle do cliente. A DRE Calculada nasce do Razão/Balancete. As duas ficam sempre lado a lado; diferenças permanecem abertas para investigação conta a conta."
-        acoes={<Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Consolidado Matriz + Filial</Badge>}
+        descricao="A DRE Enviada é a referência de controle do cliente. A DRE Calculada nasce do Razão/Balancete. Toda linha da DRE usa a mesma regra visual e pode ser aberta para conferência, inclusive quando não há composição no Razão."
+        acoes={
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Consolidado Matriz + Filial</Badge>
+            <Button variant="outline" size="sm" onClick={alternarTodaDre}>
+              {todaDreAberta ? "Recolher toda DRE" : "Expandir toda DRE"}
+            </Button>
+          </div>
+        }
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -75,9 +88,9 @@ function DrePage() {
       <Card className="border-blue-500/30 bg-blue-500/5">
         <CardContent className="grid gap-3 pt-6 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
-            <p className="font-medium">Regra de fechamento aplicada</p>
+            <p className="font-medium">Regra única aplicada à DRE inteira</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Razão → Balancete → DRE calculada → comparação com a DRE enviada. Nenhuma diferença é preenchida com plug, reversão técnica ou valor copiado da DRE de controle.
+              Toda linha segue DRE Enviada → DRE Calculada → Diferença → Status. Ao abrir, a mesma comparação aparece antes do critério e da composição do Razão/Balancete. Nenhuma diferença é preenchida com plug.
             </p>
           </div>
           <Button asChild variant="outline" size="sm"><Link to="/contabil/balancete">Abrir Balancete <ExternalLink className="ml-2 size-4" /></Link></Button>
@@ -128,28 +141,32 @@ function DrePage() {
             <div>
               <CardTitle className="text-base">DRE enviada x DRE calculada — detalhamento completo</CardTitle>
               <CardDescription>
-                Todas as linhas seguem a mesma ordem: primeiro a DRE Enviada, depois a DRE Calculada pelo Balancete. Clique na seta para abrir as contas e centros de custo que formam o valor calculado.
+                A regra abaixo vale para todas as linhas, sem exceção. Abra qualquer linha para rever os mesmos valores de Enviada, Calculada, Diferença e Status, além do critério e da composição contábil quando existir.
               </CardDescription>
             </div>
-            <Badge variant="outline">{resumoDreDetalhada.linhasComDiferenca} linhas com diferença</Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline">{resumoDreDetalhada.linhasComDiferenca} linhas com diferença</Badge>
+              <Button variant="outline" size="sm" onClick={alternarTodaDre}>
+                {todaDreAberta ? "Recolher todas" : "Expandir todas"}
+              </Button>
+            </div>
           </div>
         </CardHeader>
 
         <CardContent className="overflow-x-auto">
           <table className="w-full min-w-[1180px] text-sm">
-            <thead>
-              <tr className="border-b bg-muted/50 text-left text-xs">
+            <thead className="sticky top-0 z-10">
+              <tr className="border-b bg-muted text-left text-xs shadow-sm">
                 <th className="p-2">Linha da DRE</th>
                 <th className="p-2 text-right">DRE Enviada</th>
                 <th className="p-2 text-right">DRE Calculada (Balancete)</th>
                 <th className="p-2 text-right">Diferença</th>
-                <th className="p-2 text-center">Análise</th>
+                <th className="p-2 text-center">Status</th>
               </tr>
             </thead>
             <tbody>
               {comparacaoDreDetalhada.map((linha) => {
                 const aberta = abertas.has(linha.id);
-                const podeAbrir = linha.composicao.length > 0;
                 const ok = Math.abs(linha.diferenca) <= tolerancia;
                 const diagnostico = linha.tipo === "diagnostico";
                 const classe = linha.tipo === "resultado"
@@ -165,12 +182,13 @@ function DrePage() {
                     <td className="p-2" style={{ paddingLeft: 8 + linha.nivel * 22 }}>
                       <button
                         type="button"
-                        className={`inline-flex items-center gap-1.5 text-left ${podeAbrir ? "cursor-pointer hover:text-primary" : "cursor-default"}`}
-                        onClick={() => podeAbrir && alternar(linha.id)}
+                        aria-expanded={aberta}
+                        className="inline-flex cursor-pointer items-center gap-1.5 text-left hover:text-primary"
+                        onClick={() => alternar(linha.id)}
                       >
-                        {podeAbrir ? (aberta ? <ChevronDown className="size-4 shrink-0" /> : <ChevronRight className="size-4 shrink-0" />) : <span className="inline-block w-4" />}
+                        {aberta ? <ChevronDown className="size-4 shrink-0" /> : <ChevronRight className="size-4 shrink-0" />}
                         <span>{linha.descricao}</span>
-                        {diagnostico ? <Badge variant="outline" className="ml-2 border-amber-400 text-[10px] text-amber-800">Sem linha na enviada</Badge> : null}
+                        {diagnostico ? <Badge variant="outline" className="ml-2 border-amber-400 text-[10px] text-amber-800">Diagnóstico</Badge> : null}
                       </button>
                     </td>
                     <Money value={linha.enviado} />
@@ -182,13 +200,21 @@ function DrePage() {
                         : <span className="inline-flex items-center gap-1 text-amber-700"><CircleAlert className="size-4" />Investigar</span>}
                     </td>
                   </tr>,
-                  podeAbrir && aberta ? (
+                  aberta ? (
                     <tr key={`${linha.id}-detalhe`} className="border-b bg-slate-50/70">
                       <td colSpan={5} className="p-3 pl-8">
                         <DetalheComparacao enviada={linha.enviado} calculada={linha.calculado} diferenca={linha.diferenca} />
                         <p className="mb-2 mt-3 text-xs text-muted-foreground"><span className="font-medium text-foreground">Critério:</span> {linha.criterio}</p>
-                        <p className="mb-2 text-xs font-medium text-foreground">Composição da DRE Calculada pelo Razão/Balancete</p>
-                        <TabelaComposicao contas={linha.composicao} />
+                        {linha.composicao.length > 0 ? (
+                          <>
+                            <p className="mb-2 text-xs font-medium text-foreground">Composição da DRE Calculada pelo Razão/Balancete</p>
+                            <TabelaComposicao contas={linha.composicao} />
+                          </>
+                        ) : (
+                          <div className="rounded-md border border-dashed bg-background p-3 text-xs text-muted-foreground">
+                            Esta linha não possui composição contábil no Razão de junho. O comparativo acima continua válido e o critério informa por que o valor calculado está zerado ou é derivado de subtotal/resultado.
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ) : null,
@@ -205,7 +231,7 @@ function DrePage() {
 function DetalheComparacao({ enviada, calculada, diferenca }: { enviada: number; calculada: number; diferenca: number }) {
   const ok = Math.abs(diferenca) <= tolerancia;
   return (
-    <div className="grid gap-2 sm:grid-cols-3">
+    <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
       <div className="rounded-md border bg-background p-3">
         <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">DRE Enviada</p>
         <p className="mt-1 text-base font-semibold tabular-nums">{brl.format(enviada)}</p>
@@ -217,6 +243,13 @@ function DetalheComparacao({ enviada, calculada, diferenca }: { enviada: number;
       <div className={`rounded-md border p-3 ${ok ? "bg-emerald-50" : "border-amber-300 bg-amber-50"}`}>
         <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Diferença</p>
         <p className={`mt-1 text-base font-semibold tabular-nums ${ok ? "text-emerald-700" : "text-amber-700"}`}>{brl.format(diferenca)}</p>
+      </div>
+      <div className={`rounded-md border p-3 ${ok ? "border-emerald-300 bg-emerald-50" : "border-amber-300 bg-amber-50"}`}>
+        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Status</p>
+        <p className={`mt-1 inline-flex items-center gap-1 text-sm font-semibold ${ok ? "text-emerald-700" : "text-amber-700"}`}>
+          {ok ? <CheckCircle2 className="size-4" /> : <CircleAlert className="size-4" />}
+          {ok ? "Confere" : "Investigar"}
+        </p>
       </div>
     </div>
   );
