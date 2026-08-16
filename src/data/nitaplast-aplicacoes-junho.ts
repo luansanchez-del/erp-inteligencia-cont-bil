@@ -30,6 +30,19 @@ const nomeConta = (codigo: string) => `${codigo} - ${descricaoPorConta.get(codig
  * - saldo líquido da aplicação em 30/06: 4.965,16
  * - saldo da conta corrente após separar aplicação/resgate: 1,00
  *
+ * Greencred (conta 25110):
+ * - saldo contábil em 31/05: 1.608.508,04
+ * - aplicação em junho: 400.000,00
+ * - posição bruta em 30/06: 2.039.048,38
+ * - rendimento bruto de junho: 30.540,34
+ * - rendimento já capturado no movimento financeiro: 14.119,24
+ * - complemento de rendimento: 16.421,10
+ * - posição líquida informativa em 30/06: 2.002.659,72
+ *
+ * A posição líquida Greencred contém IOF/IR projetados na liquidação. Como não houve
+ * resgate em junho, a contabilidade segue o critério do razão de maio e reconhece a
+ * posição bruta / rendimento bruto, sem antecipar retenções ainda não realizadas.
+ *
  * Não há lançamento de ajuste para bater saldo. Os lançamentos abaixo reproduzem
  * aplicações, resgates, rendimentos e retenções identificados nos extratos.
  */
@@ -255,5 +268,25 @@ export const ajustesAplicacoesJunho: LancamentoIntegrado[] = [
     observacao: "IRRF líquido do período obtido pela conciliação entre posição inicial, resgates e posição final do extrato.",
     rastreio: "derivado",
     fonte: "Nita Bradesco energia.pdf - posição inicial, resgates e posição final",
+  },
+
+  // Greencred - complemento do rendimento bruto de junho seguindo o critério contábil de maio.
+  {
+    id: "APL-GREEN-REND-001",
+    data: "30/06/2026",
+    origem: "POSIÇÃO GREENCRED 30/06/2026",
+    debitoCodigo: "25110",
+    debito: nomeConta("25110"),
+    creditoCodigo: "25098",
+    credito: nomeConta("25098"),
+    historico: "Complemento do rendimento bruto Greencred - junho/2026",
+    documento: "GREENCRED 30/06/2026",
+    cc: "902",
+    centroCusto: "DESPESAS FINANCEIRAS",
+    valor: 16421.10,
+    status: "validado",
+    observacao: "Posição bruta em 30/06 de R$ 2.039.048,38 (R$ 2.400.000,00 aplicados + R$ 183.701,22 de juros/correção - R$ 544.652,84 já resgatados). Partindo do saldo contábil de 31/05 de R$ 1.608.508,04 e da aplicação de R$ 400.000,00 em junho, o rendimento bruto do mês é R$ 30.540,34. O movimento financeiro já capturou R$ 14.119,24; este lançamento reconhece apenas o complemento de R$ 16.421,10, seguindo o critério do razão de maio.",
+    rastreio: "documento",
+    fonte: "Green Junho.pdf + Razão por Centro de Custos 05/2026, conta 67611/25110",
   },
 ];
