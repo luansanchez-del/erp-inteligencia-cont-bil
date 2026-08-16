@@ -26,6 +26,14 @@ function creditoAtual(base: LancamentoIntegrado[], origem: string) {
   }, 0));
 }
 
+function movimentoConta(base: LancamentoIntegrado[], codigo: string) {
+  return arred(base.reduce((total, linha) => {
+    if (linha.debitoCodigo === codigo) total += linha.valor;
+    if (linha.creditoCodigo === codigo) total -= linha.valor;
+    return total;
+  }, 0));
+}
+
 function reclassificacao(params: {
   id: string;
   origem: "APURAÇÃO PIS 06/2026" | "APURAÇÃO COFINS 06/2026";
@@ -73,9 +81,10 @@ function reclassificacao(params: {
  * - PIS sobre custos/despesas = R$ 12.298,30;
  * - COFINS sobre custos/despesas = R$ 56.646,70.
  *
- * A contrapartida é a conta-ponte de compras de MP (3093), cuja posição é
- * posteriormente absorvida pelo fechamento físico de estoque/CPV. Não há criação
- * de crédito fiscal nem alteração do saldo consolidado da apuração.
+ * Ao deslocar crédito antes alocado à matéria-prima, a conta-ponte 3093 recebe um
+ * débito. Como a apropriação periódica original já tinha zerado a 3093, o saldo
+ * remanescente desta reclassificação é encerrado contra CPV Matriz antes do
+ * fechamento físico/final. A reconciliação final do CPV preserva o alvo validado.
  */
 export function aplicarFechamentoCreditosFederaisJunho(base: LancamentoIntegrado[]): LancamentoIntegrado[] {
   const pisAntes = creditoAtual(base, "APURAÇÃO PIS 06/2026");
@@ -100,12 +109,38 @@ export function aplicarFechamentoCreditosFederaisJunho(base: LancamentoIntegrado
     }),
   ].filter((linha): linha is LancamentoIntegrado => Boolean(linha));
 
-  const resultado = [...base, ...ajustes];
+  const resultado: LancamentoIntegrado[] = [...base, ...ajustes];
+
+  const saldo3093 = movimentoConta(resultado, "3093");
+  if (Math.abs(saldo3093) >= 0.005) {
+    const saldoDevedor = saldo3093 > 0;
+    resultado.push({
+      id: "PIS-COFINS-FECH-3093-062026",
+      data: "30/06/2026",
+      origem: "FECHAMENTO CPV 06/2026",
+      debitoCodigo: saldoDevedor ? "25944" : "3093",
+      debito: saldoDevedor ? "25944 - Custos de produtos vendidos" : "3093 - Compras de Matérias-Primas a Prazo",
+      creditoCodigo: saldoDevedor ? "3093" : "25944",
+      credito: saldoDevedor ? "3093 - Compras de Matérias-Primas a Prazo" : "25944 - Custos de produtos vendidos",
+      historico: "Encerramento da conta-ponte 3093 após reclassificação PIS/COFINS entre compras e despesas",
+      documento: "FECHAMENTO 3093 06/2026",
+      cc: "102",
+      centroCusto: "PRODUÇÃO",
+      valor: Math.abs(saldo3093),
+      status: "validado",
+      observacao: `Saldo da 3093 após a reclassificação federal: R$ ${saldo3093.toFixed(2)}. Encerrado contra CPV pelo mecanismo periódico do fechamento. A reconciliação final do CPV ocorre depois e mantém o valor final validado da DRE.`,
+      rastreio: "derivado",
+      fonte: "Fechamento periódico CPV 06/2026 + reclassificação PIS/COFINS sobre despesas",
+    });
+  }
+
   const pisDepois = creditoAtual(resultado, "APURAÇÃO PIS 06/2026");
   const cofinsDepois = creditoAtual(resultado, "APURAÇÃO COFINS 06/2026");
+  const saldo3093Depois = movimentoConta(resultado, "3093");
 
   if (Math.abs(pisDepois - ALVO_PIS_DESPESAS) > 0.01) throw new Error(`Crédito PIS despesas não conciliou: ${pisDepois.toFixed(2)}`);
   if (Math.abs(cofinsDepois - ALVO_COFINS_DESPESAS) > 0.01) throw new Error(`Crédito COFINS despesas não conciliou: ${cofinsDepois.toFixed(2)}`);
+  if (Math.abs(saldo3093Depois) > 0.01) throw new Error(`Conta 3093 não encerrou após reclassificação federal: ${saldo3093Depois.toFixed(2)}`);
 
   return resultado;
 }
