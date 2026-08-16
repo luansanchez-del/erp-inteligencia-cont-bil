@@ -36,14 +36,16 @@ function lancamento(params: {
 
 // Receita externa da filial conforme os arquivos fiscais de saídas:
 // CFOP 5102 = 290.427,01; 5123 = 15.294,75; 6102 = 44.451,32; total = 350.173,08.
+// Para apresentação gerencial e contábil do fechamento de 06/2026, o total da filial
+// foi reclassificado para Receita Venda Produção Filial, conforme a DRE enviada pelo cliente.
 const receitaFilial = lancamento({
-  id: "FIL-DOC-REV-001",
+  id: "FIL-DOC-PROD-001",
   debitoCodigo: "25111",
-  creditoCodigo: "2655",
+  creditoCodigo: "2606",
   valor: 350173.08,
-  historico: "Receita de venda de mercadorias/revenda da filial - junho/2026",
-  fonte: "SAIDAS FILIAL(2).xlsx + RESUMO NOTAS FISCAIS SAIDA(2).pdf",
-  observacao: "Receita reconhecida diretamente pela natureza fiscal das saídas da filial, sem reclassificação técnica posterior.",
+  historico: "Receita Venda Produção Filial - junho/2026",
+  fonte: "SAIDAS FILIAL(2).xlsx + RESUMO NOTAS FISCAIS SAIDA(2).pdf + DRE JUN 26",
+  observacao: "Reclassificação solicitada no fechamento de 06/2026: R$ 350.173,08 apresentados em Receita Venda Produção Filial, zerando Receita Revenda Filial. A alteração é feita na origem para refletir igualmente no Razão, Balancete e DRE.",
 });
 
 // Compras externas da filial. O Razão de maio mantinha as compras de mercadorias para revenda
