@@ -4,6 +4,7 @@ import { lancamentosFiscaisJunho } from "./nitaplast-lancamentos-fiscais-junho";
 import { recorrenciasJunho } from "./nitaplast-recorrencias-junho";
 import { ajustesFilialJunho } from "./nitaplast-filial-junho";
 import { ajustesAplicacoesJunho } from "./nitaplast-aplicacoes-junho";
+import { entradasCcReconciliadasJunho } from "./nitaplast-entradas-cc-reconciliadas-junho";
 
 export type LancamentoIntegrado = {
   id: string;
@@ -174,18 +175,24 @@ const folha: LancamentoIntegrado[] = [
   { id: "FOL-FGTS-RCT", data: "30/06/2026", origem: "FOLHA MENSAL 06/2026", debitoCodigo: "25941", debito: nomeConta("25941"), creditoCodigo: "4885", credito: nomeConta("4885"), historico: "FGTS rescisório de junho", documento: "FGTS RCT 06/2026", cc: "304", centroCusto: cdc("304"), valor: 141.98, status: "validado", observacao: "Funcionária desligada alocada no CC 304 conforme folha anterior.", rastreio: "documento", fonte: "Guia de FGTS rescisório 06/2026" },
 ];
 
-// O lote fiscal legado continha linhas FIL-* criadas a partir da DRE de controle e,
-// depois, lançamentos de reversão para neutralizar duplicidades. Isso não é fato contábil.
-// A filial entra no razão somente pelos lançamentos documentados em ajustesFilialJunho.
-const lancamentosFiscaisSemFilialLegada = lancamentosFiscaisJunho.filter((linha) => !linha.id.startsWith("FIL-"));
+// Linhas FIL-* antigas vieram da DRE de controle, não de fatos contábeis. ENT-LOTE foi substituído
+// pelo relatório detalhado do sistema do cliente reconciliado por centro de custo.
+const lancamentosFiscaisSemLegados = lancamentosFiscaisJunho.filter(
+  (linha) => !linha.id.startsWith("FIL-") && !linha.id.startsWith("ENT-LOTE"),
+);
+
+// Amortização de maio não foi autorizada como recorrência de junho. Permanecem somente as recorrências
+// documentadas; JCP e depreciação ficam em pontuais, conforme regra expressamente definida para o fechamento.
+const recorrenciasSemAmortizacaoNaoAutorizada = recorrenciasJunho.filter((linha) => !linha.id.startsWith("REC-AMORT-"));
 
 export const lancamentosIntegrados: LancamentoIntegrado[] = [
   ...bancarios,
   ...ajustesAplicacoesJunho,
   ...folha,
   ...pontuais,
-  ...recorrenciasJunho,
-  ...lancamentosFiscaisSemFilialLegada,
+  ...recorrenciasSemAmortizacaoNaoAutorizada,
+  ...lancamentosFiscaisSemLegados,
+  ...entradasCcReconciliadasJunho,
   ...ajustesFilialJunho,
 ];
 export const totalDebitosIntegrados = lancamentosIntegrados.reduce((total, linha) => total + linha.valor, 0);
