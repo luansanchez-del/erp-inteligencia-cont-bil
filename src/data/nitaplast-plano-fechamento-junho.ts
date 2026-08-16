@@ -1,33 +1,64 @@
 import { estruturaBalanceteNitaplast } from "./nitaplast-balancete-estrutura";
 import { saldosImplantacao } from "./nitaplast-implantacao";
 
+type ContaFechamento = {
+  conta: string;
+  classificacao: string;
+  descricao: string;
+  nivel: number;
+  natureza: "D" | "C";
+  grupo: "Ativo" | "Passivo e patrimônio líquido" | "Receitas acumuladas" | "Custos e despesas acumulados" | "Contas compensatórias";
+};
+
+const contasFechamento: ContaFechamento[] = [
+  {
+    conta: "25020",
+    classificacao: "2.1.07.005.009",
+    descricao: "Provisões para Custos",
+    nivel: 5,
+    natureza: "C",
+    grupo: "Passivo e patrimônio líquido",
+  },
+  {
+    conta: "4760",
+    classificacao: "5.9.01.003.002",
+    descricao: "Custo Vendas do Ativo Imobilizado",
+    nivel: 5,
+    natureza: "D",
+    grupo: "Custos e despesas acumulados",
+  },
+];
+
 /**
- * A conta 25020 existe no plano oficial da Nitaplast, porém não veio na estrutura
- * reduzida originalmente montada para a tela do Balancete. O fechamento da folha
- * utiliza esta conta como provisão/ponte para obrigações ainda sem abertura analítica.
+ * Algumas contas oficiais do plano da Nitaplast não vieram na estrutura reduzida
+ * originalmente montada para as telas. O fechamento de junho precisa delas no
+ * Razão/Balancete/DRE:
+ * - 25020: provisão/ponte dos ajustes de fechamento;
+ * - 4760: custo/valor contábil na baixa do ativo imobilizado vendido.
  *
- * Como os arrays de plano já são a fonte compartilhada das telas, incluímos a conta
- * uma única vez antes de Razão/Balancete/DRE consumirem os lançamentos integrados.
+ * Incluímos somente se a conta ainda não existir, preservando o plano oficial.
  */
 export function garantirPlanoFechamentoJunho() {
-  if (!estruturaBalanceteNitaplast.some((linha) => linha.conta === "25020")) {
-    estruturaBalanceteNitaplast.push({
-      conta: "25020",
-      tipo: "A",
-      classificacao: "2.1.07.005.009",
-      descricao: "Provisões para Custos",
-      nivel: 5,
-    });
-  }
+  for (const conta of contasFechamento) {
+    if (!estruturaBalanceteNitaplast.some((linha) => linha.conta === conta.conta)) {
+      estruturaBalanceteNitaplast.push({
+        conta: conta.conta,
+        tipo: "A",
+        classificacao: conta.classificacao,
+        descricao: conta.descricao,
+        nivel: conta.nivel,
+      });
+    }
 
-  if (!saldosImplantacao.some((linha) => linha.conta === "25020")) {
-    saldosImplantacao.push({
-      conta: "25020",
-      classificacao: "2.1.07.005.009",
-      descricao: "Provisões para Custos",
-      saldo: 0,
-      natureza: "C",
-      grupo: "Passivo e patrimônio líquido",
-    });
+    if (!saldosImplantacao.some((linha) => linha.conta === conta.conta)) {
+      saldosImplantacao.push({
+        conta: conta.conta,
+        classificacao: conta.classificacao,
+        descricao: conta.descricao,
+        saldo: 0,
+        natureza: conta.natureza,
+        grupo: conta.grupo,
+      });
+    }
   }
 }
