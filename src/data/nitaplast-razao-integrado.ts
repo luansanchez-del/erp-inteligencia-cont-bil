@@ -61,13 +61,20 @@ const lancamentosBaseSaneados = lancamentosBase.filter((linha) => {
   return icmsAntigoValido && naoEhCartaoDuplicado && naoEhDepreciacaoProvisoria;
 });
 
+// Duas reclassificações antigas do CPV Matriz dependiam diretamente dos créditos
+// da apuração de ICMS invalidada. Elas também saem da base oficial. Os demais fatos
+// de estoque/transferência permanecem e o CPV final é reconciliado depois.
+const fechamentoCpvSemIcmsMatrizObsoleto = fechamentoCpvJunho.filter(
+  (linha) => !["CPV-ICMS-M-OUT", "CPV-ICMS-M-IN"].includes(linha.id),
+);
+
 // A função remove a montagem FOL-* anterior e substitui por uma apropriação que
 // fecha em R$ 72.685,80 conforme o relatório real de junho, inclusive CC 502.
 const baseComFolhaOficial = aplicarFechamentoFolhaJunho(lancamentosBaseSaneados);
 
 const baseComFechamentoFinanceiro = aplicarFechamentoFinanceiroJunho([
   ...baseComFolhaOficial,
-  ...fechamentoCpvJunho,
+  ...fechamentoCpvSemIcmsMatrizObsoleto,
   ajusteEstoqueResultadoJunho,
 ]);
 
