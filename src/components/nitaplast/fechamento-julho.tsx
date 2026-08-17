@@ -1,4 +1,4 @@
-import { AlertTriangle, Boxes, CheckCircle2, FileCheck2, ReceiptText, Scale } from "lucide-react";
+import { AlertTriangle, Boxes, FileCheck2, ReceiptText, Scale } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -10,7 +10,6 @@ import {
   fontesFechamentoJulho,
   itensManuaisJulho,
   receitaFiscalJulho,
-  validacoesJulho,
 } from "@/data/nitaplast-fechamento-julho";
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -68,7 +67,7 @@ export function FechamentoNitaplastJulho() {
         <CardContent className="grid gap-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{fontesValidadas} de {fontesFechamentoJulho.length} fontes totalmente validadas</span>
-            <span>Itens em revisão permanecem rastreados</span>
+            <span>Relatórios de validação fiscal não entram no fechamento contábil</span>
           </div>
           <Progress value={cobertura} />
           <div className="grid gap-2 md:grid-cols-2">
@@ -145,16 +144,16 @@ export function FechamentoNitaplastJulho() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base"><AlertTriangle className="size-4" /> Validações que não podem ser escondidas</CardTitle>
-            <CardDescription>Erros fiscais ficam como achados; não são convertidos em ajuste contábil automático.</CardDescription>
+            <CardTitle className="flex items-center gap-2 text-base"><Scale className="size-4" /> Apuração PIS / COFINS</CardTitle>
+            <CardDescription>Valores da apuração tributária recebida; sem usar relatórios de validação fiscal.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2 text-sm">
-            <div className="flex items-center justify-between rounded-md border p-3"><span>EFD Fiscal — Matriz</span><span className="font-mono">{validacoesJulho.efdFiscalMatriz.erros} erros</span></div>
-            <div className="flex items-center justify-between rounded-md border p-3"><span>EFD Fiscal — Filial SP</span><span className="inline-flex items-center gap-1 text-emerald-700"><CheckCircle2 className="size-4" /> sem erros</span></div>
-            <div className="flex items-center justify-between rounded-md border p-3"><span>EFD-Contribuições</span><span className="font-mono">{validacoesJulho.efdContribuicoes.erros} erros / {validacoesJulho.efdContribuicoes.avisos} avisos</span></div>
-            <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
-              PIS a recolher antes de retenções: {brl.format(fiscalJulho.contribuicoes.pisRecolherAntesDeRetencoes)} • COFINS: {brl.format(fiscalJulho.contribuicoes.cofinsRecolherAntesDeRetencoes)}.
-            </div>
+            <div className="flex justify-between border-b py-2"><span>PIS — débito sobre saídas</span><span className="tabular-nums">{brl.format(fiscalJulho.contribuicoes.pisDebitoSaidas)}</span></div>
+            <div className="flex justify-between border-b py-2"><span>PIS — crédito sobre entradas</span><span className="tabular-nums">{brl.format(fiscalJulho.contribuicoes.pisCreditoEntradas)}</span></div>
+            <div className="flex justify-between border-b py-2 font-medium"><span>PIS devedor antes de retenções</span><span className="tabular-nums">{brl.format(fiscalJulho.contribuicoes.pisRecolherAntesDeRetencoes)}</span></div>
+            <div className="flex justify-between border-b py-2"><span>COFINS — débito sobre saídas</span><span className="tabular-nums">{brl.format(fiscalJulho.contribuicoes.cofinsDebitoSaidas)}</span></div>
+            <div className="flex justify-between border-b py-2"><span>COFINS — crédito sobre entradas</span><span className="tabular-nums">{brl.format(fiscalJulho.contribuicoes.cofinsCreditoEntradas)}</span></div>
+            <div className="flex justify-between py-2 font-medium"><span>COFINS devedor antes de retenções</span><span className="tabular-nums">{brl.format(fiscalJulho.contribuicoes.cofinsRecolherAntesDeRetencoes)}</span></div>
           </CardContent>
         </Card>
       </div>
@@ -165,7 +164,7 @@ export function FechamentoNitaplastJulho() {
           <div>
             <p className="text-sm font-medium">Regra de julho</p>
             <p className="text-xs text-muted-foreground">
-              JCP, depreciação, juros ativos/passivos, variação cambial e demais itens do resultado financeiro ficam fora do fechamento automático. Abertura ou visão gerencial também não gera débito/crédito no Razão. Julho só avança com fatos contábeis suportados pelos documentos recebidos.
+              JCP, depreciação, juros ativos/passivos, variação cambial e demais itens do resultado financeiro ficam fora do fechamento automático. Relatórios de validação do fiscal também ficam fora: só analisamos TXT/SPED quando o arquivo TXT real for fornecido. Julho avança com fatos contábeis suportados pelos documentos recebidos.
             </p>
           </div>
         </CardContent>
