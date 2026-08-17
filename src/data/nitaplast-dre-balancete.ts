@@ -60,7 +60,7 @@ export function classificarGrupoDre(classificacao: string, descricao: string): G
   if (classificacao.startsWith("4.1.03.005")) return "deducoes";
 
   // CUSTOS: CPV/CMV e demais contas de custo. Contas 5.3 são despesas
-  // operacionais na estrutura da Nitaplast e não podem reduzir o Lucro Bruto.
+  // operacionais na estrutura gerencial da Nitaplast e não reduzem o Lucro Bruto.
   if (classificacao.startsWith("4.2.") || classificacao.startsWith("5.1.")) return "custos";
 
   if (classificacao.startsWith("4.1.05") || classificacao.startsWith("5.7.12")) return "receitas-financeiras";
@@ -79,9 +79,15 @@ export function classificarGrupoDre(classificacao: string, descricao: string): G
 }
 
 /**
- * Motor da DRE Oficial.
+ * Motor da DRE Oficial/Report.
  * Recebe exatamente o conjunto de partidas que alimenta o Balancete no momento.
  * Não consulta a DRE enviada e não usa valores-alvo para formar o resultado.
+ *
+ * Regra contábil das deduções:
+ * - devoluções/descontos: movimento líquido da própria conta;
+ * - impostos incidentes sobre vendas (4.1.03.005): débito BRUTO das saídas;
+ * - créditos fiscais de aquisição/reversões permanecem no Razão/Balancete e não
+ *   diminuem a linha de imposto sobre vendas da DRE.
  */
 export function calcularDreBalancete(lancamentos: LancamentoIntegrado[]): ApuracaoDreBalancete {
   const movimento = new Map<string, { debitos: number; creditos: number }>();
@@ -133,9 +139,18 @@ export function calcularDreBalancete(lancamentos: LancamentoIntegrado[]): Apurac
     contasPorGrupo[grupo].reduce((total, conta) => total + conta.resultado, 0),
   );
 
+  // Para impostos sobre vendas usamos o débito bruto do Balancete, não o saldo
+  // líquido da conta. Para devoluções/descontos mantemos o movimento líquido.
+  const deducoes = arred(contasPorGrupo.deducoes.reduce((total, conta) => {
+    if (conta.classificacao.startsWith("4.1.03.005")) {
+      return total + conta.debitos;
+    }
+    return total + conta.debitos - conta.creditos;
+  }, 0));
+
   const resumo = {
     receitaBruta: somaResultado("receita"),
-    deducoes: -somaResultado("deducoes"),
+    deducoes,
     custos: -somaResultado("custos"),
     despesasOperacionais: -somaResultado("despesas-operacionais"),
     receitasFinanceiras: somaResultado("receitas-financeiras"),
