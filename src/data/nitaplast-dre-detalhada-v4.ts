@@ -9,6 +9,7 @@ import {
   type ComposicaoDre,
   type LinhaComparacaoDre,
 } from "./nitaplast-dre-detalhada-v3";
+import { lancamentosIntegrados } from "./nitaplast-razao-integrado";
 
 export type { ComposicaoDre, LinhaComparacaoDre } from "./nitaplast-dre-detalhada-v3";
 export {
@@ -28,13 +29,12 @@ const arred = (valor: number) => Math.round(valor * 100) / 100;
  * - o lado CALCULADO nasce do Razão/Balancete;
  * - impostos incidentes sobre vendas são apresentados pelo DÉBITO BRUTO;
  * - créditos/reversões permanecem no Razão/Balancete, sem reduzir essa linha;
- * - a apuração federal documentada possui um único débito consolidado de
- *   PIS R$ 47.548,49 e COFINS R$ 219.011,34;
- * - portanto PIS/COFINS "Filial" da DRE manual ficam como diferença de
- *   validação enquanto não existir um segundo débito fiscal/documental.
+ * - PIS/COFINS Matriz são R$ 47.548,49 e R$ 219.011,34;
+ * - PIS/COFINS Filial são fatos contábeis reais no Razão, CC 502:
+ *   FIL-DEB-PIS-SAI = R$ 4.361,70 e FIL-DEB-COF-SAI = R$ 20.090,42.
  *
- * A DRE enviada é somente REFERÊNCIA. Nenhum valor dela é usado para montar
- * o valor calculado.
+ * Portanto a parcela da filial compõe a DRE CALCULADA e deve conferir com a
+ * DRE enviada. Não existe mais ajuste visual de "diferença explicada".
  */
 const idsDeducoes = [
   "dev", "desc", "ipi-m", "icms-m", "pis-m", "cofins-m",
@@ -42,6 +42,7 @@ const idsDeducoes = [
 ];
 
 const basePorId = new Map(comparacaoBase.map((linha) => [linha.id, linha]));
+const lancamentoPorId = new Map(lancamentosIntegrados.map((linha) => [linha.id, linha]));
 
 function somaDebitos(composicao: ComposicaoDre[]) {
   return arred(composicao.reduce((total, item) => total + item.debitos, 0));
@@ -58,7 +59,7 @@ function composicaoDebitoBruto(composicao: ComposicaoDre[], observacao: string):
     .filter((item) => Math.abs(item.debitos) >= 0.005);
 }
 
-function composicaoFederalConsolidada(
+function composicaoFederalMatriz(
   composicao: ComposicaoDre[],
   valor: number,
   tributo: "PIS" | "COFINS",
@@ -70,17 +71,43 @@ function composicaoFederalConsolidada(
         debitos: arred(valor),
         creditos: 0,
         valorLinha: arred(valor),
-        cc: "0",
-        centroCusto: "APURAÇÃO FEDERAL CONSOLIDADA",
-        observacao: `${tributo}: débito por saídas da apuração federal documentada. Não existe segundo débito fiscal da filial no Razão.`,
+        cc: "201",
+        centroCusto: "VENDAS",
+        observacao: `${tributo} Matriz: débito fiscal das saídas contabilizado no Razão de 06/2026.`,
       }
     : {
         ...item,
         debitos: 0,
         creditos: 0,
         valorLinha: 0,
-        observacao: `${tributo}: composição gerencial não gera segundo débito contábil.`,
+        observacao: `${tributo}: composição auxiliar sem efeito adicional no valor calculado.`,
       });
+}
+
+function valorLancamento(id: string) {
+  return arred(lancamentoPorId.get(id)?.valor ?? 0);
+}
+
+function composicaoFederalFilial(
+  lancamentoId: "FIL-DEB-PIS-SAI" | "FIL-DEB-COF-SAI",
+  tributo: "PIS" | "COFINS",
+): ComposicaoDre[] {
+  const lancamento = lancamentoPorId.get(lancamentoId);
+  if (!lancamento) return [];
+  return [{
+    chave: `${lancamento.debitoCodigo}|${lancamento.cc}|${lancamento.id}|debito-saida`,
+    codigo: lancamento.debitoCodigo,
+    classificacao: tributo === "PIS" ? "4.1.03.005.004" : "4.1.03.005.005",
+    descricao: tributo === "PIS" ? "(-) PIS" : "(-) COFINS",
+    cc: lancamento.cc,
+    centroCusto: lancamento.centroCusto,
+    debitos: arred(lancamento.valor),
+    creditos: 0,
+    valorLinha: arred(lancamento.valor),
+    lancamentos: 1,
+    fonte: `${lancamento.origem} · ${lancamento.fonte}`,
+    observacao: `${tributo} Filial: fato contábil real da apuração fiscal, contabilizado no Razão e incluído na DRE calculada.`,
+  }];
 }
 
 function valorCalculado(id: string) {
@@ -90,7 +117,8 @@ function valorCalculado(id: string) {
   if (id === "dev" || id === "desc") return arred(linha.calculado);
   if (id === "pis-m") return arred(controleFiscalFederalJunho.pis.debitoSaidas);
   if (id === "cofins-m") return arred(controleFiscalFederalJunho.cofins.debitoSaidas);
-  if (id === "pis-f" || id === "cofins-f") return 0;
+  if (id === "pis-f") return valorLancamento("FIL-DEB-PIS-SAI");
+  if (id === "cofins-f") return valorLancamento("FIL-DEB-COF-SAI");
 
   return somaDebitos(linha.composicao);
 }
@@ -98,10 +126,10 @@ function valorCalculado(id: string) {
 function criterio(id: string) {
   if (id === "dev") return "Devoluções documentadas do período, apresentadas separadamente dos impostos sobre vendas.";
   if (id === "desc") return "Nenhum desconto concedido identificado no Razão de junho.";
-  if (id === "pis-m") return "PIS calculado pelo débito por saídas da apuração federal documentada: R$ 47.548,49. O valor é consolidado no Razão.";
-  if (id === "cofins-m") return "COFINS calculada pelo débito por saídas da apuração federal documentada: R$ 219.011,34. O valor é consolidado no Razão.";
-  if (id === "pis-f") return "A DRE manual informa PIS Filial, mas não há segundo débito fiscal no Razão/apuração federal. Mantido como diferença de validação, sem criar lançamento artificial.";
-  if (id === "cofins-f") return "A DRE manual informa COFINS Filial, mas não há segundo débito fiscal no Razão/apuração federal. Mantido como diferença de validação, sem criar lançamento artificial.";
+  if (id === "pis-m") return "PIS Matriz calculado pelo débito fiscal das saídas: R$ 47.548,49.";
+  if (id === "cofins-m") return "COFINS Matriz calculada pelo débito fiscal das saídas: R$ 219.011,34.";
+  if (id === "pis-f") return "PIS Filial calculado pelo lançamento real FIL-DEB-PIS-SAI no Razão, CC 502: R$ 4.361,70.";
+  if (id === "cofins-f") return "COFINS Filial calculada pelo lançamento real FIL-DEB-COF-SAI no Razão, CC 502: R$ 20.090,42.";
   return "Imposto incidente sobre as saídas pelo débito bruto do Razão. Créditos/reversões permanecem conciliados no Balancete e não reduzem esta linha da DRE.";
 }
 
@@ -113,11 +141,13 @@ export const comparacaoDreDetalhada: LinhaComparacaoDre[] = comparacaoBase.map((
   let composicao = linha.composicao;
 
   if (linha.id === "pis-m") {
-    composicao = composicaoFederalConsolidada(linha.composicao, calculado, "PIS");
+    composicao = composicaoFederalMatriz(linha.composicao, calculado, "PIS");
   } else if (linha.id === "cofins-m") {
-    composicao = composicaoFederalConsolidada(linha.composicao, calculado, "COFINS");
-  } else if (linha.id === "pis-f" || linha.id === "cofins-f") {
-    composicao = [];
+    composicao = composicaoFederalMatriz(linha.composicao, calculado, "COFINS");
+  } else if (linha.id === "pis-f") {
+    composicao = composicaoFederalFilial("FIL-DEB-PIS-SAI", "PIS");
+  } else if (linha.id === "cofins-f") {
+    composicao = composicaoFederalFilial("FIL-DEB-COF-SAI", "COFINS");
   } else if (linha.id !== "dev" && linha.id !== "desc") {
     composicao = composicaoDebitoBruto(
       linha.composicao,
@@ -140,7 +170,7 @@ const linhaDeducoes = mapa.get("deducoes");
 if (linhaDeducoes) {
   linhaDeducoes.calculado = totalDeducoes;
   linhaDeducoes.diferenca = arred(totalDeducoes - linhaDeducoes.enviado);
-  linhaDeducoes.criterio = "Total calculado exclusivamente pelo Razão/Balancete. A diferença para a DRE enviada corresponde a valores manuais sem segundo débito fiscal contabilizado.";
+  linhaDeducoes.criterio = "Total calculado pelo Razão/Balancete, incluindo os débitos fiscais reais de PIS/COFINS da filial. Deve conferir com a DRE enviada.";
 }
 
 function atualizarResultado(id: string, calculado: number, criterioResultado: string) {
@@ -151,8 +181,6 @@ function atualizarResultado(id: string, calculado: number, criterioResultado: st
   linha.criterio = criterioResultado;
 }
 
-// Qualquer mudança nas deduções precisa percorrer a cadeia inteira da DRE.
-// Nada de manter subtotal antigo depois que a origem Razão/Balancete mudou.
 const receitaCalculada = arred(mapa.get("receita")?.calculado ?? resumoBase.receitaCalculada ?? 0);
 const custosCalculados = arred(mapa.get("custos")?.calculado ?? resumoBase.custosCalculados ?? 0);
 const despesasLiquidasCalculadas = arred(mapa.get("despesas-liquidas")?.calculado ?? resumoBase.despesasLiquidasCalculadas ?? 0);
