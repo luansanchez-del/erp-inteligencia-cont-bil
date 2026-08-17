@@ -1,18 +1,15 @@
-import { useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, Printer } from "lucide-react";
 import { PageHeader, PageShell } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { calcularDreBalancete } from "@/data/nitaplast-dre-balancete";
-import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
+import { comparacaoDreDetalhada } from "@/data/nitaplast-dre-detalhada";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
-import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
 
 export const Route = createFileRoute("/relatorios/dre")({
   head: () => ({
     meta: [
       { title: "DRE Oficial — Nitaplast — ERP Contábil" },
-      { name: "description", content: "Demonstração do Resultado oficial calculada pelo Razão e Balancete." },
+      { name: "description", content: "Demonstração do Resultado oficial calculada a partir do Razão e Balancete." },
     ],
   }),
   component: DreOficialPage,
@@ -20,47 +17,24 @@ export const Route = createFileRoute("/relatorios/dre")({
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const pct = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const arred = (valor: number) => Math.round(valor * 100) / 100;
 
-type TipoLinha = "grupo" | "detalhe" | "subtotal" | "resultado";
-
-type LinhaDre = {
-  descricao: string;
-  valor: number;
-  tipo: TipoLinha;
-};
+const LINHAS_INTERNAS = new Set(["base-ir", "ajuste-jul"]);
 
 function DreOficialPage() {
   useNitaplastJunho();
-  const { aplicar } = useReclassificacoesInteligentes("2026-06");
 
-  // MESMA BASE DO RAZÃO E DO BALANCETE. Qualquer reclassificação registrada no
-  // Razão entra aqui na mesma renderização, sem depender da DRE de Validação.
-  const lancamentosComAjustes = useMemo(() => aplicar(lancamentosIntegrados), [aplicar]);
-  const apuracao = useMemo(() => calcularDreBalancete(lancamentosComAjustes), [lancamentosComAjustes]);
-  const r = apuracao.resumo;
+  // A DRE OFICIAL usa a coluna CALCULADO da mesma estrutura detalhada que valida
+  // o Razão/Balancete. A referência manual/enviada nunca é exibida nem usada como valor.
+  const linhas = comparacaoDreDetalhada.filter((linha) => {
+    if (LINHAS_INTERNAS.has(linha.id)) return false;
+    // Diagnósticos zerados são internos. Se houver valor real sem classificação,
+    // ele permanece visível para não esconder resultado contábil.
+    if (linha.tipo === "diagnostico" && Math.abs(linha.calculado) < 0.005) return false;
+    return true;
+  });
 
-  const receitaLiquida = arred(r.receitaBruta - r.deducoes);
-  const lucroBruto = arred(receitaLiquida - r.custos);
-  const financeiroLiquido = arred(r.despesasFinanceiras - r.receitasFinanceiras);
-  const outrosResultados = arred(r.resultadoNaoOperacional + r.valorSemVinculo);
-
-  const linhas: LinhaDre[] = [
-    { descricao: "Receita Operacional Bruta", valor: r.receitaBruta, tipo: "grupo" },
-    { descricao: "(-) Deduções da Receita Bruta", valor: -r.deducoes, tipo: "detalhe" },
-    { descricao: "Receita Operacional Líquida", valor: receitaLiquida, tipo: "subtotal" },
-    { descricao: "(-) Custos / CPV / CMV", valor: -r.custos, tipo: "detalhe" },
-    { descricao: "Lucro Bruto", valor: lucroBruto, tipo: "subtotal" },
-    { descricao: "(-) Despesas Operacionais", valor: -r.despesasOperacionais, tipo: "detalhe" },
-    { descricao: "(-) Despesas Financeiras", valor: -r.despesasFinanceiras, tipo: "detalhe" },
-    { descricao: "(+) Receitas Financeiras", valor: r.receitasFinanceiras, tipo: "detalhe" },
-    { descricao: "Despesas Financeiras Líquidas", valor: -financeiroLiquido, tipo: "detalhe" },
-    { descricao: "Resultado Operacional", valor: apuracao.resultadoOperacional, tipo: "subtotal" },
-    { descricao: "Resultado Não Operacional", valor: outrosResultados, tipo: "detalhe" },
-    { descricao: "Lucro / Prejuízo Líquido", valor: apuracao.resultadoLiquido, tipo: "resultado" },
-  ];
-
-  const percentual = (valor: number) => r.receitaBruta ? (valor / r.receitaBruta) * 100 : 0;
+  const receitaBruta = linhas.find((linha) => linha.id === "receita")?.calculado ?? 0;
+  const percentual = (valor: number) => receitaBruta ? (valor / receitaBruta) * 100 : 0;
 
   function exportarCsv() {
     const cabecalho = ["DESCRIÇÃO", "VALOR", "% RECEITA"];
@@ -68,8 +42,8 @@ function DreOficialPage() {
       cabecalho,
       ...linhas.map((linha) => [
         linha.descricao,
-        linha.valor.toFixed(2).replace(".", ","),
-        percentual(linha.valor).toFixed(2).replace(".", ","),
+        linha.calculado.toFixed(2).replace(".", ","),
+        percentual(linha.calculado).toFixed(2).replace(".", ","),
       ]),
     ]
       .map((colunas) => colunas.map((valor) => `"${String(valor).replaceAll('"', '""')}"`).join(";"))
@@ -91,7 +65,7 @@ function DreOficialPage() {
       <div className="print:hidden">
         <PageHeader
           titulo="DRE Oficial — Nitaplast"
-          descricao="Competência 06/2026"
+          descricao="Competência 06/2026 · calculada pelo Razão/Balancete"
           acoes={
             <div className="flex gap-2">
               <Button variant="outline" size="sm" className="gap-2" onClick={exportarCsv}>
@@ -122,24 +96,31 @@ function DreOficialPage() {
             </tr>
           </thead>
           <tbody>
-            {linhas.map((linha) => (
-              <tr
-                key={linha.descricao}
-                className={`border-b border-border print:border-neutral-300 ${
-                  linha.tipo === "resultado"
-                    ? "border-t-2 border-t-foreground font-bold print:border-t-black"
-                    : linha.tipo === "subtotal"
-                      ? "font-semibold"
-                      : linha.tipo === "grupo"
+            {linhas.map((linha) => {
+              const destaqueResultado = linha.tipo === "resultado";
+              const destaqueGrupo = linha.tipo === "grupo";
+              const diagnostico = linha.tipo === "diagnostico";
+              const recuo = linha.nivel === 2 ? "pl-12" : linha.nivel === 1 ? "pl-6" : "";
+
+              return (
+                <tr
+                  key={linha.id}
+                  className={`border-b border-border print:border-neutral-300 ${
+                    destaqueResultado
+                      ? "border-t-2 border-t-foreground font-bold print:border-t-black"
+                      : destaqueGrupo
                         ? "font-semibold"
-                        : ""
-                }`}
-              >
-                <td className="py-2.5 pr-3">{linha.descricao}</td>
-                <td className="py-2.5 text-right tabular-nums">{brl.format(linha.valor)}</td>
-                <td className="py-2.5 text-right tabular-nums">{pct.format(percentual(linha.valor))}%</td>
-              </tr>
-            ))}
+                        : diagnostico
+                          ? "italic"
+                          : ""
+                  }`}
+                >
+                  <td className={`py-2 pr-3 ${recuo}`}>{linha.descricao}</td>
+                  <td className="py-2 text-right tabular-nums">{brl.format(linha.calculado)}</td>
+                  <td className="py-2 text-right tabular-nums">{pct.format(percentual(linha.calculado))}%</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </section>
