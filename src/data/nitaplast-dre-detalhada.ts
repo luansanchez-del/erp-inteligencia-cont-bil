@@ -1,1 +1,1 @@
-export * from "./nitaplast-dre-detalhada-v6";
+export * from "./nitaplast-dre-detalhada-v7";
