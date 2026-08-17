@@ -5,6 +5,7 @@ import { corrigirMapeamentosJunho } from "./nitaplast-correcoes-mapeamento-junho
 import { gerarFechamentoEstoqueMatrizJunho } from "./nitaplast-fechamento-estoque-matriz-junho";
 import { aplicarFechamentoImportacoesJunho } from "./nitaplast-fechamento-importacoes-junho";
 import { aplicarFechamentoFinanceiroJunho } from "./nitaplast-fechamento-financeiro-junho";
+import { aplicarJurosAtivosJunho } from "./nitaplast-juros-ativos-junho";
 import { aplicarFechamentoCreditosFederaisJunho } from "./nitaplast-fechamento-creditos-federais-junho";
 import { aplicarFechamentoDespesasJunho } from "./nitaplast-fechamento-despesas-junho";
 import { aplicarFechamentoAlienacaoJunho } from "./nitaplast-fechamento-alienacao-junho";
@@ -99,7 +100,13 @@ const baseDocumentalJunho = [
 // Importação e financeiro nascem no Razão antes do Balancete/DRE.
 const baseComImportacoesFechadas = aplicarFechamentoImportacoesJunho(baseDocumentalJunho);
 const baseComFechamentoFinanceiro = aplicarFechamentoFinanceiroJunho(baseComImportacoesFechadas);
-const baseCorrigida = corrigirMapeamentosJunho(baseComFechamentoFinanceiro);
+
+// Juros Ativos de junho: o banco já contém o total efetivamente recebido.
+// A correção reclassifica somente a parcela de juros de Duplicatas a Receber
+// para Juros Ativos, seguindo o padrão observado no Razão de maio.
+const baseComJurosAtivos = aplicarJurosAtivosJunho(baseComFechamentoFinanceiro);
+
+const baseCorrigida = corrigirMapeamentosJunho(baseComJurosAtivos);
 const baseComCreditosFederaisFechados = aplicarFechamentoCreditosFederaisJunho(baseCorrigida);
 const baseComDespesasFechadas = aplicarFechamentoDespesasJunho(baseComCreditosFederaisFechados);
 const fechamentoEstoqueMatriz = gerarFechamentoEstoqueMatrizJunho(baseComDespesasFechadas);
