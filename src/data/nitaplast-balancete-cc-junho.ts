@@ -22,11 +22,11 @@ export type CentroCustoReportJunho = {codigo:string;descricao:string;grupo:strin
 
 export function grupoCentroCustoNitaplast(cc:string) {
   if(cc==="0") return "Sem centro de custo";
-  if(/^1\d{4}$/.test(cc)||/^2000[1-3]$/.test(cc)) return "Imobilizado";
-  if(/^1\d{2}$/.test(cc)||cc==="19999"||cc==="20000") return "Industrial";
+  if(/^1\d{4}$/.test(cc)||/^2000\d$/.test(cc)) return "Imobilizado";
+  if(/^1\d{2}$/.test(cc)||cc==="541") return "Industrial";
   if(/^2\d{2}$/.test(cc)) return "Comercial";
   if(/^3\d{2}$/.test(cc)) return "Administrativo";
-  if(/^4\d{2}$/.test(cc)||cc==="541") return "Veículos";
+  if(/^4\d{2}$/.test(cc)) return "Veículos";
   if(/^5\d{2}$/.test(cc)) return "Nita SP";
   if(/^6\d{2}$/.test(cc)) return "Barracão";
   if(/^9\d{2}$/.test(cc)) return "Financeiro";
