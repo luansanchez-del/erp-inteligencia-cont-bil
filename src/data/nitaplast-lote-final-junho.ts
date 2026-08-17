@@ -1,5 +1,7 @@
 import { lancamentosIntegrados, type LancamentoIntegrado } from "./nitaplast-razao-integrado";
 import { saldosImplantacao } from "./nitaplast-implantacao";
+import { estruturaBalanceteNitaplast } from "./nitaplast-balancete-estrutura";
+import { classificarGrupoDre } from "./nitaplast-dre-balancete";
 
 export type LinhaLoteContabil = {
   seq: number;
@@ -36,6 +38,9 @@ export type LoteContabilCalculado = {
 };
 
 const plano = new Map(saldosImplantacao.map((conta) => [conta.conta, conta]));
+const contasAnaliticasBalancete = new Set(
+  estruturaBalanceteNitaplast.filter((conta) => conta.tipo === "A").map((conta) => conta.conta),
+);
 const CONTAS_TRANSITORIAS_COM_ALERTA = new Set(["4859"]);
 
 const ehResultado = (codigo: string) => {
@@ -44,23 +49,9 @@ const ehResultado = (codigo: string) => {
 };
 
 function resultadoTemDestinoNaDre(codigo: string) {
-  const c = plano.get(codigo)?.classificacao ?? "";
-  if (!ehResultado(codigo)) return true;
-  return [
-    "4.1.01",
-    "4.1.03.005",
-    "4.2.",
-    "5.1.",
-    "5.3.",
-    "4.1.05",
-    "5.7.12",
-    "5.8.",
-    "5.9.",
-    "5.7.01",
-    "5.7.03",
-    "5.7.05",
-    "5.7.09",
-  ].some((prefixo) => c.startsWith(prefixo));
+  const conta = plano.get(codigo);
+  if (!conta || !ehResultado(codigo)) return true;
+  return classificarGrupoDre(conta.classificacao, conta.descricao) !== "sem-vinculo";
 }
 
 function centroDeCustoDaPartida(linha: LancamentoIntegrado) {
@@ -88,21 +79,34 @@ function normalizarData(data: string) {
  * PENDÊNCIA = impede escrituração/exportação.
  * ALERTA = permite escrituração, mas exige revisão posterior.
  *
- * A conta 4859 existe no plano e pode ser usada como transitória. Portanto,
- * movimentos nela são exportáveis e permanecem sinalizados para saneamento futuro.
+ * REGRA DE INTEGRIDADE DO FECHAMENTO:
+ * - toda conta exportada precisa existir no plano E como analítica no Balancete;
+ * - toda conta de resultado precisa ser reconhecida pelo MESMO classificador da DRE Oficial;
+ * - a 4859 existe no plano/Balancete e permanece exportável como conta transitória;
+ * - status "revisar" e rastreio "sugerido" geram alerta, não bloqueio.
  */
 function validar(linha: LancamentoIntegrado) {
   const pendencias: string[] = [];
   const alertas: string[] = [];
 
-  if (!plano.has(linha.debitoCodigo)) pendencias.push(`Conta débito ${linha.debitoCodigo} não existe no plano implantado`);
-  if (!plano.has(linha.creditoCodigo)) pendencias.push(`Conta crédito ${linha.creditoCodigo} não existe no plano implantado`);
+  const debitoNoPlano = plano.has(linha.debitoCodigo);
+  const creditoNoPlano = plano.has(linha.creditoCodigo);
 
-  if (plano.has(linha.debitoCodigo) && !resultadoTemDestinoNaDre(linha.debitoCodigo)) {
-    pendencias.push(`Conta débito ${linha.debitoCodigo} é de resultado mas ainda não possui destino na DRE`);
+  if (!debitoNoPlano) pendencias.push(`Conta débito ${linha.debitoCodigo} não existe no plano implantado`);
+  if (!creditoNoPlano) pendencias.push(`Conta crédito ${linha.creditoCodigo} não existe no plano implantado`);
+
+  if (debitoNoPlano && !contasAnaliticasBalancete.has(linha.debitoCodigo)) {
+    pendencias.push(`Conta débito ${linha.debitoCodigo} existe no plano, mas não está na estrutura analítica do Balancete`);
   }
-  if (plano.has(linha.creditoCodigo) && !resultadoTemDestinoNaDre(linha.creditoCodigo)) {
-    pendencias.push(`Conta crédito ${linha.creditoCodigo} é de resultado mas ainda não possui destino na DRE`);
+  if (creditoNoPlano && !contasAnaliticasBalancete.has(linha.creditoCodigo)) {
+    pendencias.push(`Conta crédito ${linha.creditoCodigo} existe no plano, mas não está na estrutura analítica do Balancete`);
+  }
+
+  if (debitoNoPlano && ehResultado(linha.debitoCodigo) && !resultadoTemDestinoNaDre(linha.debitoCodigo)) {
+    pendencias.push(`Conta débito ${linha.debitoCodigo} é de resultado mas não possui destino na DRE Oficial`);
+  }
+  if (creditoNoPlano && ehResultado(linha.creditoCodigo) && !resultadoTemDestinoNaDre(linha.creditoCodigo)) {
+    pendencias.push(`Conta crédito ${linha.creditoCodigo} é de resultado mas não possui destino na DRE Oficial`);
   }
 
   if (CONTAS_TRANSITORIAS_COM_ALERTA.has(linha.debitoCodigo)) {
@@ -148,6 +152,8 @@ export function montarLoteContabilJunho(base: LancamentoIntegrado[]): LoteContab
     .sort((a, b) => a.data.localeCompare(b.data) || a.seq - b.seq)
     .map((linha, index) => ({ ...linha, seq: index + 1 }));
 
+  // O lote é 1:1 com o Razão recebido: nenhuma partida é descartada nesta etapa.
+  // Se houver erro estrutural, a própria linha permanece visível como pendente e bloqueia a exportação.
   const prontas = linhas.filter((linha) => linha.status !== "pendente");
   const pendentes = linhas.filter((linha) => linha.status === "pendente");
   const alertas = linhas.filter((linha) => linha.status === "alerta");
