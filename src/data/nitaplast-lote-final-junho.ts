@@ -23,6 +23,25 @@ const ehResultado = (codigo: string) => {
   return classificacao.startsWith("4.") || classificacao.startsWith("5.") || classificacao.startsWith("6.");
 };
 
+function resultadoTemDestinoNaDre(codigo: string) {
+  const c = plano.get(codigo)?.classificacao ?? "";
+  if (!ehResultado(codigo)) return true;
+  return [
+    "4.1.01",       // receita bruta
+    "4.1.03.005",   // deduções
+    "4.2.",         // CPV/CMV
+    "5.1.",         // custos
+    "5.3.",         // custos industriais
+    "4.1.05",       // receitas financeiras históricas
+    "5.7.12",       // receitas financeiras / recuperações
+    "5.8.",         // despesas financeiras
+    "5.9.",         // outros resultados
+    "5.7.01",       // despesas operacionais
+    "5.7.03",       // despesas operacionais
+    "5.7.09",       // despesas operacionais
+  ].some((prefixo) => c.startsWith(prefixo));
+}
+
 function centroDeCustoDaPartida(linha: LancamentoIntegrado) {
   const cc = linha.cc && linha.cc !== "0" ? linha.cc : "";
   if (!cc) return { ccDebito: "", ccCredito: "" };
@@ -56,6 +75,8 @@ function validar(linha: LancamentoIntegrado) {
   const pendencias: string[] = [];
   if (!plano.has(linha.debitoCodigo)) pendencias.push(`Conta débito ${linha.debitoCodigo} não existe no plano implantado`);
   if (!plano.has(linha.creditoCodigo)) pendencias.push(`Conta crédito ${linha.creditoCodigo} não existe no plano implantado`);
+  if (plano.has(linha.debitoCodigo) && !resultadoTemDestinoNaDre(linha.debitoCodigo)) pendencias.push(`Conta débito ${linha.debitoCodigo} é de resultado mas ainda não possui destino na DRE`);
+  if (plano.has(linha.creditoCodigo) && !resultadoTemDestinoNaDre(linha.creditoCodigo)) pendencias.push(`Conta crédito ${linha.creditoCodigo} é de resultado mas ainda não possui destino na DRE`);
   if (!linha.data) pendencias.push("Data não informada");
   if (!linha.historico.trim()) pendencias.push("Histórico não informado");
   if (!(linha.valor > 0)) pendencias.push("Valor inválido");
