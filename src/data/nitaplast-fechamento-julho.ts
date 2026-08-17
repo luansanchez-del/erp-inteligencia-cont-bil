@@ -17,28 +17,33 @@ export const competenciaNitaplastJulho = {
  * Regra de governança mantida de junho:
  * documentos -> normalização -> lançamentos -> Razão -> Balancete -> DRE.
  * Nenhum valor de abertura/controle gerencial gera lançamento no Razão.
+ *
+ * IMPORTANTE:
+ * relatórios/arquivos de VALIDAÇÃO do fiscal NÃO fazem parte da análise contábil.
+ * Só considerar escrituração fiscal digital como fonte quando o arquivo TXT/SPED
+ * efetivamente for fornecido. PDF/relatório de validação é ignorado.
  */
 export const fontesFechamentoJulho = [
   {
     id: "fiscal-matriz",
     nome: "Fiscal — Matriz",
-    detalhe: "EFD Fiscal, entradas, saídas, ICMS, ICMS-ST, IPI, devoluções, CT-e, canceladas e retenções de 07/2026.",
+    detalhe: "Entradas, saídas, ICMS, ICMS-ST, IPI, devoluções, CT-e, canceladas e retenções de 07/2026.",
     status: "em revisão" as StatusFonteJulho,
-    observacao: "A validação EFD Fiscal da matriz contém 5 erros; os relatórios fiscais permanecem como evidência e a divergência deve ficar rastreada.",
+    observacao: "Relatórios de validação fiscal foram desconsiderados. A revisão aqui é somente para formar os lançamentos contábeis pelos documentos fiscais recebidos.",
   },
   {
     id: "fiscal-filial",
     nome: "Fiscal — Filial SP",
-    detalhe: "EFD Fiscal, entradas, saídas, ICMS, IPI, devoluções, CT-e, canceladas e retenções de 07/2026.",
-    status: "validado" as StatusFonteJulho,
-    observacao: "Validação EFD Fiscal da filial sem erros ou advertências.",
+    detalhe: "Entradas, saídas, ICMS, IPI, devoluções, CT-e, canceladas e retenções de 07/2026.",
+    status: "em revisão" as StatusFonteJulho,
+    observacao: "Relatórios de validação fiscal foram desconsiderados. A revisão aqui é somente para formar os lançamentos contábeis pelos documentos fiscais recebidos.",
   },
   {
     id: "contribuicoes",
     nome: "PIS / COFINS",
-    detalhe: "Apurações de PIS e COFINS e EFD-Contribuições de 07/2026.",
-    status: "em revisão" as StatusFonteJulho,
-    observacao: "A EFD-Contribuições possui 1.024 erros, sendo 1.022 ligados ao registro 0500 sem conta analítica. A apuração tributária foi preservada como fonte separada.",
+    detalhe: "Apurações de PIS e COFINS de 07/2026 usadas como fonte tributária para a contabilização.",
+    status: "validado" as StatusFonteJulho,
+    observacao: "Eventuais relatórios de validação da EFD-Contribuições são ignorados. TXT/SPED somente será analisado se o arquivo TXT real for fornecido.",
   },
   {
     id: "estoque",
@@ -175,9 +180,3 @@ export const itensManuaisJulho = [
   { id: "juros-passivo", nome: "Juros passivos", regra: "resultado financeiro manual", entraAgora: false },
   { id: "variacao-cambial", nome: "Variação cambial", regra: "resultado financeiro manual", entraAgora: false },
 ] as const;
-
-export const validacoesJulho = {
-  efdFiscalMatriz: { erros: 5, avisos: 0, status: "em revisão" as const },
-  efdFiscalFilial: { erros: 0, avisos: 0, status: "validado" as const },
-  efdContribuicoes: { erros: 1_024, avisos: 2, status: "em revisão" as const },
-} as const;
