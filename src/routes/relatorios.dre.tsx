@@ -12,6 +12,7 @@ import { calcularCreditosFederaisDespesas } from "@/data/nitaplast-fechamento-cr
 import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
+import { exportarExcel } from "@/lib/exportar-excel";
 
 export const Route = createFileRoute("/relatorios/dre")({
   head: () => ({
@@ -253,6 +254,25 @@ function DreReportPage() {
     URL.revokeObjectURL(url);
   }
 
+  function exportarDreExcel() {
+    exportarExcel({
+      arquivo: "Nitaplast_DRE_Report_062026.xlsx",
+      aba: "DRE",
+      titulo: "NITAPLAST IND E COM DE PLÁSTICOS INDUSTRIAIS LTDA — DEMONSTRAÇÃO DO RESULTADO DO EXERCÍCIO",
+      subtitulo: "Período 01/06/2026 a 30/06/2026 · Razão → Balancete → DRE",
+      colunas: [
+        { cabecalho: "Descrição", largura: 62 },
+        { cabecalho: "Valor", largura: 18, tipo: "numero" },
+        { cabecalho: "% Receita", largura: 14, tipo: "percentual" },
+      ],
+      linhas: linhas.map((linha) => [
+        `${linha.nivel === 1 ? "    " : ""}${linha.descricao}`,
+        linha.valor,
+        percentual(linha.valor) / 100,
+      ]),
+    });
+  }
+
   return (
     <PageShell>
       <div className="print:hidden">
@@ -263,6 +283,9 @@ function DreReportPage() {
             <div className="flex gap-2">
               <Button variant="outline" size="sm" className="gap-2" onClick={exportarCsv}>
                 <Download className="size-4" /> Exportar CSV
+              </Button>
+              <Button variant="outline" size="sm" className="gap-2" onClick={exportarDreExcel}>
+                <Download className="size-4" /> Exportar Excel
               </Button>
               <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}>
                 <Printer className="size-4" /> Imprimir / PDF
