@@ -37,8 +37,9 @@ function resultadoTemDestinoNaDre(codigo: string) {
     "5.8.",         // despesas financeiras
     "5.9.",         // outros resultados
     "5.7.01",       // despesas operacionais
-    "5.7.03",       // despesas operacionais
-    "5.7.09",       // despesas operacionais
+    "5.7.03",       // despesas administrativas/operacionais
+    "5.7.05",       // despesas com veículos
+    "5.7.09",       // despesas tributárias / créditos sobre despesas
   ].some((prefixo) => c.startsWith(prefixo));
 }
 
@@ -49,17 +50,12 @@ function centroDeCustoDaPartida(linha: LancamentoIntegrado) {
   const debitoResultado = ehResultado(linha.debitoCodigo);
   const creditoResultado = ehResultado(linha.creditoCodigo);
 
-  // O centro de custo acompanha a conta de resultado. Isso reproduz o modelo de
-  // importação já usado na Nitaplast: despesa no débito recebe CC; receita no
-  // crédito recebe CC. Reclassificação entre duas contas de resultado mantém o CC
-  // nos dois lados para não perder o rastreio gerencial.
   if (debitoResultado && creditoResultado) return { ccDebito: cc, ccCredito: cc };
   if (debitoResultado) return { ccDebito: cc, ccCredito: "" };
   if (creditoResultado) return { ccDebito: "", ccCredito: cc };
 
   // Partidas exclusivamente patrimoniais não recebem CC automaticamente porque o
-  // modelo atual do Razão ainda possui apenas um campo de centro de custo, e não a
-  // informação de qual lado ele pertence. O lançamento continua exportável sem CC.
+  // Razão atual possui apenas um campo de CC; não é seguro inventar o lado.
   return { ccDebito: "", ccCredito: "" };
 }
 
