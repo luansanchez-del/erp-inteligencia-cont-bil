@@ -92,12 +92,13 @@ function DrePage() {
           enviada={resumoDreDetalhada.resultadoLiquidoEnviado}
           calculada={resumoDreDetalhada.resultadoLiquidoCalculado}
           success={resumoDreDetalhada.resultadoLiquidoCalculado >= 0}
-          alert={Math.abs(resumoDreDetalhada.diferencaResultado) > tolerancia}
+          alert={diferencaResidualResultado > tolerancia}
+          diferencaPendente={diferencaResidualResultado}
         />
         <Metric
-          label="Diferença do resultado"
-          value={resumoDreDetalhada.diferencaResultado}
-          alert={Math.abs(resumoDreDetalhada.diferencaResultado) > tolerancia}
+          label="Diferença residual do resultado"
+          value={diferencaResidualResultado}
+          alert={diferencaResidualResultado > tolerancia}
         />
       </div>
 
