@@ -59,13 +59,17 @@ export function classificarGrupoDre(classificacao: string, descricao: string): G
   if (classificacao.startsWith("4.1.01")) return "receita";
   if (classificacao.startsWith("4.1.03.005")) return "deducoes";
 
-  if (classificacao.startsWith("4.2.") || classificacao.startsWith("5.1.") || classificacao.startsWith("5.3.")) return "custos";
+  // CUSTOS: CPV/CMV e demais contas de custo. Contas 5.3 são despesas
+  // operacionais na estrutura da Nitaplast e não podem reduzir o Lucro Bruto.
+  if (classificacao.startsWith("4.2.") || classificacao.startsWith("5.1.")) return "custos";
+
   if (classificacao.startsWith("4.1.05") || classificacao.startsWith("5.7.12")) return "receitas-financeiras";
   if (classificacao.startsWith("5.8.")) return "despesas-financeiras";
   if (classificacao.startsWith("5.9.")) return "nao-operacional";
 
   if (
-    classificacao.startsWith("5.7.01")
+    classificacao.startsWith("5.3.")
+    || classificacao.startsWith("5.7.01")
     || classificacao.startsWith("5.7.03")
     || classificacao.startsWith("5.7.05")
     || classificacao.startsWith("5.7.09")
