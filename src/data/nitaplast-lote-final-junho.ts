@@ -18,6 +18,8 @@ export type LinhaLoteContabil = {
 };
 
 const plano = new Map(saldosImplantacao.map((conta) => [conta.conta, conta]));
+const CONTAS_TRANSITORIAS_BLOQUEANTES = new Set(["4859"]);
+
 const ehResultado = (codigo: string) => {
   const classificacao = plano.get(codigo)?.classificacao ?? "";
   return classificacao.startsWith("4.") || classificacao.startsWith("5.") || classificacao.startsWith("6.");
@@ -27,19 +29,19 @@ function resultadoTemDestinoNaDre(codigo: string) {
   const c = plano.get(codigo)?.classificacao ?? "";
   if (!ehResultado(codigo)) return true;
   return [
-    "4.1.01",       // receita bruta
-    "4.1.03.005",   // deduções
-    "4.2.",         // CPV/CMV
-    "5.1.",         // custos
-    "5.3.",         // custos industriais
-    "4.1.05",       // receitas financeiras históricas
-    "5.7.12",       // receitas financeiras / recuperações
-    "5.8.",         // despesas financeiras
-    "5.9.",         // outros resultados
-    "5.7.01",       // despesas operacionais
-    "5.7.03",       // despesas administrativas/operacionais
-    "5.7.05",       // despesas com veículos
-    "5.7.09",       // despesas tributárias / créditos sobre despesas
+    "4.1.01",
+    "4.1.03.005",
+    "4.2.",
+    "5.1.",
+    "5.3.",
+    "4.1.05",
+    "5.7.12",
+    "5.8.",
+    "5.9.",
+    "5.7.01",
+    "5.7.03",
+    "5.7.05",
+    "5.7.09",
   ].some((prefixo) => c.startsWith(prefixo));
 }
 
@@ -53,9 +55,6 @@ function centroDeCustoDaPartida(linha: LancamentoIntegrado) {
   if (debitoResultado && creditoResultado) return { ccDebito: cc, ccCredito: cc };
   if (debitoResultado) return { ccDebito: cc, ccCredito: "" };
   if (creditoResultado) return { ccDebito: "", ccCredito: cc };
-
-  // Partidas exclusivamente patrimoniais não recebem CC automaticamente porque o
-  // Razão atual possui apenas um campo de CC; não é seguro inventar o lado.
   return { ccDebito: "", ccCredito: "" };
 }
 
@@ -67,17 +66,40 @@ function normalizarData(data: string) {
   return data;
 }
 
+/**
+ * Pendência BLOQUEANTE = problema que impede a escrituração/exportação.
+ *
+ * IMPORTANTE:
+ * - status "revisar" não bloqueia sozinho;
+ * - rastreio "sugerido" não bloqueia sozinho;
+ * - ambos continuam visíveis no Razão para auditoria;
+ * - somente conta transitória ainda sem destino final (4859), conta inexistente,
+ *   conta de resultado sem destino na DRE ou dado obrigatório inválido bloqueiam o lote.
+ */
 function validar(linha: LancamentoIntegrado) {
   const pendencias: string[] = [];
+
   if (!plano.has(linha.debitoCodigo)) pendencias.push(`Conta débito ${linha.debitoCodigo} não existe no plano implantado`);
   if (!plano.has(linha.creditoCodigo)) pendencias.push(`Conta crédito ${linha.creditoCodigo} não existe no plano implantado`);
-  if (plano.has(linha.debitoCodigo) && !resultadoTemDestinoNaDre(linha.debitoCodigo)) pendencias.push(`Conta débito ${linha.debitoCodigo} é de resultado mas ainda não possui destino na DRE`);
-  if (plano.has(linha.creditoCodigo) && !resultadoTemDestinoNaDre(linha.creditoCodigo)) pendencias.push(`Conta crédito ${linha.creditoCodigo} é de resultado mas ainda não possui destino na DRE`);
+
+  if (plano.has(linha.debitoCodigo) && !resultadoTemDestinoNaDre(linha.debitoCodigo)) {
+    pendencias.push(`Conta débito ${linha.debitoCodigo} é de resultado mas ainda não possui destino na DRE`);
+  }
+  if (plano.has(linha.creditoCodigo) && !resultadoTemDestinoNaDre(linha.creditoCodigo)) {
+    pendencias.push(`Conta crédito ${linha.creditoCodigo} é de resultado mas ainda não possui destino na DRE`);
+  }
+
+  if (CONTAS_TRANSITORIAS_BLOQUEANTES.has(linha.debitoCodigo)) {
+    pendencias.push(`Conta débito ${linha.debitoCodigo} é transitória e precisa de classificação final`);
+  }
+  if (CONTAS_TRANSITORIAS_BLOQUEANTES.has(linha.creditoCodigo)) {
+    pendencias.push(`Conta crédito ${linha.creditoCodigo} é transitória e precisa de classificação final`);
+  }
+
   if (!linha.data) pendencias.push("Data não informada");
   if (!linha.historico.trim()) pendencias.push("Histórico não informado");
   if (!(linha.valor > 0)) pendencias.push("Valor inválido");
-  if (linha.status !== "validado") pendencias.push("Lançamento ainda marcado para revisão");
-  if (linha.rastreio === "sugerido") pendencias.push("Classificação sem lastro documental suficiente");
+
   return pendencias;
 }
 
