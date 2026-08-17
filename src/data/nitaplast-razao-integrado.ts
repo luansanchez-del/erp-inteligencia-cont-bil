@@ -4,6 +4,7 @@ import { fechamentoCpvJunho } from "./nitaplast-cpv-junho";
 import { corrigirMapeamentosJunho } from "./nitaplast-correcoes-mapeamento-junho";
 import { ajusteEstoqueResultadoJunho } from "./nitaplast-ajuste-estoque-junho";
 import { gerarFechamentoEstoqueMatrizJunho } from "./nitaplast-fechamento-estoque-matriz-junho";
+import { aplicarFechamentoImportacoesJunho } from "./nitaplast-fechamento-importacoes-junho";
 import { aplicarFechamentoFinanceiroJunho } from "./nitaplast-fechamento-financeiro-junho";
 import { aplicarFechamentoCpvFinalJunho } from "./nitaplast-fechamento-cpv-final-junho";
 import { aplicarFechamentoCreditosFederaisJunho } from "./nitaplast-fechamento-creditos-federais-junho";
@@ -111,12 +112,19 @@ const fechamentoCpvSemIcmsMatrizObsoleto = fechamentoCpvJunho.filter(
   (linha) => !["CPV-ICMS-M-OUT", "CPV-ICMS-M-IN"].includes(linha.id),
 );
 
-const baseComFechamentoFinanceiro = aplicarFechamentoFinanceiroJunho([
+const baseDocumentalJunho = [
   ...lancamentosBaseSaneados,
   ...receitasFilialDocumentadas,
   ...fechamentoCpvSemIcmsMatrizObsoleto,
   ajusteEstoqueResultadoJunho,
-]);
+];
+
+// Primeiro reconhecemos a obrigação integral da importação no Razão. O lançamento
+// é de R$ 1.092.407,58; nunca é calculado pela diferença necessária para zerar 25116.
+const baseComImportacoesFechadas = aplicarFechamentoImportacoesJunho(baseDocumentalJunho);
+
+// O financeiro também nasce no Razão. Só depois Balancete/DRE consomem a base.
+const baseComFechamentoFinanceiro = aplicarFechamentoFinanceiroJunho(baseComImportacoesFechadas);
 
 const baseCorrigida = corrigirMapeamentosJunho(baseComFechamentoFinanceiro);
 
