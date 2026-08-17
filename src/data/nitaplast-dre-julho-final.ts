@@ -47,5 +47,5 @@ export const dreJulhoFinal={
   custosReconhecidos:custos,despesasReconhecidas:despesas,receitasFinanceiras,resultado,
   status:"em_fechamento" as const,
   resumoRazao:resumoFechamentoJulhoFinal,
-  itensSemFonte:["Folha/provisões 07/2026","Depreciação 07/2026"]
+  itensSemFonte:["Folha/provisões 07/2026"]
 } as const;
