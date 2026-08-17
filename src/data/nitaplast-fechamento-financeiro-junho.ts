@@ -20,6 +20,10 @@ const arred = (valor: number) => Math.round(valor * 100) / 100;
  * - despesas financeiras totais: R$ 153.961,84;
  * - despesa financeira líquida: R$ 109.045,86.
  *
+ * Recuperação de despesas, receitas eventuais e amostras grátis NÃO entram na
+ * linha de receitas financeiras apenas por estarem dentro de um agrupador antigo
+ * do plano. Elas permanecem no Razão e são apresentadas separadamente pela DRE.
+ *
  * Os complementos de rendimento das aplicações abaixo não entram duas vezes:
  * o movimento financeiro já contém os rendimentos efetivamente capturados em junho.
  */
@@ -36,10 +40,6 @@ const JCP = 140469.22;
 const DEMAIS_DESPESAS_FINANCEIRAS = 13492.62;
 const DESPESAS_FINANCEIRAS = 153961.84;
 const RESULTADO_FINANCEIRO_LIQUIDO = 109045.86;
-
-function classificacao(codigo: string) {
-  return estruturaBalanceteNitaplast.find((linha) => linha.tipo === "A" && linha.conta === codigo)?.classificacao ?? "";
-}
 
 function nomeConta(codigo: string) {
   const conta = estruturaBalanceteNitaplast.find((linha) => linha.tipo === "A" && linha.conta === codigo);
@@ -60,9 +60,24 @@ function contasDespesasFinanceiras() {
     .map((linha) => linha.conta);
 }
 
+function ehReceitaFinanceira(classificacao: string, descricao: string) {
+  const d = descricao.toLocaleUpperCase("pt-BR");
+
+  // Plano legado: 4.1.05.001 concentra rendimentos/aplicações.
+  if (classificacao.startsWith("4.1.05.001")) return true;
+
+  // Plano atual: 5.7.12 contém contas financeiras e algumas receitas de outra
+  // natureza. As exceções abaixo não podem contaminar a linha financeira da DRE.
+  if (!classificacao.startsWith("5.7.12")) return false;
+  if (d.includes("RECUPERAÇÃO") || d.includes("RECUPERACAO")) return false;
+  if (d.includes("AMOSTRA")) return false;
+  if (d.includes("RECEITA EVENTUAL") || d.includes("RECEITAS EVENTUAIS")) return false;
+  return true;
+}
+
 function contasReceitasFinanceiras() {
   return estruturaBalanceteNitaplast
-    .filter((linha) => linha.tipo === "A" && (linha.classificacao.startsWith("5.7.12") || linha.classificacao.startsWith("4.1.05.001")))
+    .filter((linha) => linha.tipo === "A" && ehReceitaFinanceira(linha.classificacao, linha.descricao))
     .map((linha) => linha.conta);
 }
 
