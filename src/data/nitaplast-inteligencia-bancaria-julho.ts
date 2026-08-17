@@ -1,0 +1,78 @@
+/**
+ * Inteligência bancária Nitaplast - competência 07/2026.
+ * Fonte: MOVIMENTAÇÃO BANCARIA NITAPLAST 06 A 072026.csv e extratos bancários já recebidos.
+ * Os grupos abaixo representam movimentos que não estavam marcados como conciliados na origem,
+ * mais os resultados financeiros deliberadamente mantidos manuais.
+ * Identificação não gera lançamento automático no Razão.
+ */
+export type StatusGrupoBanco="identificado"|"manual"|"revisar";
+export type GrupoBancoJulho={id:string;status:StatusGrupoBanco;bancoCodigo:string;banco:string;contaContabil:string;evento:string;gerencial:string;descricaoGerencial:string;movimentos:number;valor:number;acao:string;acaoLabel:string;confianca:number;exemplos:string;documentos:string};
+const g:Array<[string,StatusGrupoBanco,string,string,string,string,string,string,number,number,string,string,number,string,string]>=[
+["GRP-01","revisar","B34100","Itaú 04114","11","DEBITO TRANSF. INTERBANCARIA","","",1,25000.0,"transferencia","Transferência entre contas",40,"",""],
+["GRP-02","identificado","B23700","Bradesco 6349","9","TRANSF. - MESMA TITULARIDADE","90.01.001","TRANSFERÊNCIAS ENTRE CONTAS",15,1383903.97,"transferencia","Transferência entre contas",92,"",""],
+["GRP-03","identificado","B34100","Itaú 04114","11","TRANSF. - MESMA TITULARIDADE","90.01.001","TRANSFERÊNCIAS ENTRE CONTAS",19,1195300.0,"transferencia","Transferência entre contas",92,"",""],
+["GRP-04","identificado","B23701","Bradesco Aplicação","","TRANSF. - MESMA TITULARIDADE","90.01.001","TRANSFERÊNCIAS ENTRE CONTAS",2,500000.0,"transferencia","Transferência entre contas",92,"",""],
+["GRP-05","identificado","B00002","Greencred correlata","","TRANSF. - MESMA TITULARIDADE","90.01.001","TRANSFERÊNCIAS ENTRE CONTAS",2,400000.0,"transferencia","Transferência entre contas",92,"",""],
+["GRP-06","identificado","B34101","Itaú Aplicação","54","TRANSF. - MESMA TITULARIDADE","90.01.001","TRANSFERÊNCIAS ENTRE CONTAS",6,382944.52,"transferencia","Transferência entre contas",92,"",""],
+["GRP-07","identificado","B00003","Greencred/Uniprime","21","TRANSF. - MESMA TITULARIDADE","90.01.001","TRANSFERÊNCIAS ENTRE CONTAS",1,200000.0,"transferencia","Transferência entre contas",92,"",""],
+["GRP-08","identificado","B34100","Itaú 04114","11","RECEBIMENTO DE DUPLICATAS","01.01.001","VENDA DE MERCADORIAS MERCADO INTERNO",114,178507.72,"baixar_cliente","Baixar cliente",92,"ALLIAGE S/A IND MEDICO ODONTOLOGICA | ABENETO COMERCIAL DE METAIS LTDA | SINOMAR LOPES DA SILVA","8555 | 8569 | 8605"],
+["GRP-09","identificado","B23700","Bradesco 6349","9","RECEBIMENTO DE DUPLICATAS","01.01.001","VENDA DE MERCADORIAS MERCADO INTERNO",95,160166.97,"baixar_cliente","Baixar cliente",92,"DIMETAL DISTRIBUIDORA METAIS PASQUALIN L | J.M.G. INDUSTRIA METALURGICA LTDA | SINOMAR LOPES DA SILVA","8623 | 8629 | 8641"],
+["GRP-10","identificado","B00100","Banco do Brasil","10","ADIANTAMENTO DE CLIENTES","01.09.001","ADTO. CLIENTES MERCADO INTERNO",2,127008.28,"adiantamento_cliente","Adiantamento cliente",92,"",""],
+["GRP-11","identificado","B00100","Banco do Brasil","10","TRANSF. - MESMA TITULARIDADE","90.01.001","TRANSFERÊNCIAS ENTRE CONTAS",1,127000.0,"transferencia","Transferência entre contas",92,"",""],
+["GRP-12","identificado","B34100","Itaú 04114","11","ADIANTAMENTO DE CLIENTES","01.09.001","ADTO. CLIENTES MERCADO INTERNO",14,42122.9,"adiantamento_cliente","Adiantamento cliente",92,"",""],
+["GRP-13","identificado","B34100","Itaú 04114","11","PAGAMENTO TITULOS BANCO","14.01.001","ICMS",1,32175.46,"baixar_fornecedor","Baixar fornecedor",92,"ICMS A RECOLHER","20072026"],
+["GRP-14","identificado","B34100","Itaú 04114","11","DISTRIBUIÇÃO DE LUCROS","15.90.004","ADIANTAMENTO DE DISTRIBUIÇÃO DE LUCROS",1,25000.0,"outros","Revisar natureza",92,"",""],
+["GRP-15","identificado","B34100","Itaú 04114","11","ESTORNO DE PAGAMENTO INDEVIDO","02.01.002","ESTORNO DE DEPÓSITO",1,25000.0,"outros","Revisar natureza",92,"",""],
+["GRP-16","identificado","B23700","Bradesco 6349","9","ADIANTAMENTO DE CLIENTES","01.09.001","ADTO. CLIENTES MERCADO INTERNO",5,18971.22,"adiantamento_cliente","Adiantamento cliente",92,"",""],
+["GRP-17","identificado","B34100","Itaú 04114","11","PAGAMENTO TITULOS BANCO","14.01.006","IPI",1,15582.9,"baixar_fornecedor","Baixar fornecedor",92,"IPI A RECOLHER","24072026"],
+["GRP-18","identificado","B34100","Itaú 04114","11","AJUSTE DE SALDO","11.04.012","OUTROS",6,12859.75,"outros","Revisar natureza",92,"",""],
+["GRP-19","identificado","B34100","Itaú 04114","11","PAGAMENTO TITULOS BANCO","11.01.003","MATERIA PRIMA/INSUMOS",1,11185.27,"baixar_fornecedor","Baixar fornecedor",92,"POLIFLUOR IND COM PLASTICOS LTDA","89032"],
+["GRP-20","identificado","B34100","Itaú 04114","11","PAGAMENTO TITULOS BANCO","13.01.001","ALUGUÉIS",1,10825.02,"baixar_fornecedor","Baixar fornecedor",92,"IMOBILIARIA NOVOLAR LTDA","8082025"],
+["GRP-21","identificado","B34100","Itaú 04114","11","PAGAMENTO TITULOS BANCO","12.03.001","PAT - PROGRAMA ALIMENTAÇÃO DO TRABALHADO",3,10798.0,"baixar_fornecedor","Baixar fornecedor",92,"PLUXEE BENEFICIOS BRASIL SA","636"],
+["GRP-22","identificado","B34100","Itaú 04114","11","PAGAMENTO TITULOS BANCO","11.01.001","COMPRAS PROD REVENDA/MAT DIRETOS",3,9039.13,"baixar_fornecedor","Baixar fornecedor",92,"ATHOS METAIS LTDA | POLYROOF BRASIL LTDA","11661 | 887"],
+["GRP-23","identificado","B34100","Itaú 04114","11","PAGAMENTO TITULOS BANCO","11.01.002","MATERIAIS INDIRETOS",4,8937.03,"baixar_fornecedor","Baixar fornecedor",92,"POLYROOF BRASIL LTDA","458 | 654 | 774"],
+["GRP-24","identificado","B34100","Itaú 04114","11","BOLETO FRETES","14.03.001","FRETE VENDAS",21,8179.33,"baixar_fornecedor","Baixar fornecedor",92,"TRANSPORTADORA GAMPER LTDA. | TRANSPORTADORA J.D.F. LTDA | EXPRESSO SAO MIGUEL LTDA","18246 | 3291 | 136571842"],
+["GRP-25","identificado","B34100","Itaú 04114","11","ADIANTAMENTO SALARIO","12.01.005","ADIANTAMENTO DE SALÁRIOS",2,5292.0,"folha","Folha / adiantamento",92,"ADIANTAMENTO SALARIAL","72026"],
+["GRP-26","identificado","B34100","Itaú 04114","11","ESTORNO DE CRÉDITO","11.04.012","OUTROS",2,5108.42,"outros","Revisar natureza",92,"",""],
+["GRP-27","identificado","B23702","Bradesco Energia 895","25001","TRANSF. - MESMA TITULARIDADE","90.01.001","TRANSFERÊNCIAS ENTRE CONTAS",3,5103.97,"transferencia","Transferência entre contas",92,"",""],
+["GRP-28","identificado","B23702","Bradesco Energia 895","25001","DEBITO AUTOMATICO","15.01.011","OUTRAS DESPESAS",3,5103.97,"baixar_fornecedor","Baixar fornecedor",92,"",""],
+["GRP-29","identificado","B34100","Itaú 04114","11","PAGAMENTO SALARIO","12.01.001","SALÁRIOS",1,3301.88,"folha","Folha / adiantamento",92,"SALÁRIOS E ORDENADOS A PAGAR","62026"],
+["GRP-30","identificado","B34100","Itaú 04114","11","DESPESAS E TARIFAS BANCARIAS","15.02.005","DESPESAS DE COBRANÇA",7,2931.73,"tarifa","Tarifa bancária",92,"",""],
+["GRP-31","identificado","B34100","Itaú 04114","11","REEMBOLSO GERAIS","11.04.012","OUTROS",22,2904.99,"outros","Revisar natureza",92,"",""],
+["GRP-32","identificado","B23700","Bradesco 6349","9","PAGAMENTO TITULOS BANCO","11.01.002","MATERIAIS INDIRETOS",1,2761.94,"baixar_fornecedor","Baixar fornecedor",92,"POLYROOF BRASIL LTDA","429"],
+["GRP-33","identificado","B34100","Itaú 04114","11","PAGAMENTO TITULOS BANCO","11.02.002","SERVIÇOS DE TERCEIROS OPERACIONAL",1,1907.0,"baixar_fornecedor","Baixar fornecedor",92,"SOFTDIB INFORMATICA LTDA","1175"],
+["GRP-34","identificado","B23700","Bradesco 6349","9","PAGAMENTO DE FÉRIAS","12.02.001","FÉRIAS",1,1640.2,"folha","Folha / adiantamento",92,"FÉRIAS A PAGAR","30335"],
+["GRP-35","identificado","B34100","Itaú 04114","11","PAGAMENTO TITULOS BANCO","12.02.003","FGTS",2,1407.43,"baixar_fornecedor","Baixar fornecedor",92,"FGTS A RECOLHER","62026"],
+["GRP-36","identificado","B00100","Banco do Brasil","10","BOLETO FRETES","11.90.001","FRETES COMPRAS",2,1172.57,"baixar_fornecedor","Baixar fornecedor",92,"TRANSLIGUE TRANSPORTES E SERVICOS LTDA.","122578"],
+["GRP-37","identificado","B23700","Bradesco 6349","9","PAGAMENTO SALARIO","12.01.001","SALÁRIOS",1,1064.33,"folha","Folha / adiantamento",92,"SALÁRIOS E ORDENADOS A PAGAR","62026"],
+["GRP-38","identificado","B23700","Bradesco 6349","9","DESPESAS E TARIFAS BANCARIAS","15.02.005","DESPESAS DE COBRANÇA",56,1021.9,"tarifa","Tarifa bancária",92,"",""],
+["GRP-39","identificado","B34100","Itaú 04114","11","PAGAMENTO TITULOS BANCO","12.03.004","VALE TRANSPORTE",1,754.71,"baixar_fornecedor","Baixar fornecedor",92,"PLUXEE BENEFICIOS BRASIL SA","633"],
+["GRP-40","identificado","B34100","Itaú 04114","11","PAGAMENTO TITULOS BANCO","12.03.003","VALE COMBUSTÍVEL",1,751.0,"baixar_fornecedor","Baixar fornecedor",92,"PLUXEE FROTA E COMBUSTIVEL BRASIL LTDA","967810"],
+["GRP-41","identificado","B23700","Bradesco 6349","9","ADIANTAMENTO SALARIO","12.01.005","ADIANTAMENTO DE SALÁRIOS",1,693.33,"folha","Folha / adiantamento",92,"ADIANTAMENTO SALARIAL","72026"],
+["GRP-42","identificado","B34100","Itaú 04114","11","PAGAMENTO TITULOS BANCO","12.03.005","CURSOS E TREINAMENTOS",2,551.81,"baixar_fornecedor","Baixar fornecedor",92,"UNIAO EDUCACIONAL, CULTURAL E TECNOLOGIC | VITRU BRASIL EMPREEND, PARTICIP. E COM.","30352 | 30323"],
+["GRP-43","identificado","B34100","Itaú 04114","11","ADIANTAMENTO VIAGEM","15.01.002","DESPESAS DE VIAGEM",1,400.0,"outros","Revisar natureza",92,"",""],
+["GRP-44","identificado","B23700","Bradesco 6349","9","PAGAMENTO TITULOS BANCO","11.01.001","COMPRAS PROD REVENDA/MAT DIRETOS",1,372.6,"baixar_fornecedor","Baixar fornecedor",92,"LUCC INDUSTRIA E COMERCIO DE PLASTICOS L","51261"],
+["GRP-45","identificado","B34100","Itaú 04114","11","PAGAMENTO TITULOS BANCO","15.02.020","ENERGIA ELÉTRICA",1,372.44,"baixar_fornecedor","Baixar fornecedor",92,"ELETROPAULO METROP ELETRICIDADE DE SP","24072026"],
+["GRP-46","identificado","B23702","Bradesco Energia 895","25001","REEMBOLSO GERAIS","11.04.012","OUTROS",1,249.52,"outros","Revisar natureza",92,"",""],
+["GRP-47","identificado","B34100","Itaú 04114","11","PAGAMENTO TITULOS BANCO","12.03.008","EXAMES MÉDICOS/PCMSO",2,218.65,"baixar_fornecedor","Baixar fornecedor",92,"MASTMED MEDICINA OCUPACIONAL LTDA | CONTRIBUIÇÕES FEDERAIS","119625 | 118382"],
+["GRP-48","identificado","B00100","Banco do Brasil","10","DESPESAS E TARIFAS BANCARIAS","15.02.005","DESPESAS DE COBRANÇA",1,215.9,"tarifa","Tarifa bancária",92,"",""],
+["GRP-49","identificado","B34100","Itaú 04114","11","PAGAMENTO TITULOS BANCO","15.02.018","PROTEÇÃO/SEGURANÇA PATRIMONIAL",1,215.09,"baixar_fornecedor","Baixar fornecedor",92,"VERISURE BRASIL MONITORIAMENTO DE ALARME","6072026"],
+["GRP-50","identificado","B34100","Itaú 04114","11","DEBITO AUTOMATICO","15.02.025","SEGUROS DE VIDA EM GRUPO/DIVERSOS",1,182.52,"baixar_fornecedor","Baixar fornecedor",92,"PORTO SEGURO CIA DE SEGUROS GERAIS","72026"],
+["GRP-51","identificado","B34100","Itaú 04114","11","PAGAMENTO TITULOS BANCO","15.02.019","AGUA E ESGOTO",1,163.96,"baixar_fornecedor","Baixar fornecedor",92,"CIA DE SANEAMENTO BASICO DO ESTADO DE SA","28072026"],
+["GRP-52","identificado","B34100","Itaú 04114","11","BOLETO FRETES","11.90.001","FRETES COMPRAS",1,142.79,"baixar_fornecedor","Baixar fornecedor",92,"BIANCA DE OLIVEIRA TRANSPORTES","5103"],
+["GRP-53","identificado","B00100","Banco do Brasil","10","REEMBOLSO GERAIS","11.04.012","OUTROS",1,113.91,"outros","Revisar natureza",92,"",""],
+["GRP-54","identificado","B23702","Bradesco Energia 895","25001","DESPESAS E TARIFAS BANCARIAS","15.02.005","DESPESAS DE COBRANÇA",1,48.21,"tarifa","Tarifa bancária",92,"",""],
+["GRP-55","identificado","B23700","Bradesco 6349","9","REEMBOLSO GERAIS","11.04.012","OUTROS",1,46.64,"outros","Revisar natureza",92,"",""],
+["GRP-56","identificado","B00100","Banco do Brasil","10","AJUSTE DE SALDO","11.04.012","OUTROS",1,11.47,"outros","Revisar natureza",92,"",""],
+["GRP-57","manual","B34101","Itaú Aplicação","54","RENDIMENTO APLIC. FINANCEIRA","09.01.002","RENDIMENTOS FINANCEIROS",15,354474.57,"manual","Resultado financeiro manual",100,"",""],
+["GRP-58","manual","B34100","Itaú 04114","11","RENDIMENTO APLIC. FINANCEIRA","09.01.002","RENDIMENTOS FINANCEIROS",13,354002.85,"manual","Resultado financeiro manual",100,"",""],
+["GRP-59","manual","B00003","Greencred/Uniprime","21","RENDIMENTO APLIC. FINANCEIRA","09.01.002","RENDIMENTOS FINANCEIROS",23,18440.85,"manual","Resultado financeiro manual",100,"",""],
+["GRP-60","manual","B34100","Itaú 04114","11","JUROS RECEBIDOS","09.01.005","JUROS DE MORA RECEBIDO",1,517.2,"manual","Resultado financeiro manual",100,"",""],
+["GRP-61","manual","B23701","Bradesco Aplicação","","RENDIMENTO APLIC. FINANCEIRA","09.01.002","RENDIMENTOS FINANCEIROS",4,157.3,"manual","Resultado financeiro manual",100,"",""],
+["GRP-62","manual","B23700","Bradesco 6349","9","RENDIMENTO APLIC. FINANCEIRA","09.01.002","RENDIMENTOS FINANCEIROS",23,10.4,"manual","Resultado financeiro manual",100,"",""],
+["GRP-63","manual","B23702","Bradesco Energia 895","25001","RENDIMENTO APLIC. FINANCEIRA","09.01.002","RENDIMENTOS FINANCEIROS",1,1.03,"manual","Resultado financeiro manual",100,"",""],
+];
+export const gruposBancoJulho:GrupoBancoJulho[]=g.map(x=>({id:x[0],status:x[1],bancoCodigo:x[2],banco:x[3],contaContabil:x[4],evento:x[5],gerencial:x[6],descricaoGerencial:x[7],movimentos:x[8],valor:x[9],acao:x[10],acaoLabel:x[11],confianca:x[12],exemplos:x[13],documentos:x[14]}));
+export const resumoBancoJulho={movimentosExtrato:1978,conciliadosNaOrigem:1454,identificados:443,resultadoFinanceiroManual:80,revisar:1,gruposEmAnalise:63,fontesRecebidas:17} as const;
+const norm=(v:string)=>v.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[^A-Z0-9]+/g," ").trim();
+export function sugerirGrupoBancoJulho(texto:string){const t=norm(texto);if(!t)return null;return gruposBancoJulho.map(gr=>{const base=norm(`${gr.evento} ${gr.gerencial} ${gr.descricaoGerencial} ${gr.exemplos} ${gr.documentos}`);let score=0;if(base.includes(t))score+=60;for(const termo of t.split(" ").filter(x=>x.length>3)){if(base.includes(termo))score+=5;}return {gr,score};}).filter(x=>x.score>0).sort((a,b)=>b.score-a.score)[0]?.gr??null;}
