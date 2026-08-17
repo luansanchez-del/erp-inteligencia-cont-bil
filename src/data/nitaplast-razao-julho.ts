@@ -1,7 +1,7 @@
 import type { LancamentoIntegrado } from "./nitaplast-razao-base";
 import { entradasCcAgregadasJulho, resumoEntradasCcAgregadasJulho } from "./nitaplast-entradas-cc-julho-fonte";
 import { descricaoContaJulho } from "./nitaplast-saldos-julho";
-import { lancamentosBancariosSegurosJulho, resumoIntegracaoBancariaJulho } from "./nitaplast-bancos-julho";
+import { lancamentosBancariosSegurosJulho, resumoIntegracaoBancariaJulho } from "./nitaplast-bancos-julho-completo";
 
 const nomeConta = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(codigo) ?? "Conta a revisar"}`;
 const arred = (valor: number) => Math.round(valor * 100) / 100;
