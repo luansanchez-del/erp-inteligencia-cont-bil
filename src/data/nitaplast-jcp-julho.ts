@@ -7,9 +7,10 @@ const nomeConta = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(cod
 /**
  * JCP de 07/2026 autorizado para contabilização.
  *
- * O reconhecimento contábil constitui crédito ao beneficiário mesmo sem pagamento
- * bancário imediato. Por isso, o IRRF é reconhecido separadamente no momento do
- * crédito, mantendo a despesa pelo valor bruto e o passivo do sócio pelo valor líquido.
+ * Orientação operacional desta competência:
+ * - contabilizar somente o JCP bruto;
+ * - NÃO contabilizar IRRF nesta etapa;
+ * - manter eventual IRRF apenas como informação/pendência tributária no fechamento.
  */
 export const lancamentosJcpJulho: LancamentoIntegrado[] = [
   {
@@ -26,35 +27,18 @@ export const lancamentosJcpJulho: LancamentoIntegrado[] = [
     centroCusto: "DESPESAS FINANCEIRAS",
     valor: calculoJcpJulho.jcpCalculado,
     status: "validado",
-    observacao: "JCP de julho autorizado para contabilização. Valor bruto calculado pela base fiscal/TJLP registrada no fechamento. Manter a deliberação societária/evidência vinculada ao fechamento.",
+    observacao: "JCP de julho autorizado para contabilização pelo valor bruto. IRRF não contabilizado nesta etapa por orientação operacional; manter como pendência tributária separada.",
     rastreio: "derivado",
     fonte: "Cálculo JCP 07/2026 do ERP + autorização de contabilização",
-  },
-  {
-    id: "JUL-JCP-IRRF-072026",
-    data: "31/07/2026",
-    origem: "RECONHECIMENTO JCP 07/2026",
-    debitoCodigo: "25253",
-    debito: nomeConta("25253"),
-    creditoCodigo: "1546",
-    credito: nomeConta("1546"),
-    historico: "IRRF de 17,5% sobre o crédito de JCP de julho/2026",
-    documento: "JCP 07/2026 - IRRF",
-    cc: "0",
-    centroCusto: "SEM CENTRO DE CUSTO",
-    valor: calculoJcpJulho.irrfPotencialSeCreditado,
-    status: "validado",
-    observacao: "Retenção reconhecida sobre o crédito do JCP ao beneficiário. Não é crédito de IRPJ/CSLL da empresa pagadora; reduz o passivo líquido devido ao beneficiário e cria IRRF a recolher.",
-    rastreio: "derivado",
-    fonte: "Cálculo JCP 07/2026 do ERP + LC 224/2025, art. 8",
   },
 ];
 
 export const resumoJcpJulho = {
   bruto: calculoJcpJulho.jcpCalculado,
-  irrf: calculoJcpJulho.irrfPotencialSeCreditado,
-  liquidoBeneficiario: Math.round((calculoJcpJulho.jcpCalculado - calculoJcpJulho.irrfPotencialSeCreditado) * 100) / 100,
-  aliquotaIrrf: 17.5,
-  contabilizado: true,
+  contabilizado: calculoJcpJulho.jcpCalculado,
+  irrfContabilizado: 0,
+  irrfPotencial: calculoJcpJulho.irrfPotencialSeCreditado,
+  aliquotaIrrfReferencia: 17.5,
+  contabilizadoNoRazao: true,
   pago: false,
 } as const;
