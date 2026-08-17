@@ -1,6 +1,7 @@
 import type { LancamentoIntegrado } from "./nitaplast-razao-base";
 import { entradasCcAgregadasJulho, resumoEntradasCcAgregadasJulho } from "./nitaplast-entradas-cc-julho-fonte";
 import { descricaoContaJulho } from "./nitaplast-saldos-julho";
+import { lancamentosBancariosSegurosJulho, resumoIntegracaoBancariaJulho } from "./nitaplast-bancos-julho";
 
 const nomeConta = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(codigo) ?? "Conta a revisar"}`;
 const arred = (valor: number) => Math.round(valor * 100) / 100;
@@ -12,7 +13,7 @@ const ccAdministrativo = new Set(["301","302","303","304","305","306"]);
 type MapeamentoEntrada = { debitoCodigo: string; creditoCodigo: string; status: "validado" | "revisar"; observacao?: string };
 
 function mapearEntrada(gerencial: string, cc: string): MapeamentoEntrada | null | "duplicado-fiscal" {
-  if (gerencial === "11.01.008") return "duplicado-fiscal"; // devolução já entra pela fonte fiscal
+  if (gerencial === "11.01.008") return "duplicado-fiscal";
   if (gerencial === "11.01.001" && cc === "201") return { debitoCodigo: "25135", creditoCodigo: "1496", status: "revisar", observacao: "Mesmo gerencial/CC corrigido para estoque no fechamento de junho; fornecedor analítico ainda precisa ser confirmado em julho." };
   if (gerencial === "11.01.002") {
     if (cc === "201") return { debitoCodigo: "25135", creditoCodigo: "1496", status: "revisar", observacao: "Mesmo gerencial/CC corrigido para estoque em junho; manter em revisão documental." };
@@ -111,6 +112,7 @@ const receitasEDeducoesJulho: LancamentoIntegrado[] = [
 export const lancamentosIntegradosJulho: LancamentoIntegrado[] = [
   ...receitasEDeducoesJulho,
   ...lancamentosEntradasCcJulho,
+  ...lancamentosBancariosSegurosJulho,
 ];
 
 const pendenciasEntrada = entradasCcAgregadasJulho.filter((linha) => !mapearEntrada(linha.gerencial, linha.cc));
@@ -132,7 +134,9 @@ export const diagnosticoFechamentoJulho = {
   ipiMatrizDiferencaFonte: 26.21,
   saldoCredorIcmsFilialEsperadoAposClassificacao: 11980.13,
   folha: "pendente de documento 07/2026",
-  bancosArAp: "em conciliação - não integrados neste Razão parcial",
+  bancosArAp: resumoIntegracaoBancariaJulho.situacao,
+  fontesBancariasRecebidas: resumoIntegracaoBancariaJulho.fontesRecebidas.length,
+  movimentosBancariosSegurosIntegrados: resumoIntegracaoBancariaJulho.movimentosPatrimoniaisIntegrados,
   estoque: "alvo 31/07 carregado; ajuste técnico bloqueado até completar movimentos reais",
   itensManuaisExcluidos: ["JCP", "Depreciação", "Juros ativos", "Juros passivos", "Variação cambial"],
 } as const;
