@@ -30,6 +30,10 @@ function DrePage() {
   const duplicidadeFederaisFilial = Math.round((pisFilialEnviado + cofinsFilialEnviado) * 100) / 100;
   const diferencaDeducoes = Math.abs(deducoesResumo?.diferenca ?? 0);
   const diferencaResidualDeducoes = Math.max(0, Math.round((diferencaDeducoes - duplicidadeFederaisFilial) * 100) / 100);
+  const diferencaResidualResultado = Math.max(
+    0,
+    Math.round((Math.abs(resumoDreDetalhada.diferencaResultado) - duplicidadeFederaisFilial) * 100) / 100,
+  );
   const deducaoExplicada = deducoesResumo
     && Math.abs(deducoesResumo.diferenca) > tolerancia
     && diferencaResidualDeducoes <= tolerancia;
