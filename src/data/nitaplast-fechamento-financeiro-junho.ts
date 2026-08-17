@@ -7,11 +7,11 @@ const arred = (valor: number) => Math.round(valor * 100) / 100;
  * Fechamento financeiro contábil de 06/2026.
  *
  * REGRA OBRIGATÓRIA:
- * fato/documento -> Razão -> Balancete -> DRE.
+ * fato de junho -> lançamento em 30/06 -> Razão -> Balancete -> DRE.
  *
- * A DRE não cria lançamentos e não é usada para ajustar o resultado.
- * Divergências entre o Razão e os valores de controle são apresentadas como
- * validação contábil; nunca lançam exceção durante o carregamento do app.
+ * Juros Ativos e Juros Passivos são fatos contábeis próprios e não podem ser
+ * calculados como "diferença para fechar a DRE". Tarifas, IOF, IRRF e JCP
+ * permanecem separados nas respectivas contas.
  */
 const idsRendimentosComplementaresDuplicados = new Set([
   "APL-ITAU-TRUST-REND-001",
@@ -21,11 +21,8 @@ const idsRendimentosComplementaresDuplicados = new Set([
 
 const RECEITA_EXTRATOS_CONTROLE = 19621.28;
 const JUROS_ATIVOS = 25294.70;
-const RECEITAS_FINANCEIRAS_CONTROLE = 44915.98;
+const JUROS_PASSIVOS = 13492.62;
 const JCP = 140469.22;
-const DEMAIS_DESPESAS_FINANCEIRAS_CONTROLE = 13492.62;
-const DESPESAS_FINANCEIRAS_CONTROLE = 153961.84;
-const RESULTADO_FINANCEIRO_LIQUIDO_CONTROLE = 109045.86;
 
 function nomeConta(codigo: string) {
   const conta = estruturaBalanceteNitaplast.find((linha) => linha.tipo === "A" && linha.conta === codigo);
@@ -48,7 +45,6 @@ function contasDespesasFinanceiras() {
 
 function ehReceitaFinanceira(classificacao: string, descricao: string) {
   const d = descricao.toLocaleUpperCase("pt-BR");
-
   if (classificacao.startsWith("4.1.05.001")) return true;
   if (!classificacao.startsWith("5.7.12")) return false;
   if (d.includes("RECUPERAÇÃO") || d.includes("RECUPERACAO")) return false;
@@ -71,12 +67,6 @@ function totalReceitasFinanceiras(base: LancamentoIntegrado[]) {
   return arred(-contasReceitasFinanceiras().reduce((total, codigo) => total + movimentoLiquido(base, codigo), 0));
 }
 
-function despesasFinanceirasSemJcp(base: LancamentoIntegrado[]) {
-  return arred(contasDespesasFinanceiras()
-    .filter((codigo) => codigo !== "25107")
-    .reduce((total, codigo) => total + movimentoLiquido(base, codigo), 0));
-}
-
 const lancamentoJcp: LancamentoIntegrado = {
   id: "FIN-JCP-062026",
   data: "30/06/2026",
@@ -91,7 +81,7 @@ const lancamentoJcp: LancamentoIntegrado = {
   centroCusto: "DESPESAS FINANCEIRAS",
   valor: JCP,
   status: "validado",
-  observacao: "Valor contábil de junho validado em R$ 140.469,22. Razão, Balancete e DRE usam a mesma base.",
+  observacao: "JCP de junho reconhecido no Razão antes do Balancete e da DRE.",
   rastreio: "documento",
   fonte: "Fechamento financeiro contábil de junho/2026",
 };
@@ -104,42 +94,42 @@ const lancamentoJurosAtivos: LancamentoIntegrado = {
   debito: nomeConta("54"),
   creditoCodigo: "25095",
   credito: nomeConta("25095"),
-  historico: "Juros ativos reconhecidos no fechamento financeiro de junho/2026",
+  historico: "Juros ativos de junho/2026",
   documento: "JUROS ATIVOS 06/2026",
   cc: "901",
   centroCusto: "RECEITAS FINANCEIRAS",
   valor: JUROS_ATIVOS,
   status: "validado",
-  observacao: "Parcela de juros ativos do resultado financeiro de junho. Os rendimentos de aplicação documentados nos extratos permanecem separados no Razão.",
+  observacao: "Lançamento próprio de Juros Ativos. Não é complemento gerencial da DRE.",
   rastreio: "documento",
   fonte: "Fechamento financeiro contábil de junho/2026",
 };
 
-function lancamentoJurosPassivosComplementar(valor: number): LancamentoIntegrado {
-  return {
-    id: "FIN-JUROS-PASSIVOS-062026",
-    data: "30/06/2026",
-    origem: "FECHAMENTO FINANCEIRO CONTÁBIL 06/2026",
-    debitoCodigo: "25103",
-    debito: nomeConta("25103"),
-    creditoCodigo: "1496",
-    credito: nomeConta("1496"),
-    historico: "Juros passivos complementares de junho/2026",
-    documento: "JUROS PASSIVOS 06/2026",
-    cc: "902",
-    centroCusto: "DESPESAS FINANCEIRAS",
-    valor,
-    status: "validado",
-    observacao: "Tarifas, IOF e demais despesas documentadas permanecem nas contas próprias; somente a parcela remanescente validada é reconhecida como Juros Passivos.",
-    rastreio: "derivado",
-    fonte: "Fechamento financeiro contábil de junho/2026 + movimentos financeiros documentados no Razão",
-  };
-}
+const lancamentoJurosPassivos: LancamentoIntegrado = {
+  id: "FIN-JUROS-PASSIVOS-062026",
+  data: "30/06/2026",
+  origem: "FECHAMENTO FINANCEIRO CONTÁBIL 06/2026",
+  debitoCodigo: "25103",
+  debito: nomeConta("25103"),
+  creditoCodigo: "1496",
+  credito: nomeConta("1496"),
+  historico: "Juros passivos de junho/2026",
+  documento: "JUROS PASSIVOS 06/2026",
+  cc: "902",
+  centroCusto: "DESPESAS FINANCEIRAS",
+  valor: JUROS_PASSIVOS,
+  status: "validado",
+  observacao: "Lançamento próprio de Juros Passivos. Tarifas, IOF e demais encargos bancários permanecem separados e não reduzem este valor.",
+  rastreio: "documento",
+  fonte: "Fechamento financeiro contábil de junho/2026",
+};
 
 export type ValidacaoFinanceiroJunho = {
   receitasDocumentadas: number;
+  jurosAtivosLancados: number;
+  jurosPassivosLancados: number;
+  jcpLancado: number;
   receitasFinanceirasCalculadas: number;
-  despesasSemJcpDocumentadas: number;
   despesasFinanceirasCalculadas: number;
   resultadoFinanceiroLiquidoCalculado: number;
   bloqueado: boolean;
@@ -149,28 +139,32 @@ export type ValidacaoFinanceiroJunho = {
 export function validarFechamentoFinanceiroJunho(base: LancamentoIntegrado[]): ValidacaoFinanceiroJunho {
   const receitasDocumentadas = arred(totalReceitasFinanceiras(base) - (base.some((linha) => linha.id === "FIN-JUROS-ATIVOS-062026") ? JUROS_ATIVOS : 0));
   const receitasFinanceirasCalculadas = totalReceitasFinanceiras(base);
-  const despesasSemJcpDocumentadas = despesasFinanceirasSemJcp(base);
   const despesasFinanceirasCalculadas = totalDespesasFinanceiras(base);
   const resultadoFinanceiroLiquidoCalculado = arred(despesasFinanceirasCalculadas - receitasFinanceirasCalculadas);
+  const jurosAtivosLancados = arred(base.filter((linha) => linha.id === "FIN-JUROS-ATIVOS-062026").reduce((t, linha) => t + linha.valor, 0));
+  const jurosPassivosLancados = arred(base.filter((linha) => linha.id === "FIN-JUROS-PASSIVOS-062026").reduce((t, linha) => t + linha.valor, 0));
+  const jcpLancado = arred(base.filter((linha) => linha.id === "FIN-JCP-062026").reduce((t, linha) => t + linha.valor, 0));
   const mensagens: string[] = [];
 
   if (Math.abs(receitasDocumentadas - RECEITA_EXTRATOS_CONTROLE) > 0.01) {
-    mensagens.push(`Rendimentos/aplicações no Razão: R$ ${receitasDocumentadas.toFixed(2)}; controle anterior: R$ ${RECEITA_EXTRATOS_CONTROLE.toFixed(2)}. Revisar a composição, sem alterar o Razão para forçar a DRE.`);
+    mensagens.push(`Rendimentos documentados no Razão: R$ ${receitasDocumentadas.toFixed(2)}; controle dos extratos: R$ ${RECEITA_EXTRATOS_CONTROLE.toFixed(2)}.`);
   }
-  if (Math.abs(receitasFinanceirasCalculadas - RECEITAS_FINANCEIRAS_CONTROLE) > 0.01) {
-    mensagens.push(`Receitas financeiras calculadas pelo Razão: R$ ${receitasFinanceirasCalculadas.toFixed(2)}; DRE de controle: R$ ${RECEITAS_FINANCEIRAS_CONTROLE.toFixed(2)}.`);
+  if (Math.abs(jurosAtivosLancados - JUROS_ATIVOS) > 0.01) {
+    mensagens.push(`Juros Ativos de junho não estão integralmente no Razão. Calculado R$ ${jurosAtivosLancados.toFixed(2)} / esperado R$ ${JUROS_ATIVOS.toFixed(2)}.`);
   }
-  if (Math.abs(despesasFinanceirasCalculadas - DESPESAS_FINANCEIRAS_CONTROLE) > 0.01) {
-    mensagens.push(`Despesas financeiras calculadas pelo Razão: R$ ${despesasFinanceirasCalculadas.toFixed(2)}; DRE de controle: R$ ${DESPESAS_FINANCEIRAS_CONTROLE.toFixed(2)}.`);
+  if (Math.abs(jurosPassivosLancados - JUROS_PASSIVOS) > 0.01) {
+    mensagens.push(`Juros Passivos de junho não estão integralmente no Razão. Calculado R$ ${jurosPassivosLancados.toFixed(2)} / esperado R$ ${JUROS_PASSIVOS.toFixed(2)}.`);
   }
-  if (Math.abs(resultadoFinanceiroLiquidoCalculado - RESULTADO_FINANCEIRO_LIQUIDO_CONTROLE) > 0.01) {
-    mensagens.push(`Resultado financeiro líquido pelo Razão: R$ ${resultadoFinanceiroLiquidoCalculado.toFixed(2)}; DRE de controle: R$ ${RESULTADO_FINANCEIRO_LIQUIDO_CONTROLE.toFixed(2)}.`);
+  if (Math.abs(jcpLancado - JCP) > 0.01) {
+    mensagens.push(`JCP de junho não está integralmente no Razão. Calculado R$ ${jcpLancado.toFixed(2)} / esperado R$ ${JCP.toFixed(2)}.`);
   }
 
   return {
     receitasDocumentadas,
+    jurosAtivosLancados,
+    jurosPassivosLancados,
+    jcpLancado,
     receitasFinanceirasCalculadas,
-    despesasSemJcpDocumentadas,
     despesasFinanceirasCalculadas,
     resultadoFinanceiroLiquidoCalculado,
     bloqueado: mensagens.length > 0,
@@ -189,25 +183,17 @@ export function aplicarFechamentoFinanceiroJunho(
     && !idsRendimentosComplementaresDuplicados.has(linha.id),
   );
 
-  const despesasJaDocumentadas = despesasFinanceirasSemJcp(baseSemProvisoriosEDuplicidades);
-  const jurosPassivosComplementares = arred(Math.max(0, DEMAIS_DESPESAS_FINANCEIRAS_CONTROLE - despesasJaDocumentadas));
-
   return [
     ...baseSemProvisoriosEDuplicidades,
     lancamentoJcp,
     lancamentoJurosAtivos,
-    ...(jurosPassivosComplementares > 0.005
-      ? [lancamentoJurosPassivosComplementar(jurosPassivosComplementares)]
-      : []),
+    lancamentoJurosPassivos,
   ];
 }
 
 export const fechamentoFinanceiroJunho = {
   receitaFinanceiraExtratosControle: RECEITA_EXTRATOS_CONTROLE,
   jurosAtivos: JUROS_ATIVOS,
-  receitasFinanceirasControle: RECEITAS_FINANCEIRAS_CONTROLE,
+  jurosPassivos: JUROS_PASSIVOS,
   jcp: JCP,
-  demaisDespesasFinanceirasControle: DEMAIS_DESPESAS_FINANCEIRAS_CONTROLE,
-  despesasFinanceirasControle: DESPESAS_FINANCEIRAS_CONTROLE,
-  resultadoFinanceiroLiquidoControle: RESULTADO_FINANCEIRO_LIQUIDO_CONTROLE,
 } as const;
