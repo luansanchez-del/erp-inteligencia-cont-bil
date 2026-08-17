@@ -33,10 +33,29 @@ function credito(params: {
   };
 }
 
-// PIS/COFINS: as apurações emitidas com o CNPJ 0003-60 apresentam os mesmos totais
-// consolidados da matriz. Portanto não existe um segundo débito federal da filial.
-// O antigo "residual" técnico era, na verdade, a parcela dos créditos de entradas da filial
-// ainda sem abertura: compras 1101/1102 e devoluções 1202/2202.
+// PIS/COFINS da filial: os débitos abaixo são fatos contábeis reais identificados
+// nas apurações fiscais do estabelecimento e não vêm da DRE de controle.
+// Os créditos de compras e devoluções permanecem lançados separadamente.
+const pisDebitoFilial = credito({
+  id: "FIL-DEB-PIS-SAI",
+  debitoCodigo: "2829",
+  creditoCodigo: "1556",
+  valor: 4361.70,
+  historico: "Débito de PIS sobre vendas da filial - competência 06/2026",
+  fonte: "REGISTRO APURAÇÃO PIS(6).pdf",
+  observacao: "Fato contábil real da apuração fiscal da filial. D 2829 / C 1556, CC 502. Não deriva da DRE de controle.",
+});
+
+const cofinsDebitoFilial = credito({
+  id: "FIL-DEB-COF-SAI",
+  debitoCodigo: "2830",
+  creditoCodigo: "1552",
+  valor: 20090.42,
+  historico: "Débito de COFINS sobre vendas da filial - competência 06/2026",
+  fonte: "REEGISTRO APURAÇÃO COFINS(1).pdf",
+  observacao: "Fato contábil real da apuração fiscal da filial. D 2830 / C 1552, CC 502. Não deriva da DRE de controle.",
+});
+
 const pisComprasFilial = credito({
   id: "FIL-CRED-PIS-COMP",
   debitoCodigo: "1556",
@@ -122,6 +141,8 @@ const ipiComprasFilial = credito({
 });
 
 export const creditosFilialJunho: LancamentoIntegrado[] = [
+  pisDebitoFilial,
+  cofinsDebitoFilial,
   pisComprasFilial,
   pisDevolucoesFilial,
   cofinsComprasFilial,
