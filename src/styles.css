@@ -146,3 +146,62 @@
     font-feature-settings: "tnum" 1;
   }
 }
+
+@page {
+  size: A4 landscape;
+  margin: 8mm;
+}
+
+@media print {
+  html,
+  body {
+    width: 100%;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  main {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  table {
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: auto !important;
+    border-collapse: collapse !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  th,
+  td {
+    padding: 2px 4px !important;
+    line-height: 1.15 !important;
+    white-space: normal !important;
+  }
+
+  [class*="overflow-x-auto"] {
+    overflow: visible !important;
+  }
+
+  [class*="min-w-[1450px]"] {
+    min-width: 0 !important;
+  }
+}
