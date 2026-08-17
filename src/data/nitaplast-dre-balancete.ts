@@ -52,6 +52,17 @@ export type ApuracaoDreBalancete = {
 const plano = new Map(saldosImplantacao.map((conta) => [conta.conta, conta]));
 const arred = (valor: number) => Math.round(valor * 100) / 100;
 
+function ehReceitaNaoFinanceiraDentroDoAgrupador(descricao: string) {
+  const d = descricao.toLocaleUpperCase("pt-BR");
+  return d.includes("RECUPERAÇÃO")
+    || d.includes("RECUPERACAO")
+    || d.includes("REEMBOLSO")
+    || d.includes("AMOSTRA")
+    || d.includes("RECEITA EVENTUAL")
+    || d.includes("RECEITAS EVENTUAIS")
+    || d === "OUTRAS RECEITAS";
+}
+
 export function classificarGrupoDre(classificacao: string, descricao: string): GrupoDreBalancete {
   const d = descricao.toLocaleUpperCase("pt-BR");
 
@@ -63,7 +74,14 @@ export function classificarGrupoDre(classificacao: string, descricao: string): G
   // operacionais na estrutura gerencial da Nitaplast e não reduzem o Lucro Bruto.
   if (classificacao.startsWith("4.2.") || classificacao.startsWith("5.1.")) return "custos";
 
-  if (classificacao.startsWith("4.1.05") || classificacao.startsWith("5.7.12")) return "receitas-financeiras";
+  // O plano legado tem receitas de naturezas distintas próximas às contas financeiras.
+  // Recuperações, reembolsos, amostras e receitas eventuais NÃO entram como juros/rendimentos
+  // apenas por estarem no mesmo agrupador. Permanecem no resultado, mas fora da linha financeira.
+  if (classificacao.startsWith("4.1.05.003")) return "nao-operacional";
+  if (classificacao.startsWith("5.7.12") && ehReceitaNaoFinanceiraDentroDoAgrupador(descricao)) return "nao-operacional";
+
+  // Financeiro verdadeiro: aplicações, juros, variações monetárias/cambiais e SELIC.
+  if (classificacao.startsWith("4.1.05.001") || classificacao.startsWith("5.7.12")) return "receitas-financeiras";
   if (classificacao.startsWith("5.8.")) return "despesas-financeiras";
   if (classificacao.startsWith("5.9.")) return "nao-operacional";
 
@@ -169,8 +187,9 @@ export function calcularDreBalancete(lancamentos: LancamentoIntegrado[]): Apurac
       - resumo.despesasFinanceiras,
   );
 
-  // Toda conta de resultado do Balancete entra no lucro líquido. Se existir conta
-  // ainda sem grupo gerencial, ela não desaparece do resultado contábil.
+  // Toda conta de resultado do Balancete entra no lucro líquido. Receitas de recuperação/
+  // reembolso/eventuais ficam fora da linha financeira, mas permanecem no resultado final
+  // através do grupo não operacional. Contas sem vínculo também nunca desaparecem.
   const resultadoLiquido = arred(
     resultadoOperacional
       + resumo.resultadoNaoOperacional
@@ -198,9 +217,9 @@ const comparacoesBase: Omit<LinhaComparacaoDre, "diferenca">[] = [
   { id: "deducoes", descricao: "Deduções da receita", apuradoBalancete: resumoDreBalancete.deducoes, controleEsperado: valorControle("deducoes"), natureza: "deducao" },
   { id: "custos", descricao: "Custos / CPV / CMV", apuradoBalancete: resumoDreBalancete.custos, controleEsperado: valorControle("custos"), natureza: "custo" },
   { id: "despesas-operacionais", descricao: "Despesas operacionais líquidas (sem financeiro)", apuradoBalancete: resumoDreBalancete.despesasOperacionais, controleEsperado: despesasOperacionaisControle, natureza: "despesa" },
-  { id: "receitas-financeiras", descricao: "Receitas financeiras e recuperações", apuradoBalancete: resumoDreBalancete.receitasFinanceiras, controleEsperado: Math.abs(valorControle("fin-rec")), natureza: "receita" },
+  { id: "receitas-financeiras", descricao: "Receitas financeiras (juros, aplicações e variações financeiras)", apuradoBalancete: resumoDreBalancete.receitasFinanceiras, controleEsperado: Math.abs(valorControle("fin-rec")), natureza: "receita" },
   { id: "despesas-financeiras", descricao: "Despesas financeiras", apuradoBalancete: resumoDreBalancete.despesasFinanceiras, controleEsperado: valorControle("fin-desp"), natureza: "despesa" },
-  { id: "nao-operacional", descricao: "Resultado não operacional", apuradoBalancete: resumoDreBalancete.resultadoNaoOperacional, controleEsperado: valorControle("nao-op"), natureza: "resultado" },
+  { id: "nao-operacional", descricao: "Outras receitas / resultado não operacional", apuradoBalancete: resumoDreBalancete.resultadoNaoOperacional, controleEsperado: valorControle("nao-op"), natureza: "resultado" },
   { id: "resultado", descricao: "Lucro / prejuízo líquido", apuradoBalancete: resultadoLiquidoBalancete, controleEsperado: valorControle("lucro-liq"), natureza: "resultado" },
 ];
 
