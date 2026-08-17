@@ -16,6 +16,7 @@ import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 export const Route = createFileRoute("/contabil/lancamentos")({ component: Lancamentos });
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+type FiltroStatus = "todos" | "alerta" | "pendente";
 
 function baixarCsv() {
   const conteudo = gerarCsvLoteContabilJunho();
@@ -33,17 +34,17 @@ function baixarCsv() {
 function Lancamentos() {
   useNitaplastJunho();
   const [busca, setBusca] = useState("");
-  const [somentePendentes, setSomentePendentes] = useState(false);
+  const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>("todos");
 
   const linhas = useMemo(() => {
     const q = busca.toLocaleLowerCase("pt-BR").trim();
     return loteContabilJunho.filter((linha) => {
-      if (somentePendentes && linha.status !== "pendente") return false;
+      if (filtroStatus !== "todos" && linha.status !== filtroStatus) return false;
       if (!q) return true;
       return [linha.seq, linha.data, linha.debito, linha.credito, linha.ccDebito, linha.ccCredito, linha.documento, linha.historico, linha.lancamentoId, linha.origem]
         .join(" ").toLocaleLowerCase("pt-BR").includes(q);
     });
-  }, [busca, somentePendentes]);
+  }, [busca, filtroStatus]);
 
   return (
     <PageShell>
@@ -57,28 +58,42 @@ function Lancamentos() {
         }
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
         <Metric label="Partidas do Razão" value={resumoLoteContabilJunho.totalPartidas} />
-        <Metric label="Prontas para importar" value={resumoLoteContabilJunho.prontas} />
-        <Metric label="Pendentes" value={resumoLoteContabilJunho.pendentes} warning={resumoLoteContabilJunho.pendentes > 0} />
+        <Metric label="Prontas" value={resumoLoteContabilJunho.prontas} />
+        <Metric label="Alertas exportáveis" value={resumoLoteContabilJunho.alertas} warning={resumoLoteContabilJunho.alertas > 0} />
+        <Metric label="Pendências bloqueantes" value={resumoLoteContabilJunho.pendentes} danger={resumoLoteContabilJunho.pendentes > 0} />
         <Metric label="Valor das partidas" value={resumoLoteContabilJunho.valorTotal} money />
-        <Metric label="Valor pendente" value={resumoLoteContabilJunho.valorPendente} money warning={resumoLoteContabilJunho.valorPendente > 0} />
+        <Metric label="Valor bloqueado" value={resumoLoteContabilJunho.valorPendente} money danger={resumoLoteContabilJunho.valorPendente > 0} />
       </div>
 
       {resumoLoteContabilJunho.podeFinalizar ? (
-        <Card className="border-emerald-500/40 bg-emerald-500/5"><CardContent className="pt-5 text-sm"><strong>Lote apto para finalização.</strong> Todas as partidas possuem contas válidas, histórico, valor e status de validação.</CardContent></Card>
+        <Card className="border-emerald-500/40 bg-emerald-500/5">
+          <CardContent className="pt-5 text-sm">
+            <strong>Lote apto para exportação.</strong> Alertas, inclusive movimentos na conta transitória 4859, serão exportados normalmente e permanecem identificados para reclassificação posterior.
+          </CardContent>
+        </Card>
       ) : (
-        <Card className="border-amber-500/40 bg-amber-500/5"><CardContent className="flex gap-3 pt-5 text-sm"><TriangleAlert className="mt-0.5 size-4 shrink-0 text-amber-700" /><div><strong>Finalização bloqueada.</strong> Resolva as partidas pendentes abaixo. O sistema não gera o CSV final enquanto existir lançamento sem conta válida, em revisão ou sem lastro suficiente.</div></CardContent></Card>
+        <Card className="border-red-500/40 bg-red-500/5">
+          <CardContent className="flex gap-3 pt-5 text-sm">
+            <TriangleAlert className="mt-0.5 size-4 shrink-0 text-red-700" />
+            <div><strong>Exportação bloqueada.</strong> Existem erros estruturais reais: conta inexistente, dado obrigatório inválido ou conta de resultado sem destino na DRE. Alertas de revisão e uso da 4859 não bloqueiam.</div>
+          </CardContent>
+        </Card>
       )}
 
       <Card>
         <CardContent className="pt-5">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex gap-2">
-              <Button size="sm" variant={!somentePendentes ? "default" : "outline"} onClick={() => setSomentePendentes(false)}>Todos</Button>
-              <Button size="sm" variant={somentePendentes ? "default" : "outline"} onClick={() => setSomentePendentes(true)}>Pendentes</Button>
+              <Button size="sm" variant={filtroStatus === "todos" ? "default" : "outline"} onClick={() => setFiltroStatus("todos")}>Todos</Button>
+              <Button size="sm" variant={filtroStatus === "alerta" ? "default" : "outline"} onClick={() => setFiltroStatus("alerta")}>Alertas</Button>
+              <Button size="sm" variant={filtroStatus === "pendente" ? "default" : "outline"} onClick={() => setFiltroStatus("pendente")}>Bloqueantes</Button>
             </div>
-            <div className="relative w-full sm:w-96"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" /><Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar conta, documento ou histórico" className="pl-9" /></div>
+            <div className="relative w-full sm:w-96">
+              <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
+              <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar conta, documento ou histórico" className="pl-9" />
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -87,7 +102,25 @@ function Lancamentos() {
                 <th className="p-2">SEQ</th><th className="p-2">Data</th><th className="p-2">Débito</th><th className="p-2">CC Débito</th><th className="p-2">Crédito</th><th className="p-2">CC Crédito</th><th className="p-2">N. Docto</th><th className="p-2 text-right">Valor</th><th className="p-2">Histórico</th><th className="p-2">Origem Razão</th><th className="p-2">Status</th>
               </tr></thead>
               <tbody>{linhas.map((linha) => <tr key={linha.lancamentoId} className="border-b last:border-0">
-                <td className="p-2 font-mono">{linha.seq}</td><td className="p-2">{linha.data}</td><td className="p-2 font-mono">{linha.debito}</td><td className="p-2 font-mono">{linha.ccDebito || "—"}</td><td className="p-2 font-mono">{linha.credito}</td><td className="p-2 font-mono">{linha.ccCredito || "—"}</td><td className="p-2 font-mono text-xs">{linha.documento || "—"}</td><td className="p-2 text-right tabular-nums">{brl.format(linha.valor)}</td><td className="max-w-[420px] p-2">{linha.historico}</td><td className="p-2"><div className="font-mono text-xs">{linha.lancamentoId}</div><div className="text-[11px] text-muted-foreground">{linha.origem}</div></td><td className="p-2">{linha.status === "pronto" ? <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Pronto</Badge> : <div><Badge variant="outline" className="border-amber-400 text-amber-800">Pendente</Badge><div className="mt-1 max-w-[300px] text-[11px] text-amber-800">{linha.pendencias.join(" · ")}</div></div>}</td>
+                <td className="p-2 font-mono">{linha.seq}</td>
+                <td className="p-2">{linha.data}</td>
+                <td className="p-2 font-mono">{linha.debito}</td>
+                <td className="p-2 font-mono">{linha.ccDebito || "—"}</td>
+                <td className="p-2 font-mono">{linha.credito}</td>
+                <td className="p-2 font-mono">{linha.ccCredito || "—"}</td>
+                <td className="p-2 font-mono text-xs">{linha.documento || "—"}</td>
+                <td className="p-2 text-right tabular-nums">{brl.format(linha.valor)}</td>
+                <td className="max-w-[420px] p-2">{linha.historico}</td>
+                <td className="p-2"><div className="font-mono text-xs">{linha.lancamentoId}</div><div className="text-[11px] text-muted-foreground">{linha.origem}</div></td>
+                <td className="p-2">
+                  {linha.status === "pronto" ? (
+                    <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Pronto</Badge>
+                  ) : linha.status === "alerta" ? (
+                    <div><Badge variant="outline" className="border-amber-400 text-amber-800">Alerta · exportável</Badge><div className="mt-1 max-w-[300px] text-[11px] text-amber-800">{linha.alertas.join(" · ")}</div></div>
+                  ) : (
+                    <div><Badge variant="outline" className="border-red-400 text-red-800">Bloqueante</Badge><div className="mt-1 max-w-[300px] text-[11px] text-red-800">{linha.pendencias.join(" · ")}</div></div>
+                  )}
+                </td>
               </tr>)}</tbody>
             </table>
           </div>
@@ -97,7 +130,9 @@ function Lancamentos() {
   );
 }
 
-function Metric({ label, value, money = false, warning = false }: { label: string; value: number; money?: boolean; warning?: boolean }) {
+function Metric({ label, value, money = false, warning = false, danger = false }: { label: string; value: number; money?: boolean; warning?: boolean; danger?: boolean }) {
   const display = money ? brl.format(value) : String(value);
-  return <Card className={warning ? "border-amber-500/40" : ""}><CardContent className="pt-5"><p className="text-xs text-muted-foreground">{label}</p><p className={`mt-1 text-lg font-semibold tabular-nums ${warning ? "text-amber-700" : ""}`}>{display}</p></CardContent></Card>;
+  const border = danger ? "border-red-500/40" : warning ? "border-amber-500/40" : "";
+  const text = danger ? "text-red-700" : warning ? "text-amber-700" : "";
+  return <Card className={border}><CardContent className="pt-5"><p className="text-xs text-muted-foreground">{label}</p><p className={`mt-1 text-lg font-semibold tabular-nums ${text}`}>{display}</p></CardContent></Card>;
 }
