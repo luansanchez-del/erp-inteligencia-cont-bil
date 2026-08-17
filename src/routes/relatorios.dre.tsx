@@ -12,7 +12,7 @@ import { calcularCreditosFederaisDespesas } from "@/data/nitaplast-fechamento-cr
 import {
   conciliacaoPisGerencialJunho,
   conciliacaoCofinsGerencialJunho,
-} from "@/data/nitaplast-dre-detalhada-v4";
+} from "@/data/nitaplast-dre-detalhada-v3";
 import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
