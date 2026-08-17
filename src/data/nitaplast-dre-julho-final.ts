@@ -1,5 +1,6 @@
 import { saldosImplantacao } from "./nitaplast-implantacao";
-import { lancamentosIntegradosJulhoFinal, resumoFechamentoJulhoFinal } from "./nitaplast-razao-julho-final";
+import { lancamentosIntegradosJulhoFinal, resumoFechamentoJulhoFinal } from "./nitaplast-razao-julho-final-v2";
+import { resumoFinanceiroJulho } from "./nitaplast-financeiro-julho";
 
 const arred=(v:number)=>Math.round(v*100)/100;
 const classificacaoPorConta=new Map(saldosImplantacao.map(c=>[c.conta,c.classificacao]));
@@ -37,15 +38,27 @@ for(const l of lancamentosIntegradosJulhoFinal){
 }
 export const composicaoResultadoJulhoFinal=[...mapa.values()].filter(x=>Math.abs(x.valor)>=0.005).map((x,i)=>({id:`DRE-JUL-${i+1}`,conta:x.codigo,classificacao:x.classificacao,descricao:x.descricao,cc:x.cc,centroCusto:x.centroCusto,valor:x.valor,status:x.status,fonte:x.fonte,debitos:arred(x.debitos),creditos:arred(x.creditos)}));
 
-const custos=arred(composicaoResultadoJulhoFinal.filter(x=>x.classificacao.startsWith("4.2")||x.classificacao.startsWith("5.1")).reduce((s,x)=>s+x.valor,0));
-const despesas=arred(composicaoResultadoJulhoFinal.filter(x=>x.classificacao.startsWith("5.")&&!x.classificacao.startsWith("5.1")).reduce((s,x)=>s+x.valor,0));
-const receitasFinanceiras=Math.max(0,creditoLiquido("25098"));
+// 5.3 é custo industrial, não despesa operacional. Mantemos 4.2/5.1 como custo e
+// adicionamos 5.3 para que industrialização, MP e demais custos fabris não fiquem
+// apresentados abaixo do lucro bruto.
+const ehCusto=(x:typeof composicaoResultadoJulhoFinal[number])=>x.classificacao.startsWith("4.2")||x.classificacao.startsWith("5.1")||x.classificacao.startsWith("5.3");
+const contasReceitasFinanceiras=new Set(["25095","25096","25098"]);
+const custos=arred(composicaoResultadoJulhoFinal.filter(ehCusto).reduce((s,x)=>s+x.valor,0));
+const despesas=arred(composicaoResultadoJulhoFinal.filter(x=>x.classificacao.startsWith("5.")&&!x.classificacao.startsWith("5.1")&&!x.classificacao.startsWith("5.3")&&!contasReceitasFinanceiras.has(x.codigo)).reduce((s,x)=>s+x.valor,0));
+const jurosAtivos=Math.max(0,creditoLiquido("25095"));
+const variacaoCambialAtiva=Math.max(0,creditoLiquido("25096"));
+const receitaAplicacoes=Math.max(0,creditoLiquido("25098"));
+const receitasFinanceiras=arred(jurosAtivos+variacaoCambialAtiva+receitaAplicacoes);
+const jcp=Math.max(0,mov("25107"));
+const variacaoCambialPassiva=Math.max(0,mov("25109"));
 const resultado=arred(receitaLiquida-custos-despesas+receitasFinanceiras);
 
 export const dreJulhoFinal={
   receitaProducao,receitaRevenda,receitaBruta,devolucoes,icms,icmsSt,ipi,pis,cofins,deducoes,receitaLiquida,
-  custosReconhecidos:custos,despesasReconhecidas:despesas,receitasFinanceiras,resultado,
+  custosReconhecidos:custos,despesasReconhecidas:despesas,
+  receitasFinanceiras,jurosAtivos,variacaoCambialAtiva,receitaAplicacoes,jcp,variacaoCambialPassiva,resultado,
   status:"em_fechamento" as const,
   resumoRazao:resumoFechamentoJulhoFinal,
-  itensSemFonte:["Folha/provisões 07/2026"]
+  financeiro:resumoFinanceiroJulho,
+  itensSemFonte:[`R$ ${resumoFinanceiroJulho.valorEntradasSemCcPendente.toFixed(2)} de entradas ainda sem centro de custo/documento suficiente`,`Contratos de câmbio ainda pendentes de valor contábil de origem: ${resumoFinanceiroJulho.contratosCambioPendentes}`]
 } as const;
