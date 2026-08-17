@@ -9,18 +9,20 @@ import {
   ReceiptText,
   Scale,
 } from "lucide-react";
+import { FechamentoNitaplastJulho } from "@/components/nitaplast/fechamento-julho";
 import { PageHeader, PageShell } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { useErp } from "@/context/erp-context";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 
 export const Route = createFileRoute("/contabil/fechamento-assistido")({
   head: () => ({
     meta: [
-      { title: "Nitaplast 06/2026 - Fechamento Assistido" },
-      { name: "description", content: "Fechamento contábil da Nitaplast para junho de 2026." },
+      { title: "Nitaplast - Fechamento Assistido" },
+      { name: "description", content: "Fechamento contábil assistido da Nitaplast por competência." },
     ],
   }),
   component: FechamentoAssistidoPage,
@@ -83,6 +85,25 @@ function Metric({ label, value, tone = "default" }: { label: string; value: numb
 }
 
 function FechamentoAssistidoPage() {
+  const { competencia } = useErp();
+
+  if (competencia.id === "2026-07") {
+    return (
+      <PageShell>
+        <PageHeader
+          titulo="Fechamento Assistido - Nitaplast"
+          descricao="Competência 07/2026 • CNPJ 82.295.817/0001-07 • fechamento iniciado pela base documental de julho, seguindo a cadeia Razão → Balancete → DRE."
+          acoes={<Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">Em fechamento</Badge>}
+        />
+        <FechamentoNitaplastJulho />
+      </PageShell>
+    );
+  }
+
+  return <FechamentoJunhoPage />;
+}
+
+function FechamentoJunhoPage() {
   useNitaplastJunho();
   const [somenteRevisao, setSomenteRevisao] = useState(false);
   const [revisados, setRevisados] = useState<string[]>([]);
