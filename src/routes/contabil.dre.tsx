@@ -195,6 +195,7 @@ function DrePage() {
                 const aberta = abertas.has(linha.id);
                 const ok = Math.abs(linha.diferenca) <= tolerancia;
                 const federalExplicada = idsFederaisExplicados.has(linha.id) && !ok;
+                const deducaoExplicadaLinha = linha.id === "deducoes" && deducaoExplicada;
                 const deducaoComResidual = linha.id === "deducoes" && diferencaResidualDeducoes > tolerancia;
                 const diagnostico = linha.tipo === "diagnostico";
                 const financeira = linha.id === "fin-liq" || linha.id === "fin-desp" || linha.id === "fin-rec";
@@ -207,7 +208,7 @@ function DrePage() {
                       : diagnostico
                         ? "border-b bg-amber-50/60"
                         : "border-b";
-                const statusDetalhe = ok ? "confere" : federalExplicada ? "explicada" : deducaoComResidual ? "residual" : "investigar";
+                const statusDetalhe = ok ? "confere" : federalExplicada || deducaoExplicadaLinha ? "explicada" : deducaoComResidual ? "residual" : "investigar";
 
                 return [
                   <tr key={linha.id} className={classe}>
@@ -222,20 +223,20 @@ function DrePage() {
                         <span>{linha.descricao}</span>
                         {diagnostico ? <Badge variant="outline" className="ml-2 border-amber-400 text-[10px] text-amber-800">Diagnóstico</Badge> : null}
                         {financeira ? <Badge variant="outline" className="ml-2 border-sky-400 text-[10px] text-sky-800">Financeiro</Badge> : null}
-                        {federalExplicada ? <Badge variant="outline" className="ml-2 border-emerald-400 text-[10px] text-emerald-800">Conciliada</Badge> : null}
+                        {federalExplicada || deducaoExplicadaLinha ? <Badge variant="outline" className="ml-2 border-emerald-400 text-[10px] text-emerald-800">Conciliada</Badge> : null}
                       </button>
                     </td>
                     <Money value={linha.enviado} />
                     <Money value={linha.calculado} strong={linha.tipo !== "detalhe"} />
-                    <td className={`p-2 text-right font-semibold tabular-nums ${ok || federalExplicada ? "text-emerald-700" : "text-amber-700"}`}>
+                    <td className={`p-2 text-right font-semibold tabular-nums ${ok || federalExplicada || deducaoExplicadaLinha ? "text-emerald-700" : "text-amber-700"}`}>
                       {brl.format(linha.diferenca)}
                       {deducaoComResidual ? <div className="mt-0.5 text-[10px] font-normal text-amber-700">Pendente: {brl.format(diferencaResidualDeducoes)}</div> : null}
-                      {federalExplicada ? <div className="mt-0.5 text-[10px] font-normal text-emerald-700">Diferença de apresentação já conciliada</div> : null}
+                      {federalExplicada || deducaoExplicadaLinha ? <div className="mt-0.5 text-[10px] font-normal text-emerald-700">Diferença de apresentação já conciliada</div> : null}
                     </td>
                     <td className="p-2 text-center">
                       {ok
                         ? <span className="inline-flex items-center gap-1 text-emerald-700"><CheckCircle2 className="size-4" />Confere</span>
-                        : federalExplicada
+                        : federalExplicada || deducaoExplicadaLinha
                           ? <span className="inline-flex items-center gap-1 text-emerald-700"><CheckCircle2 className="size-4" />Explicada</span>
                           : deducaoComResidual
                             ? <span className="inline-flex items-center gap-1 text-amber-700"><CircleAlert className="size-4" />Investigar residual</span>
