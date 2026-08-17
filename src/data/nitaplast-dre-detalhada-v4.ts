@@ -107,7 +107,7 @@ function criterio(id: string) {
 
 export const comparacaoDreDetalhada: LinhaComparacaoDre[] = comparacaoBase.map((linha) => {
   if (linha.id === "deducoes") return { ...linha };
-  if (!idsDeducoes.includes(linha.id)) return linha;
+  if (!idsDeducoes.includes(linha.id)) return { ...linha };
 
   const calculado = valorCalculado(linha.id);
   let composicao = linha.composicao;
@@ -143,7 +143,48 @@ if (linhaDeducoes) {
   linhaDeducoes.criterio = "Total calculado exclusivamente pelo Razão/Balancete. A diferença para a DRE enviada corresponde a valores manuais sem segundo débito fiscal contabilizado.";
 }
 
+function atualizarResultado(id: string, calculado: number, criterioResultado: string) {
+  const linha = mapa.get(id);
+  if (!linha) return;
+  linha.calculado = arred(calculado);
+  linha.diferenca = arred(linha.calculado - linha.enviado);
+  linha.criterio = criterioResultado;
+}
+
+// Qualquer mudança nas deduções precisa percorrer a cadeia inteira da DRE.
+// Nada de manter subtotal antigo depois que a origem Razão/Balancete mudou.
+const receitaCalculada = arred(mapa.get("receita")?.calculado ?? resumoBase.receitaCalculada ?? 0);
+const custosCalculados = arred(mapa.get("custos")?.calculado ?? resumoBase.custosCalculados ?? 0);
+const despesasLiquidasCalculadas = arred(mapa.get("despesas-liquidas")?.calculado ?? resumoBase.despesasLiquidasCalculadas ?? 0);
+const resultadoNaoOperacionalCalculado = arred(mapa.get("nao-op")?.calculado ?? 0);
+const lucroBrutoCalculado = arred(receitaCalculada - totalDeducoes - custosCalculados);
+const resultadoOperacionalCalculado = arred(lucroBrutoCalculado - despesasLiquidasCalculadas);
+const resultadoLiquidoCalculado = arred(resultadoOperacionalCalculado + resultadoNaoOperacionalCalculado);
+
+atualizarResultado(
+  "lucro-bruto",
+  lucroBrutoCalculado,
+  "Receita calculada pelo Razão menos deduções brutas documentadas menos custos/CPV do Razão.",
+);
+atualizarResultado(
+  "resultado-op",
+  resultadoOperacionalCalculado,
+  "Lucro bruto recalculado menos despesas operacionais líquidas calculadas pelo Razão/Balancete.",
+);
+atualizarResultado(
+  "lucro-liq",
+  resultadoLiquidoCalculado,
+  "Resultado operacional recalculado mais resultado não operacional do Razão/Balancete.",
+);
+
 export const resumoDreDetalhada = {
   ...resumoBase,
+  receitaCalculada,
   deducoesCalculadas: totalDeducoes,
+  custosCalculados,
+  lucroBrutoCalculado,
+  despesasLiquidasCalculadas,
+  resultadoOperacionalCalculado,
+  resultadoLiquidoCalculado,
+  diferencaResultado: arred(resultadoLiquidoCalculado - (mapa.get("lucro-liq")?.enviado ?? 0)),
 } as const;
