@@ -112,6 +112,22 @@ function totaisPorCategoria(base: LancamentoIntegrado[]) {
   return totais;
 }
 
+/**
+ * Exposição somente de leitura para os Reports.
+ * Usa exatamente a mesma classificação do fechamento e recebe o mesmo Razão
+ * ajustado da tela. Não consulta DRE manual nem valores enviados.
+ */
+export function calcularDespesasOperacionaisPorCategoria(
+  base: LancamentoIntegrado[],
+): Record<CategoriaDespesaJunho, number> {
+  const totais = totaisPorCategoria(base);
+  const resultado = {} as Record<CategoriaDespesaJunho, number>;
+  for (const categoria of Object.keys(alvos) as CategoriaDespesaJunho[]) {
+    resultado[categoria] = arred(totais.get(categoria) ?? 0);
+  }
+  return resultado;
+}
+
 function nomeConta(codigo: string) {
   if (codigo === "25020") return "25020 - Provisões para Custos";
   const conta = plano.get(codigo);
