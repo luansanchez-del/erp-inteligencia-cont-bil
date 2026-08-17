@@ -2,6 +2,7 @@ import type { LancamentoIntegrado } from "./nitaplast-razao-base";
 import { lancamentosIntegradosJulho as baseJulho } from "./nitaplast-razao-julho";
 import { lancamentosBancariosOperacionaisJulho, resumoLancamentosBancariosOperacionaisJulho } from "./nitaplast-lancamentos-bancarios-julho";
 import { descricaoContaJulho, saldoAberturaJulhoPorConta } from "./nitaplast-saldos-julho";
+import { calcularDepreciacaoImobilizado } from "./nitaplast-imobilizado";
 
 const nome = (c:string) => `${c} - ${descricaoContaJulho.get(c) ?? "Conta a revisar"}`;
 const arred = (v:number) => Math.round(v*100)/100;
@@ -68,7 +69,11 @@ const fechamentoEstoqueFilial: LancamentoIntegrado[] = [
   l({id:"JUL-CPV-F-FINAL",data:"31/07/2026",origem:"FECHAMENTO ESTOQUE FILIAL 07/2026",debitoCodigo:"25138",creditoCodigo:"25945",historico:"Reconhecimento do estoque físico final da filial em 31/07",documento:"INVENTÁRIO FILIAL 31/07/2026",cc:"502",centroCusto:"COMERCIAL SP",valor:577396.32,observacao:"Inventário oficial: 6.629 peças / 38.778,209 kg / R$ 577.396,32.",fonte:"REGISTRO INVENTARIO ESTOQUE FILIAL 31/07/2026"}),
 ];
 
-export const lancamentosIntegradosJulhoFinal: LancamentoIntegrado[] = [...antesEstoque,...fechamentoEstoqueMatriz,...fechamentoEstoqueFilial];
+const antesDepreciacao: LancamentoIntegrado[] = [...antesEstoque,...fechamentoEstoqueMatriz,...fechamentoEstoqueFilial];
+export const calculoDepreciacaoJulho = calcularDepreciacaoImobilizado(antesDepreciacao, "31/07/2026");
+export const posicoesImobilizadoJulho = calculoDepreciacaoJulho;
+
+export const lancamentosIntegradosJulhoFinal: LancamentoIntegrado[] = [...antesDepreciacao,...calculoDepreciacaoJulho.lancamentos];
 export const totalDebitosJulhoFinal=arred(lancamentosIntegradosJulhoFinal.reduce((s,x)=>s+x.valor,0));
 export const totalCreditosJulhoFinal=totalDebitosJulhoFinal;
 export const pendenciasJulhoFinal=lancamentosIntegradosJulhoFinal.filter(x=>x.status==="revisar");
@@ -82,7 +87,13 @@ export const resumoFechamentoJulhoFinal={
   pisCreditos:arred(pis.reduce((s,x)=>s+x[1],0)),cofinsCreditos:arred(cof.reduce((s,x)=>s+x[1],0)),
   icmsMatrizRecolher:99012.38,icmsFilialCredito:11980.13,ipiMatrizRecolher:82103.34,ipiFilialRecolher:31914.13,
   estoqueMatrizFinal:5803744.06,estoqueFilialFinal:577396.32,
-  itensSemFonteJulho:["Folha/provisões 07/2026","Depreciação 07/2026"],
+  imobilizadoBruto:calculoDepreciacaoJulho.totalBruto,
+  depreciacaoAcumulada:calculoDepreciacaoJulho.totalDepreciacaoAcumulada,
+  saldoResidualImobilizado:calculoDepreciacaoJulho.totalResidual,
+  depreciacaoJulho:calculoDepreciacaoJulho.totalDepreciacaoCalculada,
+  gruposDepreciacaoCalculados:calculoDepreciacaoJulho.gruposCalculaveis,
+  gruposImobilizadoSemRegra:calculoDepreciacaoJulho.gruposSemRegra,
+  itensSemFonteJulho:["Folha/provisões 07/2026"],
   itensMantidosForaPorDecisao:["JCP","Juros de mora/ativos não suportados","Juros passivos","Variação cambial"],
 } as const;
 
