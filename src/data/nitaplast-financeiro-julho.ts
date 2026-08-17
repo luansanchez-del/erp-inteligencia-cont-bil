@@ -21,7 +21,9 @@ const nomeConta = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(cod
  *   ficam em pendência para não fabricar resultado.
  */
 const contasBaseJcp = ["2348", "25240", "2515", "5747", "25241"] as const;
-export const baseJcpJulho = arred(contasBaseJcp.reduce((total, conta) => total + (saldoAberturaJulhoPorConta.get(conta) ?? 0), 0));
+// Os saldos patrimoniais de natureza credora são armazenados negativos no mapa de abertura.
+// A base fiscal/econômica do JCP deve ser positiva, por isso invertemos o saldo líquido do PL elegível.
+export const baseJcpJulho = arred(-contasBaseJcp.reduce((total, conta) => total + (saldoAberturaJulhoPorConta.get(conta) ?? 0), 0));
 export const taxaTjlpJulho = 0.007617;
 export const jcpBrutoJulho = arred(baseJcpJulho * taxaTjlpJulho);
 export const aliquotaIrrfJcpJulho = 0.175;
