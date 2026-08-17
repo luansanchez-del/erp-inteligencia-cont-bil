@@ -38,17 +38,23 @@ garantirPlanoFechamentoJunho();
  * - FIL-DOC-PROD-001: lançamento da filial que jogava R$ 350.173,08 integralmente em
  *   Produção com base na apresentação da DRE enviada. Ele é excluído e substituído
  *   abaixo pela composição fiscal real das saídas da filial.
+ *
+ * - EST-REV / EST-FIN: fechamento de estoque legado, com valores anteriores ao
+ *   inventário oficial. Foi substituído pela rotina gerarFechamentoEstoqueMatrizJunho,
+ *   que fecha diretamente nos saldos físicos oficiais de 30/06/2026.
  */
 const lancamentosBaseSaneados = lancamentosBase.filter((linha) => {
   const icmsAntigoValido = linha.origem !== "APURAÇÃO ICMS 06/2026" || linha.id === "TAX-SAI-ICMS";
   const cartaoIndividualAindaNaoValidado = linha.id.startsWith("CAR-LOTE-");
   const depreciacaoProvisoriaSemFichaJunho = linha.id.startsWith("PON-DEP-");
   const receitaFilialCircular = linha.id === "FIL-DOC-PROD-001";
+  const estoqueLegadoSubstituido = linha.id.startsWith("EST-REV-") || linha.id.startsWith("EST-FIN-");
 
   return icmsAntigoValido
     && !cartaoIndividualAindaNaoValidado
     && !depreciacaoProvisoriaSemFichaJunho
-    && !receitaFilialCircular;
+    && !receitaFilialCircular
+    && !estoqueLegadoSubstituido;
 });
 
 /**
