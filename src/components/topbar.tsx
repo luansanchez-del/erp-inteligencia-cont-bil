@@ -41,18 +41,19 @@ export function Topbar() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={competencia.id} onValueChange={setCompetenciaId}>
-            <SelectTrigger className="h-9 w-[102px] sm:w-[118px] md:w-[130px]" aria-label="Selecionar competência">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {competencias.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+
+          <select
+            value={competencia.id}
+            onChange={(event) => setCompetenciaId(event.target.value)}
+            aria-label="Selecionar competência"
+            className="h-9 w-[112px] cursor-pointer rounded-md border border-input bg-background px-3 text-sm font-medium shadow-sm outline-none focus:ring-1 focus:ring-ring sm:w-[128px] md:w-[140px]"
+          >
+            {competencias.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="relative hidden min-w-0 lg:block">
