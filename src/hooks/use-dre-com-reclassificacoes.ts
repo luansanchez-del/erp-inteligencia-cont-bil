@@ -104,61 +104,113 @@ function soma(map: Map<string, LinhaComparacaoDre>, ids: string[]) {
   return arred(ids.reduce((total, id) => total + (map.get(id)?.calculado ?? 0), 0));
 }
 
+function ehReceitaFinanceira(codigo: string) {
+  const conta = plano.get(codigo);
+  if (!conta) return false;
+  const classificacao = conta.classificacao;
+  const descricao = conta.descricao.toLocaleUpperCase("pt-BR");
+  if (classificacao.startsWith("4.1.05.001")) return true;
+  if (!classificacao.startsWith("5.7.12")) return false;
+  if (descricao.includes("RECUPERAÇÃO") || descricao.includes("RECUPERACAO")) return false;
+  if (descricao.includes("AMOSTRA")) return false;
+  if (descricao.includes("RECEITA EVENTUAL") || descricao.includes("RECEITAS EVENTUAIS")) return false;
+  return true;
+}
+
+function ehDespesaFinanceira(codigo: string) {
+  return Boolean(plano.get(codigo)?.classificacao.startsWith("5.8"));
+}
+
+/**
+ * Financeiro de 06/2026 sempre é reconstruído do Razão definitivo.
+ * Assim 2859 (rendimento de aplicações), 25095 (Juros Ativos), 25103 (Juros Passivos),
+ * 25104/25105 (tarifas/IOF) e 25107 (JCP) não dependem de valor pré-calculado da DRE.
+ */
+function reconstruirFinanceiroDoRazao(map: Map<string, LinhaComparacaoDre>) {
+  const compReceitas = new Map<string, ComposicaoDre>();
+  const compDespesas = new Map<string, ComposicaoDre>();
+
+  const acumular = (
+    destino: Map<string, ComposicaoDre>,
+    codigo: string,
+    lancamento: LancamentoIntegrado,
+    debitos: number,
+    creditos: number,
+  ) => {
+    const conta = plano.get(codigo);
+    if (!conta) return;
+    const chave = `${codigo}|${lancamento.cc}|financeiro-razao-062026`;
+    const atual = destino.get(chave) ?? {
+      chave,
+      codigo,
+      classificacao: conta.classificacao,
+      descricao: conta.descricao,
+      cc: lancamento.cc,
+      centroCusto: lancamento.centroCusto,
+      debitos: 0,
+      creditos: 0,
+      valorLinha: 0,
+      lancamentos: 0,
+      fonte: "Razão definitivo 06/2026",
+      observacao: "Composição reconstruída diretamente dos lançamentos do Razão de junho.",
+    };
+    atual.debitos = arred(atual.debitos + debitos);
+    atual.creditos = arred(atual.creditos + creditos);
+    atual.valorLinha = arred(atual.debitos - atual.creditos);
+    atual.lancamentos += 1;
+    destino.set(chave, atual);
+  };
+
+  for (const lancamento of lancamentosIntegrados) {
+    if (ehReceitaFinanceira(lancamento.debitoCodigo)) acumular(compReceitas, lancamento.debitoCodigo, lancamento, lancamento.valor, 0);
+    if (ehReceitaFinanceira(lancamento.creditoCodigo)) acumular(compReceitas, lancamento.creditoCodigo, lancamento, 0, lancamento.valor);
+    if (ehDespesaFinanceira(lancamento.debitoCodigo)) acumular(compDespesas, lancamento.debitoCodigo, lancamento, lancamento.valor, 0);
+    if (ehDespesaFinanceira(lancamento.creditoCodigo)) acumular(compDespesas, lancamento.creditoCodigo, lancamento, 0, lancamento.valor);
+  }
+
+  const receitas = [...compReceitas.values()].filter((item) => Math.abs(item.valorLinha) >= 0.005);
+  const despesas = [...compDespesas.values()].filter((item) => Math.abs(item.valorLinha) >= 0.005);
+  const valorReceitas = arred(receitas.reduce((total, item) => total + item.valorLinha, 0));
+  const valorDespesas = arred(despesas.reduce((total, item) => total + item.valorLinha, 0));
+
+  const linhaReceitas = map.get("fin-rec");
+  if (linhaReceitas) {
+    linhaReceitas.calculado = valorReceitas;
+    linhaReceitas.diferenca = arred(valorReceitas - linhaReceitas.enviado);
+    linhaReceitas.composicao = receitas;
+    linhaReceitas.criterio = "Receitas financeiras reconstruídas diretamente do Razão de 06/2026. Inclui 2859 - Receitas Aplicações Financeiras e 25095 - Juros Ativos.";
+  }
+
+  const linhaDespesas = map.get("fin-desp");
+  if (linhaDespesas) {
+    linhaDespesas.calculado = valorDespesas;
+    linhaDespesas.diferenca = arred(valorDespesas - linhaDespesas.enviado);
+    linhaDespesas.composicao = despesas;
+    linhaDespesas.criterio = "Despesas financeiras reconstruídas diretamente das contas 5.8 do Razão de 06/2026.";
+  }
+}
+
 /**
  * DRE de deduções usa o débito do imposto incidente nas SAÍDAS.
  * Créditos de entrada/aquisição, energia, ativo, devoluções e outros créditos
  * permanecem no Razão/Balancete, mas não reduzem a linha de imposto sobre vendas.
- *
- * A DRE enviada de junho apresenta PIS/COFINS da matriz na base consolidada da
- * apuração da empresa. A abertura gerencial da filial é demonstrada separadamente
- * nota a nota; não subtraímos a filial novamente da linha de controle da matriz.
  */
 function aplicarDebitosDeSaidaNasDeducoes(map: Map<string, LinhaComparacaoDre>) {
   const regras = [
-    {
-      linhaId: "ipi-m",
-      lancamentoIds: ["TAX-SAI-IPI"],
-      criterio: "IPI sobre vendas: débito das saídas. Créditos fiscais e estornos permanecem no Razão, mas não reduzem esta linha da DRE.",
-    },
-    {
-      linhaId: "icms-m",
-      lancamentoIds: ["TAX-SAI-ICMS"],
-      criterio: "ICMS sobre vendas da matriz: débito das saídas. Créditos de entradas, energia, ativo ou créditos presumidos não reduzem esta linha da DRE.",
-    },
-    {
-      linhaId: "pis-m",
-      lancamentoIds: ["TAX-SAI-PIS"],
-      criterio: "PIS da linha de controle da matriz: débito consolidado das saídas da empresa. A parcela gerencial da filial é aberta nota a nota e não é subtraída novamente desta linha.",
-    },
-    {
-      linhaId: "cofins-m",
-      lancamentoIds: ["TAX-SAI-COF"],
-      criterio: "COFINS da linha de controle da matriz: débito consolidado das saídas da empresa. A parcela gerencial da filial é aberta nota a nota e não é subtraída novamente desta linha.",
-    },
-    {
-      linhaId: "icms-st",
-      lancamentoIds: ["TAX-SAI-ICMSST"],
-      criterio: "ICMS-ST da DRE: débito incidente nas saídas, sem compensar créditos fiscais de outras naturezas.",
-    },
-    {
-      linhaId: "icms-f",
-      lancamentoIds: ["FIL-TAX-ICMS"],
-      criterio: "ICMS da filial: débito das saídas da filial. Créditos de entradas e transferências não reduzem esta linha da DRE.",
-    },
-    {
-      linhaId: "ipi-f",
-      lancamentoIds: ["FIL-TAX-IPI"],
-      criterio: "IPI da filial: débito das saídas da filial. Créditos fiscais permanecem no Razão/Balancete e não reduzem esta linha da DRE.",
-    },
+    { linhaId: "ipi-m", lancamentoIds: ["TAX-SAI-IPI"], criterio: "IPI sobre vendas: débito das saídas. Créditos fiscais e estornos permanecem no Razão, mas não reduzem esta linha da DRE." },
+    { linhaId: "icms-m", lancamentoIds: ["TAX-SAI-ICMS"], criterio: "ICMS sobre vendas da matriz: débito das saídas. Créditos de entradas, energia, ativo ou créditos presumidos não reduzem esta linha da DRE." },
+    { linhaId: "pis-m", lancamentoIds: ["TAX-SAI-PIS"], criterio: "PIS da linha de controle da matriz: débito consolidado das saídas da empresa. A parcela gerencial da filial é aberta nota a nota e não é subtraída novamente desta linha." },
+    { linhaId: "cofins-m", lancamentoIds: ["TAX-SAI-COF"], criterio: "COFINS da linha de controle da matriz: débito consolidado das saídas da empresa. A parcela gerencial da filial é aberta nota a nota e não é subtraída novamente desta linha." },
+    { linhaId: "icms-st", lancamentoIds: ["TAX-SAI-ICMSST"], criterio: "ICMS-ST da DRE: débito incidente nas saídas, sem compensar créditos fiscais de outras naturezas." },
+    { linhaId: "icms-f", lancamentoIds: ["FIL-TAX-ICMS"], criterio: "ICMS da filial: débito das saídas da filial. Créditos de entradas e transferências não reduzem esta linha da DRE." },
+    { linhaId: "ipi-f", lancamentoIds: ["FIL-TAX-IPI"], criterio: "IPI da filial: débito das saídas da filial. Créditos fiscais permanecem no Razão/Balancete e não reduzem esta linha da DRE." },
   ] as const;
 
   for (const regra of regras) {
     const linha = map.get(regra.linhaId);
     if (!linha) continue;
-
     const lancamentos = lancamentosIntegrados.filter((item) => regra.lancamentoIds.includes(item.id as never));
     if (!lancamentos.length) continue;
-
     const valor = arred(lancamentos.reduce((total, item) => total + item.valor, 0));
     linha.calculado = valor;
     linha.diferenca = arred(valor - linha.enviado);
@@ -195,21 +247,11 @@ function recalcularDerivadas(map: Map<string, LinhaComparacaoDre>) {
   set("deducoes", soma(map, idsDeducoes));
   set("custos", soma(map, idsCustos));
   set("lucro-bruto", (map.get("receita")?.calculado ?? 0) - (map.get("deducoes")?.calculado ?? 0) - (map.get("custos")?.calculado ?? 0));
-
   set("fin-liq", (map.get("fin-desp")?.calculado ?? 0) + (map.get("fin-rec")?.calculado ?? 0));
   set("despesas", soma(map, idsOperacionais) + (map.get("fin-liq")?.calculado ?? 0));
   set("despesas-liquidas", (map.get("despesas")?.calculado ?? 0) + (map.get("credito-pis")?.calculado ?? 0) + (map.get("credito-cofins")?.calculado ?? 0));
   set("resultado-op", (map.get("lucro-bruto")?.calculado ?? 0) - (map.get("despesas-liquidas")?.calculado ?? 0));
-
-  set(
-    "nao-op",
-    (map.get("alienacao")?.calculado ?? 0)
-      - (map.get("baixa")?.calculado ?? 0)
-      + (map.get("rec-vinter")?.calculado ?? 0)
-      + (map.get("sinistros")?.calculado ?? 0)
-      + (map.get("outras")?.calculado ?? 0)
-      + (map.get("equiv")?.calculado ?? 0),
-  );
+  set("nao-op", (map.get("alienacao")?.calculado ?? 0) - (map.get("baixa")?.calculado ?? 0) + (map.get("rec-vinter")?.calculado ?? 0) + (map.get("sinistros")?.calculado ?? 0) + (map.get("outras")?.calculado ?? 0) + (map.get("equiv")?.calculado ?? 0));
   set("lucro-liq", (map.get("resultado-op")?.calculado ?? 0) + (map.get("nao-op")?.calculado ?? 0));
 }
 
@@ -223,15 +265,9 @@ export function useDreComReclassificacoes() {
     }));
     const map = new Map(linhas.map((linha) => [linha.id, linha]));
 
-    // O identificador interno foi preservado por compatibilidade com a versão anterior.
-    // O valor é de 06/2026 e agora possui lançamento contábil explícito no Razão.
-    const ajusteJunho = map.get("ajuste-jul");
-    if (ajusteJunho) {
-      ajusteJunho.descricao = "Ajuste de estoque incorporado ao fechamento final de 06/2026";
-      ajusteJunho.calculado = ajusteJunho.enviado;
-      ajusteJunho.criterio = "Contabilizado no Razão em 30/06/2026: D 25135 - Estoque de Matéria-Prima / C 25944 - CPV Matriz, R$ 82.536,10. O inventário oficial e o lucro final de junho já incorporam este ajuste; não repetir em 07/2026.";
-      ajusteJunho.diferenca = 0;
-    }
+    // Financeiro sempre nasce do Razão de junho; nenhum valor financeiro é herdado
+    // da DRE enviada e nenhum ajuste de julho é forçado dentro de 06/2026.
+    reconstruirFinanceiroDoRazao(map);
 
     const ajustes = gerarLancamentosReclassificacao(lancamentosIntegrados, reclassificacoes);
 
@@ -247,7 +283,6 @@ export function useDreComReclassificacoes() {
         const linha = map.get(destino.id);
         const conta = plano.get(ponta.codigo);
         if (!linha || !conta) continue;
-
         const delta = arred(ponta.efeito * destino.multiplicador);
         linha.calculado = arred(linha.calculado + delta);
         linha.diferenca = arred(linha.calculado - linha.enviado);
@@ -268,8 +303,6 @@ export function useDreComReclassificacoes() {
       }
     }
 
-    // Regra final da DRE: imposto sobre vendas usa o débito das saídas.
-    // Assim créditos fiscais não criam falsa divergência na dedução da receita.
     aplicarDebitosDeSaidaNasDeducoes(map);
     recalcularDerivadas(map);
 
