@@ -30,9 +30,13 @@ function DrePage() {
   const duplicidadeFederaisFilial = Math.round((pisFilialEnviado + cofinsFilialEnviado) * 100) / 100;
   const diferencaDeducoes = Math.abs(deducoesResumo?.diferenca ?? 0);
   const diferencaResidualDeducoes = Math.max(0, Math.round((diferencaDeducoes - duplicidadeFederaisFilial) * 100) / 100);
+  const deducaoExplicada = deducoesResumo
+    && Math.abs(deducoesResumo.diferenca) > tolerancia
+    && diferencaResidualDeducoes <= tolerancia;
   const linhasPendentes = comparacaoDreDetalhada.filter((linha) =>
     Math.abs(linha.diferenca) > tolerancia
     && !idsFederaisExplicados.has(linha.id)
+    && !(linha.id === "deducoes" && deducaoExplicada)
     && linha.id !== "ajuste-jul",
   ).length;
   const todosIds = comparacaoDreDetalhada.map((linha) => linha.id);
