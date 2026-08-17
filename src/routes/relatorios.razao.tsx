@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Printer } from "lucide-react";
+import { Download, Printer } from "lucide-react";
 import { PageHeader, PageShell } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { saldosImplantacao } from "@/data/nitaplast-implantacao";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 import { usePrintMode } from "@/hooks/use-print-mode";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
+import { exportarExcel } from "@/lib/exportar-excel";
 
 export const Route = createFileRoute("/relatorios/razao")({ component: RazaoReportPage });
 
@@ -68,12 +69,58 @@ function RazaoReportPage() {
   const fim = inicio + POR_PAGINA;
   const linhasVisiveis = printing ? linhas : linhas.slice(inicio, fim);
 
+  function exportarRazaoExcel() {
+    if (!contaSelecionada) return;
+
+    exportarExcel({
+      arquivo: `Nitaplast_Razao_${contaSelecionada}_062026.xlsx`,
+      aba: "Razao",
+      titulo: "NITAPLAST IND E COM DE PLÁSTICOS INDUSTRIAIS LTDA — RAZÃO ANALÍTICO",
+      subtitulo: `Competência 06/2026 · Conta ${contaSelecionada} · ${conta?.classificacao ?? ""} · ${conta?.descricao ?? ""} · Saldo anterior ${brl.format(saldoAnterior)} · Débitos ${brl.format(debitos)} · Créditos ${brl.format(creditos)} · Saldo final ${brl.format(saldoFinal)}`,
+      colunas: [
+        { cabecalho: "Data", largura: 12 },
+        { cabecalho: "Lançamento", largura: 20 },
+        { cabecalho: "Contrapartida", largura: 36 },
+        { cabecalho: "Histórico", largura: 58 },
+        { cabecalho: "Documento", largura: 28 },
+        { cabecalho: "CC", largura: 14 },
+        { cabecalho: "Débito", largura: 16, tipo: "numero" },
+        { cabecalho: "Crédito", largura: 16, tipo: "numero" },
+        { cabecalho: "Saldo", largura: 16, tipo: "numero" },
+      ],
+      linhas: linhas.map((linha) => {
+        const contrapartida = linha.debitoCodigo === contaSelecionada ? linha.credito : linha.debito;
+        return [
+          linha.data,
+          linha.id,
+          contrapartida,
+          linha.historico,
+          linha.documento || "",
+          linha.cc && linha.cc !== "0" ? linha.cc : "",
+          linha.debito || 0,
+          linha.credito || 0,
+          linha.saldo,
+        ];
+      }),
+    });
+  }
+
   return (
     <PageShell>
       <PageHeader
         titulo="Razão Report — Nitaplast"
         descricao="Razão analítico da competência 06/2026."
-        acoes={<div className="flex items-center gap-2"><Badge variant="outline">06/2026</Badge><Button variant="outline" size="sm" className="gap-2" onClick={printAll}><Printer className="size-4" />Imprimir / PDF</Button></div>}
+        acoes={
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">06/2026</Badge>
+            <Button variant="outline" size="sm" className="gap-2" onClick={exportarRazaoExcel} disabled={!contaSelecionada}>
+              <Download className="size-4" />Exportar Excel
+            </Button>
+            <Button variant="outline" size="sm" className="gap-2" onClick={printAll}>
+              <Printer className="size-4" />Imprimir / PDF
+            </Button>
+          </div>
+        }
       />
 
       <Card className="print:border-0 print:shadow-none">
