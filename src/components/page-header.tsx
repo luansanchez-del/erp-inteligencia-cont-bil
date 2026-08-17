@@ -2,10 +2,10 @@ import type { ReactNode } from "react";
 import { useErp } from "@/context/erp-context";
 import {
   BalanceteJulho,
-  DreJulho,
   LancamentosJulho,
   RazaoJulho,
 } from "@/components/nitaplast/contabil-julho";
+import { DreJulhoCompleta } from "@/components/nitaplast/dre-julho-completa";
 
 const rotasSensíveisCompetencia = [
   "/contabil/balancete",
@@ -87,7 +87,7 @@ export function PageShell({ children }: { children: ReactNode }) {
 function telaContabilJulho(pathname: string) {
   if (pathname === "/contabil/balancete") return <BalanceteJulho />;
   if (pathname === "/contabil/razao") return <RazaoJulho />;
-  if (pathname === "/contabil/dre") return <DreJulho />;
+  if (pathname === "/contabil/dre") return <DreJulhoCompleta />;
   if (pathname === "/contabil/lancamentos") return <LancamentosJulho />;
   return null;
 }
