@@ -69,6 +69,7 @@ export const navGroups: NavGroup[] = [
       { label: "Razão Report", to: "/relatorios/razao" },
       { label: "Diário Report", to: "/relatorios/diario" },
       { label: "Balancete Report", to: "/contabil/balancete" },
+      { label: "Balancete por Centro de Custo", to: "/relatorios/balancete-centro-custo" },
       { label: "Balanço Patrimonial Report", to: "/contabil/balanco-patrimonial" },
     ],
   },
