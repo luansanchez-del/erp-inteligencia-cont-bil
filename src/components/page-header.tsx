@@ -6,6 +6,7 @@ import {
   RazaoJulho,
 } from "@/components/nitaplast/contabil-julho";
 import { DreJulhoCompleta } from "@/components/nitaplast/dre-julho-completa";
+import { FechamentoNitaplastJulho } from "@/components/nitaplast/fechamento-julho";
 
 const rotasSensíveisCompetencia = [
   "/contabil/balancete",
@@ -73,7 +74,7 @@ export function PageShell({ children }: { children: ReactNode }) {
       <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-5 p-4 md:p-6">
         <PageHeader
           titulo={`${nomeModulo(pathname)} — 07/2026`}
-          descricao="Esta rota ainda está sendo migrada para a escrituração específica de julho. Balancete, Razão, DRE e Lançamentos já usam a base contábil real da competência."
+          descricao="Esta rota ainda não possui visão específica para julho. Nenhum dado de junho é reaproveitado."
           acoes={<StatusPill label="Em fechamento" />}
         />
       </div>
@@ -88,6 +89,7 @@ function telaContabilJulho(pathname: string) {
   if (pathname === "/contabil/razao") return <RazaoJulho />;
   if (pathname === "/contabil/dre") return <DreJulhoCompleta />;
   if (pathname === "/contabil/lancamentos") return <LancamentosJulho />;
+  if (pathname === "/contabil/fechamento") return <FechamentoNitaplastJulho />;
   return null;
 }
 
