@@ -7,11 +7,18 @@ const arred = (valor: number) => Math.round(valor * 100) / 100;
  * Fechamento financeiro contábil de 06/2026.
  *
  * REGRA OBRIGATÓRIA:
- * fato de junho -> lançamento em 30/06 -> Razão -> Balancete -> DRE.
+ * fato de junho -> lançamento -> Razão -> Balancete -> DRE.
  *
  * Juros Ativos e Juros Passivos são fatos contábeis próprios e não podem ser
  * calculados como "diferença para fechar a DRE". Tarifas, IOF, IRRF e JCP
  * permanecem separados nas respectivas contas.
+ *
+ * IMPORTANTE — JUROS ATIVOS:
+ * o controle de fechamento informa R$ 25.294,70, porém não há nos documentos
+ * disponíveis uma contrapartida bancária/aplicação que comprove D 54. Portanto
+ * o sistema NÃO cria lançamento automático para esse valor. A conta 25095 só
+ * recebe Juros Ativos quando a contrapartida documental (cliente/duplicata,
+ * banco ou outra conta efetivamente comprovada) estiver identificada.
  *
  * A composição de R$ 13.492,62 das demais despesas financeiras de junho é:
  * - Despesas bancárias já existentes no Razão: R$ 2.807,23;
@@ -157,25 +164,6 @@ const lancamentoJcp: LancamentoIntegrado = {
   fonte: "Fechamento financeiro contábil de junho/2026",
 };
 
-const lancamentoJurosAtivos: LancamentoIntegrado = {
-  id: "FIN-JUROS-ATIVOS-062026",
-  data: "30/06/2026",
-  origem: "FECHAMENTO FINANCEIRO CONTÁBIL 06/2026",
-  debitoCodigo: "54",
-  debito: nomeConta("54"),
-  creditoCodigo: "25095",
-  credito: nomeConta("25095"),
-  historico: "Juros ativos de junho/2026",
-  documento: "JUROS ATIVOS 06/2026",
-  cc: "901",
-  centroCusto: "RECEITAS FINANCEIRAS",
-  valor: JUROS_ATIVOS,
-  status: "validado",
-  observacao: "Lançamento próprio de Juros Ativos. Não é complemento gerencial da DRE.",
-  rastreio: "documento",
-  fonte: "Fechamento financeiro contábil de junho/2026",
-};
-
 const lancamentoJurosPassivos: LancamentoIntegrado = {
   id: "FIN-JUROS-PASSIVOS-062026",
   data: "30/06/2026",
@@ -208,11 +196,11 @@ export type ValidacaoFinanceiroJunho = {
 };
 
 export function validarFechamentoFinanceiroJunho(base: LancamentoIntegrado[]): ValidacaoFinanceiroJunho {
-  const receitasDocumentadas = arred(totalReceitasFinanceiras(base) - (base.some((linha) => linha.id === "FIN-JUROS-ATIVOS-062026") ? JUROS_ATIVOS : 0));
+  const receitasDocumentadas = arred(-movimentoLiquido(base, "2859"));
   const receitasFinanceirasCalculadas = totalReceitasFinanceiras(base);
   const despesasFinanceirasCalculadas = totalDespesasFinanceiras(base);
   const resultadoFinanceiroLiquidoCalculado = arred(despesasFinanceirasCalculadas - receitasFinanceirasCalculadas);
-  const jurosAtivosLancados = arred(base.filter((linha) => linha.id === "FIN-JUROS-ATIVOS-062026").reduce((t, linha) => t + linha.valor, 0));
+  const jurosAtivosLancados = arred(-movimentoLiquido(base, "25095"));
   const jurosPassivosLancados = arred(base.filter((linha) => linha.id === "FIN-JUROS-PASSIVOS-062026").reduce((t, linha) => t + linha.valor, 0));
   const jcpLancado = arred(base.filter((linha) => linha.id === "FIN-JCP-062026").reduce((t, linha) => t + linha.valor, 0));
   const mensagens: string[] = [];
@@ -221,7 +209,7 @@ export function validarFechamentoFinanceiroJunho(base: LancamentoIntegrado[]): V
     mensagens.push(`Rendimentos documentados no Razão: R$ ${receitasDocumentadas.toFixed(2)}; controle dos extratos/lote final: R$ ${RECEITA_EXTRATOS_CONTROLE.toFixed(2)}.`);
   }
   if (Math.abs(jurosAtivosLancados - JUROS_ATIVOS) > 0.01) {
-    mensagens.push(`Juros Ativos de junho não estão integralmente no Razão. Calculado R$ ${jurosAtivosLancados.toFixed(2)} / esperado R$ ${JUROS_ATIVOS.toFixed(2)}.`);
+    mensagens.push(`Juros Ativos de junho aguardam contrapartida documental. Razão comprovado em 25095: R$ ${jurosAtivosLancados.toFixed(2)} / controle do fechamento: R$ ${JUROS_ATIVOS.toFixed(2)}. Não lançar em banco/aplicação sem extrato ou composição por cliente/duplicata.`);
   }
   if (Math.abs(jurosPassivosLancados - JUROS_PASSIVOS) > 0.01) {
     mensagens.push(`Juros Passivos de junho não estão conciliados no Razão. Calculado R$ ${jurosPassivosLancados.toFixed(2)} / esperado R$ ${JUROS_PASSIVOS.toFixed(2)}.`);
@@ -267,7 +255,6 @@ export function aplicarFechamentoFinanceiroJunho(
     ...baseSemProvisoriosEDuplicidades,
     ...rendimentosInvestFacilDoLoteFinal,
     lancamentoJcp,
-    lancamentoJurosAtivos,
     lancamentoJurosPassivos,
   ];
 }
@@ -275,6 +262,7 @@ export function aplicarFechamentoFinanceiroJunho(
 export const fechamentoFinanceiroJunho = {
   receitaFinanceiraExtratosControle: RECEITA_EXTRATOS_CONTROLE,
   jurosAtivos: JUROS_ATIVOS,
+  jurosAtivosStatus: "aguardando-contrapartida-documental",
   jurosPassivos: JUROS_PASSIVOS,
   despesasBancarias: DESPESAS_BANCARIAS_CONTROLE,
   iof: IOF_CONTROLE,
