@@ -6,71 +6,75 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  gerarCsvLoteContabilJunho,
-  loteContabilJunho,
-  resumoLoteContabilJunho,
-} from "@/data/nitaplast-lote-final-junho";
+import { gerarCsvLoteContabilJunho, montarLoteContabilJunho } from "@/data/nitaplast-lote-final-junho";
+import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
+import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
 
 export const Route = createFileRoute("/contabil/lancamentos")({ component: Lancamentos });
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 type FiltroStatus = "todos" | "alerta" | "pendente";
 
-function baixarCsv() {
-  const conteudo = gerarCsvLoteContabilJunho();
-  const blob = new Blob(["\uFEFF", conteudo], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "Nitaplast_062026_Lancamentos_CC.csv";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
 function Lancamentos() {
   useNitaplastJunho();
+  const { aplicar } = useReclassificacoesInteligentes("2026-06");
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>("todos");
 
+  // EXATAMENTE A MESMA BASE DO BALANCETE E DA DRE OFICIAL.
+  const razaoAjustado = useMemo(() => aplicar(lancamentosIntegrados), [aplicar]);
+  const lote = useMemo(() => montarLoteContabilJunho(razaoAjustado), [razaoAjustado]);
+  const resumo = lote.resumo;
+
   const linhas = useMemo(() => {
     const q = busca.toLocaleLowerCase("pt-BR").trim();
-    return loteContabilJunho.filter((linha) => {
+    return lote.linhas.filter((linha) => {
       if (filtroStatus !== "todos" && linha.status !== filtroStatus) return false;
       if (!q) return true;
       return [linha.seq, linha.data, linha.debito, linha.credito, linha.ccDebito, linha.ccCredito, linha.documento, linha.historico, linha.lancamentoId, linha.origem]
         .join(" ").toLocaleLowerCase("pt-BR").includes(q);
     });
-  }, [busca, filtroStatus]);
+  }, [busca, filtroStatus, lote.linhas]);
+
+  function baixarCsv() {
+    const conteudo = gerarCsvLoteContabilJunho(lote.prontas);
+    const blob = new Blob(["\uFEFF", conteudo], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "Nitaplast_062026_Lancamentos_CC.csv";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <PageShell>
       <PageHeader
         titulo="Lançamentos finais — Nitaplast"
-        descricao="Cada partida do Razão é transformada no layout contábil de importação. Competência 06/2026."
+        descricao="O lote é o espelho do mesmo Razão que alimenta o Balancete e a DRE Oficial. Competência 06/2026."
         acoes={
-          <Button size="sm" className="gap-2" onClick={baixarCsv} disabled={!resumoLoteContabilJunho.podeFinalizar}>
+          <Button size="sm" className="gap-2" onClick={baixarCsv} disabled={!resumo.podeFinalizar}>
             <Download className="size-4" /> Gerar CSV final
           </Button>
         }
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-        <Metric label="Partidas do Razão" value={resumoLoteContabilJunho.totalPartidas} />
-        <Metric label="Prontas" value={resumoLoteContabilJunho.prontas} />
-        <Metric label="Alertas exportáveis" value={resumoLoteContabilJunho.alertas} warning={resumoLoteContabilJunho.alertas > 0} />
-        <Metric label="Pendências bloqueantes" value={resumoLoteContabilJunho.pendentes} danger={resumoLoteContabilJunho.pendentes > 0} />
-        <Metric label="Valor das partidas" value={resumoLoteContabilJunho.valorTotal} money />
-        <Metric label="Valor bloqueado" value={resumoLoteContabilJunho.valorPendente} money danger={resumoLoteContabilJunho.valorPendente > 0} />
+        <Metric label="Partidas do Razão" value={resumo.totalPartidas} />
+        <Metric label="Prontas" value={resumo.prontas} />
+        <Metric label="Alertas exportáveis" value={resumo.alertas} warning={resumo.alertas > 0} />
+        <Metric label="Pendências bloqueantes" value={resumo.pendentes} danger={resumo.pendentes > 0} />
+        <Metric label="Valor das partidas" value={resumo.valorTotal} money />
+        <Metric label="Valor bloqueado" value={resumo.valorPendente} money danger={resumo.valorPendente > 0} />
       </div>
 
-      {resumoLoteContabilJunho.podeFinalizar ? (
+      {resumo.podeFinalizar ? (
         <Card className="border-emerald-500/40 bg-emerald-500/5">
           <CardContent className="pt-5 text-sm">
-            <strong>Lote apto para exportação.</strong> Alertas, inclusive movimentos na conta transitória 4859, serão exportados normalmente e permanecem identificados para reclassificação posterior.
+            <strong>Lote apto para exportação.</strong> Ele contém o mesmo Razão ajustado usado no Balancete e na DRE Oficial. Alertas, inclusive a conta transitória 4859, são exportáveis e permanecem identificados para revisão posterior.
           </CardContent>
         </Card>
       ) : (
