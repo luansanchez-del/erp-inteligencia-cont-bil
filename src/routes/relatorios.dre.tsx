@@ -40,6 +40,23 @@ function detalhes(grupo: GrupoDreBalancete, contas: ContaResultadoJunho[]): Linh
   }));
 }
 
+/**
+ * O subtotal de deduções usa débito BRUTO dos impostos sobre vendas.
+ * Portanto as linhas de detalhe precisam usar o mesmo critério; exibir saldo
+ * líquido aqui faria o subtotal não fechar com a soma visual das contas.
+ */
+function detalhesDeducoes(contas: ContaResultadoJunho[]): LinhaReport[] {
+  return contas.map((conta) => ({
+    id: `deducoes-${conta.codigo}`,
+    descricao: `${conta.codigo} · ${conta.descricao}`,
+    valor: conta.classificacao.startsWith("4.1.03.005")
+      ? -arred(conta.debitos)
+      : conta.resultado,
+    nivel: 1,
+    tipo: "detalhe",
+  }));
+}
+
 function DreReportPage() {
   useNitaplastJunho();
   const { aplicar } = useReclassificacoesInteligentes("2026-06");
@@ -60,7 +77,7 @@ function DreReportPage() {
       ...detalhes("receita", apuracao.contasPorGrupo.receita),
 
       { id: "deducoes", descricao: "(-) Deduções da Receita Bruta", valor: -r.deducoes, nivel: 0, tipo: "grupo" },
-      ...detalhes("deducoes", apuracao.contasPorGrupo.deducoes),
+      ...detalhesDeducoes(apuracao.contasPorGrupo.deducoes),
 
       { id: "receita-liquida", descricao: "Receita Operacional Líquida", valor: receitaLiquida, nivel: 0, tipo: "subtotal" },
 
