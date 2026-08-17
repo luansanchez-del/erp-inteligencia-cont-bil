@@ -138,11 +138,15 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ErpProvider>
         <SidebarProvider>
-          <div className="flex min-h-screen w-full bg-background">
-            <AppSidebar />
-            <div className="flex min-w-0 flex-1 flex-col">
-              <Topbar />
-              <main className="min-w-0 flex-1">
+          <div className="flex min-h-screen w-full bg-background print:block print:min-h-0 print:bg-white">
+            <div className="print:hidden">
+              <AppSidebar />
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col print:block print:w-full">
+              <div className="print:hidden">
+                <Topbar />
+              </div>
+              <main className="min-w-0 flex-1 print:w-full print:min-w-0">
                 {/* Required: nested routes render here. */}
                 <Outlet />
               </main>
@@ -150,7 +154,9 @@ function RootComponent() {
           </div>
         </SidebarProvider>
       </ErpProvider>
-      <Toaster />
+      <div className="print:hidden">
+        <Toaster />
+      </div>
     </QueryClientProvider>
   );
 }
