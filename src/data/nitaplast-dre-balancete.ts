@@ -63,9 +63,16 @@ function classificarGrupo(classificacao: string, descricao: string): GrupoDreBal
   if (classificacao.startsWith("5.8.")) return "despesas-financeiras";
   if (classificacao.startsWith("5.9.")) return "nao-operacional";
 
-  // Despesas operacionais propriamente ditas. Créditos dentro desses grupos
-  // (ex.: PIS/COFINS sobre custos e despesas) reduzem o valor líquido automaticamente.
-  if (classificacao.startsWith("5.7.01") || classificacao.startsWith("5.7.03") || classificacao.startsWith("5.7.09")) return "despesas-operacionais";
+  // Despesas operacionais propriamente ditas. Inclui o ramo 5.7.05 de veículos,
+  // que existe no plano oficial e não pode ficar fora da DRE calculada.
+  // Créditos dentro desses grupos (ex.: PIS/COFINS sobre custos e despesas)
+  // reduzem o valor líquido automaticamente.
+  if (
+    classificacao.startsWith("5.7.01")
+    || classificacao.startsWith("5.7.03")
+    || classificacao.startsWith("5.7.05")
+    || classificacao.startsWith("5.7.09")
+  ) return "despesas-operacionais";
 
   return "sem-vinculo";
 }
