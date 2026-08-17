@@ -19,6 +19,10 @@ const nomeConta = (codigo: string) => `${codigo} - ${descricaoPorConta.get(codig
  * - a baixa fiscal CFOP 3101 de R$ 1.092.407,58 permanece no Razão;
  * - como a liquidação cambial ocorreu posteriormente, em 30/06 a contrapartida fica
  *   em obrigação a pagar, sem movimentar banco de julho dentro de junho.
+ *
+ * IMPORTANTE PARA APLICAÇÃO:
+ * divergência de conciliação nunca lança exceção em import-time. A tela deve abrir
+ * normalmente e apresentar o problema como validação/bloqueio contábil.
  */
 const obrigacaoCambialJunho: LancamentoIntegrado = {
   id: "IMP-CAMBIO-062026",
@@ -47,30 +51,50 @@ function movimentoConta(lancamentos: LancamentoIntegrado[], codigo: string) {
   }, 0));
 }
 
+export type ValidacaoImportacoesJunho = {
+  baixaFiscalCalculada: number;
+  baixaFiscalEsperada: number;
+  saldoFinalCalculado: number;
+  saldoFinalEsperado: number;
+  baixaFiscalOk: boolean;
+  saldoFinalOk: boolean;
+  bloqueado: boolean;
+  mensagens: string[];
+};
+
+export function validarFechamentoImportacoesJunho(lancamentos: LancamentoIntegrado[]): ValidacaoImportacoesJunho {
+  const baixaFiscalCalculada = arred(lancamentos
+    .filter((linha) => linha.creditoCodigo === "25116" && linha.debitoCodigo === "3093")
+    .reduce((total, linha) => total + linha.valor, 0));
+  const saldoFinalCalculado = arred(SALDO_INICIAL_IMPORTACOES + movimentoConta(lancamentos, "25116"));
+  const baixaFiscalOk = Math.abs(baixaFiscalCalculada - VALOR_IMPORTACOES_NACIONALIZADAS) <= 0.01;
+  const saldoFinalOk = Math.abs(saldoFinalCalculado - SALDO_FINAL_ESPERADO) <= 0.01;
+  const mensagens: string[] = [];
+
+  if (!baixaFiscalOk) {
+    mensagens.push(`Baixa fiscal CFOP 3101: calculado R$ ${baixaFiscalCalculada.toFixed(2)} / esperado R$ ${VALOR_IMPORTACOES_NACIONALIZADAS.toFixed(2)}.`);
+  }
+  if (!saldoFinalOk) {
+    mensagens.push(`Saldo final da 25116: calculado R$ ${saldoFinalCalculado.toFixed(2)} / esperado R$ ${SALDO_FINAL_ESPERADO.toFixed(2)}.`);
+  }
+
+  return {
+    baixaFiscalCalculada,
+    baixaFiscalEsperada: VALOR_IMPORTACOES_NACIONALIZADAS,
+    saldoFinalCalculado,
+    saldoFinalEsperado: SALDO_FINAL_ESPERADO,
+    baixaFiscalOk,
+    saldoFinalOk,
+    bloqueado: !baixaFiscalOk || !saldoFinalOk,
+    mensagens,
+  };
+}
+
 export function aplicarFechamentoImportacoesJunho(
   lancamentos: LancamentoIntegrado[],
 ): LancamentoIntegrado[] {
   const semDuplicidade = lancamentos.filter((linha) => linha.id !== obrigacaoCambialJunho.id);
-  const resultado = [...semDuplicidade, obrigacaoCambialJunho];
-
-  const baixaFiscal = resultado
-    .filter((linha) => linha.creditoCodigo === "25116" && linha.debitoCodigo === "3093")
-    .reduce((total, linha) => total + linha.valor, 0);
-
-  if (Math.abs(arred(baixaFiscal) - VALOR_IMPORTACOES_NACIONALIZADAS) > 0.01) {
-    throw new Error(
-      `Fechamento de importações: baixa fiscal CFOP 3101 não concilia. Calculado R$ ${arred(baixaFiscal).toFixed(2)} / esperado R$ ${VALOR_IMPORTACOES_NACIONALIZADAS.toFixed(2)}`,
-    );
-  }
-
-  const saldoFinal = arred(SALDO_INICIAL_IMPORTACOES + movimentoConta(resultado, "25116"));
-  if (Math.abs(saldoFinal - SALDO_FINAL_ESPERADO) > 0.01) {
-    throw new Error(
-      `Fechamento de importações: saldo final da 25116 não concilia. Calculado R$ ${saldoFinal.toFixed(2)} / esperado R$ ${SALDO_FINAL_ESPERADO.toFixed(2)}`,
-    );
-  }
-
-  return resultado;
+  return [...semDuplicidade, obrigacaoCambialJunho];
 }
 
 export const fechamentoImportacoesJunho = {
