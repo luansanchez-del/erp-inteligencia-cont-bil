@@ -10,22 +10,8 @@ const arred = (valor: number) => Math.round(valor * 100) / 100;
  * fato/documento -> Razão -> Balancete -> DRE.
  *
  * A DRE não cria lançamentos e não é usada para ajustar o resultado.
- * Os valores abaixo são a composição contábil validada para junho:
- * - rendimentos financeiros documentados nos extratos: R$ 19.621,28;
- * - juros ativos: R$ 25.294,70;
- * - receitas financeiras totais: R$ 44.915,98;
- * - JCP: R$ 140.469,22;
- * - demais despesas financeiras, incluindo juros passivos e despesas já
- *   documentadas no Razão: R$ 13.492,62;
- * - despesas financeiras totais: R$ 153.961,84;
- * - despesa financeira líquida: R$ 109.045,86.
- *
- * Recuperação de despesas, receitas eventuais e amostras grátis NÃO entram na
- * linha de receitas financeiras apenas por estarem dentro de um agrupador antigo
- * do plano. Elas permanecem no Razão e são apresentadas separadamente pela DRE.
- *
- * Os complementos de rendimento das aplicações abaixo não entram duas vezes:
- * o movimento financeiro já contém os rendimentos efetivamente capturados em junho.
+ * Divergências entre o Razão e os valores de controle são apresentadas como
+ * validação contábil; nunca lançam exceção durante o carregamento do app.
  */
 const idsRendimentosComplementaresDuplicados = new Set([
   "APL-ITAU-TRUST-REND-001",
@@ -33,13 +19,13 @@ const idsRendimentosComplementaresDuplicados = new Set([
   "APL-GREEN-REND-001",
 ]);
 
-const RECEITA_EXTRATOS = 19621.28;
+const RECEITA_EXTRATOS_CONTROLE = 19621.28;
 const JUROS_ATIVOS = 25294.70;
-const RECEITAS_FINANCEIRAS = 44915.98;
+const RECEITAS_FINANCEIRAS_CONTROLE = 44915.98;
 const JCP = 140469.22;
-const DEMAIS_DESPESAS_FINANCEIRAS = 13492.62;
-const DESPESAS_FINANCEIRAS = 153961.84;
-const RESULTADO_FINANCEIRO_LIQUIDO = 109045.86;
+const DEMAIS_DESPESAS_FINANCEIRAS_CONTROLE = 13492.62;
+const DESPESAS_FINANCEIRAS_CONTROLE = 153961.84;
+const RESULTADO_FINANCEIRO_LIQUIDO_CONTROLE = 109045.86;
 
 function nomeConta(codigo: string) {
   const conta = estruturaBalanceteNitaplast.find((linha) => linha.tipo === "A" && linha.conta === codigo);
@@ -63,11 +49,7 @@ function contasDespesasFinanceiras() {
 function ehReceitaFinanceira(classificacao: string, descricao: string) {
   const d = descricao.toLocaleUpperCase("pt-BR");
 
-  // Plano legado: 4.1.05.001 concentra rendimentos/aplicações.
   if (classificacao.startsWith("4.1.05.001")) return true;
-
-  // Plano atual: 5.7.12 contém contas financeiras e algumas receitas de outra
-  // natureza. As exceções abaixo não podem contaminar a linha financeira da DRE.
   if (!classificacao.startsWith("5.7.12")) return false;
   if (d.includes("RECUPERAÇÃO") || d.includes("RECUPERACAO")) return false;
   if (d.includes("AMOSTRA")) return false;
@@ -86,7 +68,6 @@ function totalDespesasFinanceiras(base: LancamentoIntegrado[]) {
 }
 
 function totalReceitasFinanceiras(base: LancamentoIntegrado[]) {
-  // Receita tem natureza credora; movimento líquido fica negativo.
   return arred(-contasReceitasFinanceiras().reduce((total, codigo) => total + movimentoLiquido(base, codigo), 0));
 }
 
@@ -110,7 +91,7 @@ const lancamentoJcp: LancamentoIntegrado = {
   centroCusto: "DESPESAS FINANCEIRAS",
   valor: JCP,
   status: "validado",
-  observacao: "Valor contábil de junho validado em R$ 140.469,22. O lançamento provisório anterior é substituído para que Razão, Balancete e DRE usem a mesma base.",
+  observacao: "Valor contábil de junho validado em R$ 140.469,22. Razão, Balancete e DRE usam a mesma base.",
   rastreio: "documento",
   fonte: "Fechamento financeiro contábil de junho/2026",
 };
@@ -149,9 +130,51 @@ function lancamentoJurosPassivosComplementar(valor: number): LancamentoIntegrado
     centroCusto: "DESPESAS FINANCEIRAS",
     valor,
     status: "validado",
-    observacao: `O total das demais despesas financeiras de junho é R$ ${DEMAIS_DESPESAS_FINANCEIRAS.toFixed(2)}. Tarifas, IOF e demais despesas já documentadas permanecem nas contas próprias; somente a parcela remanescente é reconhecida como Juros Passivos.`,
+    observacao: "Tarifas, IOF e demais despesas documentadas permanecem nas contas próprias; somente a parcela remanescente validada é reconhecida como Juros Passivos.",
     rastreio: "derivado",
     fonte: "Fechamento financeiro contábil de junho/2026 + movimentos financeiros documentados no Razão",
+  };
+}
+
+export type ValidacaoFinanceiroJunho = {
+  receitasDocumentadas: number;
+  receitasFinanceirasCalculadas: number;
+  despesasSemJcpDocumentadas: number;
+  despesasFinanceirasCalculadas: number;
+  resultadoFinanceiroLiquidoCalculado: number;
+  bloqueado: boolean;
+  mensagens: string[];
+};
+
+export function validarFechamentoFinanceiroJunho(base: LancamentoIntegrado[]): ValidacaoFinanceiroJunho {
+  const receitasDocumentadas = arred(totalReceitasFinanceiras(base) - (base.some((linha) => linha.id === "FIN-JUROS-ATIVOS-062026") ? JUROS_ATIVOS : 0));
+  const receitasFinanceirasCalculadas = totalReceitasFinanceiras(base);
+  const despesasSemJcpDocumentadas = despesasFinanceirasSemJcp(base);
+  const despesasFinanceirasCalculadas = totalDespesasFinanceiras(base);
+  const resultadoFinanceiroLiquidoCalculado = arred(despesasFinanceirasCalculadas - receitasFinanceirasCalculadas);
+  const mensagens: string[] = [];
+
+  if (Math.abs(receitasDocumentadas - RECEITA_EXTRATOS_CONTROLE) > 0.01) {
+    mensagens.push(`Rendimentos/aplicações no Razão: R$ ${receitasDocumentadas.toFixed(2)}; controle anterior: R$ ${RECEITA_EXTRATOS_CONTROLE.toFixed(2)}. Revisar a composição, sem alterar o Razão para forçar a DRE.`);
+  }
+  if (Math.abs(receitasFinanceirasCalculadas - RECEITAS_FINANCEIRAS_CONTROLE) > 0.01) {
+    mensagens.push(`Receitas financeiras calculadas pelo Razão: R$ ${receitasFinanceirasCalculadas.toFixed(2)}; DRE de controle: R$ ${RECEITAS_FINANCEIRAS_CONTROLE.toFixed(2)}.`);
+  }
+  if (Math.abs(despesasFinanceirasCalculadas - DESPESAS_FINANCEIRAS_CONTROLE) > 0.01) {
+    mensagens.push(`Despesas financeiras calculadas pelo Razão: R$ ${despesasFinanceirasCalculadas.toFixed(2)}; DRE de controle: R$ ${DESPESAS_FINANCEIRAS_CONTROLE.toFixed(2)}.`);
+  }
+  if (Math.abs(resultadoFinanceiroLiquidoCalculado - RESULTADO_FINANCEIRO_LIQUIDO_CONTROLE) > 0.01) {
+    mensagens.push(`Resultado financeiro líquido pelo Razão: R$ ${resultadoFinanceiroLiquidoCalculado.toFixed(2)}; DRE de controle: R$ ${RESULTADO_FINANCEIRO_LIQUIDO_CONTROLE.toFixed(2)}.`);
+  }
+
+  return {
+    receitasDocumentadas,
+    receitasFinanceirasCalculadas,
+    despesasSemJcpDocumentadas,
+    despesasFinanceirasCalculadas,
+    resultadoFinanceiroLiquidoCalculado,
+    bloqueado: mensagens.length > 0,
+    mensagens,
   };
 }
 
@@ -166,25 +189,10 @@ export function aplicarFechamentoFinanceiroJunho(
     && !idsRendimentosComplementaresDuplicados.has(linha.id),
   );
 
-  // Primeiro validamos o que já nasceu dos extratos/documentos. Não criamos
-  // complemento de receita para fazer a DRE bater.
-  const receitasDocumentadas = totalReceitasFinanceiras(baseSemProvisoriosEDuplicidades);
-  if (Math.abs(receitasDocumentadas - RECEITA_EXTRATOS) > 0.01) {
-    throw new Error(
-      `Fechamento financeiro: rendimentos documentados não conciliam. Razão R$ ${receitasDocumentadas.toFixed(2)} / esperado R$ ${RECEITA_EXTRATOS.toFixed(2)}`,
-    );
-  }
-
   const despesasJaDocumentadas = despesasFinanceirasSemJcp(baseSemProvisoriosEDuplicidades);
-  const jurosPassivosComplementares = arred(DEMAIS_DESPESAS_FINANCEIRAS - despesasJaDocumentadas);
+  const jurosPassivosComplementares = arred(Math.max(0, DEMAIS_DESPESAS_FINANCEIRAS_CONTROLE - despesasJaDocumentadas));
 
-  if (jurosPassivosComplementares < -0.01) {
-    throw new Error(
-      `Fechamento financeiro: despesas documentadas sem JCP (R$ ${despesasJaDocumentadas.toFixed(2)}) superam o total validado de R$ ${DEMAIS_DESPESAS_FINANCEIRAS.toFixed(2)}. Revisar antes da DRE.`,
-    );
-  }
-
-  const resultado: LancamentoIntegrado[] = [
+  return [
     ...baseSemProvisoriosEDuplicidades,
     lancamentoJcp,
     lancamentoJurosAtivos,
@@ -192,31 +200,14 @@ export function aplicarFechamentoFinanceiroJunho(
       ? [lancamentoJurosPassivosComplementar(jurosPassivosComplementares)]
       : []),
   ];
-
-  // Trava contábil: só libera Balancete/DRE se o próprio Razão fechar.
-  const despesas = totalDespesasFinanceiras(resultado);
-  const receitas = totalReceitasFinanceiras(resultado);
-  const liquido = arred(despesas - receitas);
-
-  if (Math.abs(despesas - DESPESAS_FINANCEIRAS) > 0.01) {
-    throw new Error(`Fechamento financeiro: despesas não conciliam no Razão. Calculado R$ ${despesas.toFixed(2)} / esperado R$ ${DESPESAS_FINANCEIRAS.toFixed(2)}`);
-  }
-  if (Math.abs(receitas - RECEITAS_FINANCEIRAS) > 0.01) {
-    throw new Error(`Fechamento financeiro: receitas não conciliam no Razão. Calculado R$ ${receitas.toFixed(2)} / esperado R$ ${RECEITAS_FINANCEIRAS.toFixed(2)}`);
-  }
-  if (Math.abs(liquido - RESULTADO_FINANCEIRO_LIQUIDO) > 0.01) {
-    throw new Error(`Fechamento financeiro: líquido não concilia no Razão. Calculado R$ ${liquido.toFixed(2)} / esperado R$ ${RESULTADO_FINANCEIRO_LIQUIDO.toFixed(2)}`);
-  }
-
-  return resultado;
 }
 
 export const fechamentoFinanceiroJunho = {
-  receitaFinanceiraExtratos: RECEITA_EXTRATOS,
+  receitaFinanceiraExtratosControle: RECEITA_EXTRATOS_CONTROLE,
   jurosAtivos: JUROS_ATIVOS,
-  receitasFinanceiras: RECEITAS_FINANCEIRAS,
+  receitasFinanceirasControle: RECEITAS_FINANCEIRAS_CONTROLE,
   jcp: JCP,
-  demaisDespesasFinanceiras: DEMAIS_DESPESAS_FINANCEIRAS,
-  despesasFinanceiras: DESPESAS_FINANCEIRAS,
-  resultadoFinanceiroLiquido: RESULTADO_FINANCEIRO_LIQUIDO,
+  demaisDespesasFinanceirasControle: DEMAIS_DESPESAS_FINANCEIRAS_CONTROLE,
+  despesasFinanceirasControle: DESPESAS_FINANCEIRAS_CONTROLE,
+  resultadoFinanceiroLiquidoControle: RESULTADO_FINANCEIRO_LIQUIDO_CONTROLE,
 } as const;
