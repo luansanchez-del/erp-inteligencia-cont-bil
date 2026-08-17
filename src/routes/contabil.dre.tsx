@@ -30,6 +30,10 @@ function DrePage() {
   const duplicidadeFederaisFilial = Math.round((pisFilialEnviado + cofinsFilialEnviado) * 100) / 100;
   const diferencaDeducoes = Math.abs(deducoesResumo?.diferenca ?? 0);
   const diferencaResidualDeducoes = Math.max(0, Math.round((diferencaDeducoes - duplicidadeFederaisFilial) * 100) / 100);
+  const diferencaResidualResultado = Math.max(
+    0,
+    Math.round((Math.abs(resumoDreDetalhada.diferencaResultado) - duplicidadeFederaisFilial) * 100) / 100,
+  );
   const deducaoExplicada = deducoesResumo
     && Math.abs(deducoesResumo.diferenca) > tolerancia
     && diferencaResidualDeducoes <= tolerancia;
@@ -88,12 +92,13 @@ function DrePage() {
           enviada={resumoDreDetalhada.resultadoLiquidoEnviado}
           calculada={resumoDreDetalhada.resultadoLiquidoCalculado}
           success={resumoDreDetalhada.resultadoLiquidoCalculado >= 0}
-          alert={Math.abs(resumoDreDetalhada.diferencaResultado) > tolerancia}
+          alert={diferencaResidualResultado > tolerancia}
+          diferencaPendente={diferencaResidualResultado}
         />
         <Metric
-          label="Diferença do resultado"
-          value={resumoDreDetalhada.diferencaResultado}
-          alert={Math.abs(resumoDreDetalhada.diferencaResultado) > tolerancia}
+          label="Diferença residual do resultado"
+          value={diferencaResidualResultado}
+          alert={diferencaResidualResultado > tolerancia}
         />
       </div>
 
