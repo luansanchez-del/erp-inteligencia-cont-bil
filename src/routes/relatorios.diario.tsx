@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Printer, Search } from "lucide-react";
+import { Download, Printer, Search } from "lucide-react";
 import { PageHeader, PageShell } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 import { usePrintMode } from "@/hooks/use-print-mode";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
+import { exportarExcel } from "@/lib/exportar-excel";
 
 export const Route = createFileRoute("/relatorios/diario")({ component: DiarioReportPage });
 
@@ -45,12 +46,51 @@ function DiarioReportPage() {
   const fim = inicio + POR_PAGINA;
   const linhasVisiveis = printing ? linhas : linhas.slice(inicio, fim);
 
+  function exportarDiarioExcel() {
+    exportarExcel({
+      arquivo: "Nitaplast_Diario_Report_062026.xlsx",
+      aba: "Diario",
+      titulo: "NITAPLAST IND E COM DE PLÁSTICOS INDUSTRIAIS LTDA — LIVRO DIÁRIO",
+      subtitulo: `Período 01/06/2026 a 30/06/2026 · ${linhas.length} partidas · Total débitos = total créditos = ${brl.format(total)}${busca.trim() ? ` · Filtro: ${busca.trim()}` : ""}`,
+      colunas: [
+        { cabecalho: "Data", largura: 12 },
+        { cabecalho: "Lançamento", largura: 20 },
+        { cabecalho: "Conta Débito", largura: 40 },
+        { cabecalho: "Conta Crédito", largura: 40 },
+        { cabecalho: "Histórico", largura: 58 },
+        { cabecalho: "Documento", largura: 28 },
+        { cabecalho: "Centro de Custo", largura: 30 },
+        { cabecalho: "Valor", largura: 16, tipo: "numero" },
+      ],
+      linhas: linhas.map((linha) => [
+        linha.data,
+        linha.id,
+        linha.debito,
+        linha.credito,
+        linha.historico,
+        linha.documento || "",
+        linha.cc && linha.cc !== "0" ? `${linha.cc} - ${linha.centroCusto}` : "",
+        linha.valor,
+      ]),
+    });
+  }
+
   return (
     <PageShell>
       <PageHeader
         titulo="Diário Report — Nitaplast"
         descricao="Livro Diário da competência 06/2026."
-        acoes={<div className="flex items-center gap-2"><Badge variant="outline">06/2026</Badge><Button variant="outline" size="sm" className="gap-2" onClick={printAll}><Printer className="size-4" />Imprimir / PDF</Button></div>}
+        acoes={
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">06/2026</Badge>
+            <Button variant="outline" size="sm" className="gap-2" onClick={exportarDiarioExcel}>
+              <Download className="size-4" />Exportar Excel
+            </Button>
+            <Button variant="outline" size="sm" className="gap-2" onClick={printAll}>
+              <Printer className="size-4" />Imprimir / PDF
+            </Button>
+          </div>
+        }
       />
 
       <Card className="print:border-0 print:shadow-none">
