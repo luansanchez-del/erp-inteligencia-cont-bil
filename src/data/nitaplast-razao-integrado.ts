@@ -2,11 +2,9 @@ import { lancamentosIntegrados as lancamentosBase } from "./nitaplast-razao-base
 import { saldosImplantacao } from "./nitaplast-implantacao";
 import { fechamentoCpvJunho } from "./nitaplast-cpv-junho";
 import { corrigirMapeamentosJunho } from "./nitaplast-correcoes-mapeamento-junho";
-import { ajusteEstoqueResultadoJunho } from "./nitaplast-ajuste-estoque-junho";
 import { gerarFechamentoEstoqueMatrizJunho } from "./nitaplast-fechamento-estoque-matriz-junho";
 import { aplicarFechamentoImportacoesJunho } from "./nitaplast-fechamento-importacoes-junho";
 import { aplicarFechamentoFinanceiroJunho } from "./nitaplast-fechamento-financeiro-junho";
-import { aplicarFechamentoCpvFinalJunho } from "./nitaplast-fechamento-cpv-final-junho";
 import { aplicarFechamentoCreditosFederaisJunho } from "./nitaplast-fechamento-creditos-federais-junho";
 import { aplicarFechamentoDespesasJunho } from "./nitaplast-fechamento-despesas-junho";
 import { aplicarFechamentoAlienacaoJunho } from "./nitaplast-fechamento-alienacao-junho";
@@ -23,8 +21,10 @@ garantirPlanoFechamentoJunho();
  * A DRE enviada é somente controle de comparação e jamais pode gerar receita,
  * custo ou despesa usada pela própria DRE calculada.
  *
- * O CPV de junho volta ao fechamento que já estava vigente antes da análise
- * específica do CPV de julho. As correções financeiras de junho permanecem.
+ * REGRA DE COMPETÊNCIA:
+ * - o ajuste de estoque de R$ 82.536,10 pertence a 07/2026 e não entra em junho;
+ * - junho não usa plug de CPV contra conta transitória para atingir valor-alvo;
+ * - as correções financeiras de junho permanecem integralmente no Razão.
  */
 const lancamentosBaseSaneados = lancamentosBase.filter((linha) => {
   const icmsAntigoValido = linha.origem !== "APURAÇÃO ICMS 06/2026" || linha.id === "TAX-SAI-ICMS";
@@ -87,7 +87,6 @@ const baseDocumentalJunho = [
   ...lancamentosBaseSaneados,
   ...receitasFilialDocumentadas,
   ...fechamentoCpvSemIcmsMatrizObsoleto,
-  ajusteEstoqueResultadoJunho,
 ];
 
 // Importação e financeiro nascem no Razão antes do Balancete/DRE.
@@ -103,8 +102,8 @@ const baseComEstoqueFechado = [
   ...fechamentoEstoqueMatriz,
 ];
 
-const baseComCpvFinal = aplicarFechamentoCpvFinalJunho(baseComEstoqueFechado);
-const lancamentosIntegradosFinais = aplicarFechamentoAlienacaoJunho(baseComCpvFinal);
+// Sem ajuste de julho e sem rotina de CPV por valor-alvo em 06/2026.
+const lancamentosIntegradosFinais = aplicarFechamentoAlienacaoJunho(baseComEstoqueFechado);
 
 /**
  * Validação anticircularidade.
