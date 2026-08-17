@@ -12,9 +12,15 @@
 
 O fechamento de julho repete a cadeia de junho:
 
-**documentos/origens → normalização → lançamentos → Razão → Balancete → DRE/Balanço → validações → evidências → fechamento**
+**documentos/origens → normalização → lançamentos → Razão → Balancete → DRE/Balanço → evidências → fechamento**
 
 Abertura gerencial ou valor de controle **não vira lançamento no Razão**. O Razão recebe somente fatos contábeis documentados. Nenhum valor de DRE pode alimentar a própria DRE calculada.
+
+### Regra para arquivos do fiscal
+
+Arquivos/relatórios de **validação do fiscal devem ser ignorados no fechamento contábil**. Erros e avisos desses relatórios não são achados contábeis da Nitaplast e não bloqueiam o fechamento.
+
+Somente analisar a escrituração fiscal digital quando for fornecido o **arquivo TXT/SPED real**. PDF, impressão ou relatório de validação não substitui o TXT e não deve gerar pendência contábil.
 
 ## Itens que ficam fora nesta etapa
 
@@ -31,8 +37,6 @@ Por orientação do usuário, os itens abaixo serão lançados depois pela tela 
 
 ### Fiscal
 
-- EFD Fiscal matriz 07/2026;
-- EFD Fiscal filial SP 07/2026;
 - entradas e saídas em CSV/PDF;
 - ICMS matriz e filial;
 - ICMS-ST;
@@ -43,8 +47,9 @@ Por orientação do usuário, os itens abaixo serão lançados depois pela tela 
 - CT-e;
 - impostos retidos;
 - DANFEs canceladas;
-- FCI;
-- EFD-Contribuições.
+- FCI.
+
+Relatórios de validação EFD/EFD-Contribuições eventualmente enviados ficam fora da base contábil. Só entram como escrituração quando houver TXT/SPED real.
 
 ### Financeiro e patrimonial
 
@@ -102,15 +107,6 @@ Arquivo Softdib de julho:
 - diferença sem centro de custo completo: **R$ 7.047,92**, em 9 documentos.
 
 Essa diferença não será rateada automaticamente. Permanecerá como achado para classificação.
-
-## Validações recebidas
-
-- EFD Fiscal matriz: 5 erros;
-- EFD Fiscal filial SP: 0 erros e 0 advertências;
-- EFD-Contribuições: 1.024 erros e 2 avisos;
-- dos erros da EFD-Contribuições, 1.022 se referem à ausência de conta contábil analítica no registro 0500.
-
-Essas pendências são **achados de validação**, não autorização para gerar ajuste genérico no Razão.
 
 ## PIS / COFINS — apuração
 
