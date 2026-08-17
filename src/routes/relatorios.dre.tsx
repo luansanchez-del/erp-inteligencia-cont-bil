@@ -4,6 +4,11 @@ import { Download, Printer } from "lucide-react";
 import { PageHeader, PageShell } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { calcularDreBalancete, type ContaResultadoJunho, type GrupoDreBalancete } from "@/data/nitaplast-dre-balancete";
+import {
+  calcularDespesasOperacionaisPorCategoria,
+  type CategoriaDespesaJunho,
+} from "@/data/nitaplast-fechamento-despesas-junho";
+import { calcularCreditosFederaisDespesas } from "@/data/nitaplast-fechamento-creditos-federais-junho";
 import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
@@ -30,6 +35,19 @@ type LinhaReport = {
   tipo: "grupo" | "detalhe" | "subtotal" | "resultado" | "alerta";
 };
 
+const categoriasDespesas: Array<{ id: CategoriaDespesaJunho; descricao: string }> = [
+  { id: "adm", descricao: "Despesas Administrativas" },
+  { id: "nplog", descricao: "Despesas com Serviço - NPLog" },
+  { id: "comerciais", descricao: "Despesas Comerciais" },
+  { id: "producao", descricao: "Despesas Produção" },
+  { id: "veiculos", descricao: "Despesas Veículos" },
+  { id: "barracao", descricao: "Despesas Barracão" },
+  { id: "imobilizado", descricao: "Despesas com Imobilizado" },
+  { id: "industrializacao", descricao: "Despesas com Industrialização" },
+  { id: "tributarias", descricao: "Despesas Tributárias" },
+  { id: "comercial-sp", descricao: "Despesas Comercial SP" },
+];
+
 function detalhes(grupo: GrupoDreBalancete, contas: ContaResultadoJunho[]): LinhaReport[] {
   return contas.map((conta) => ({
     id: `${grupo}-${conta.codigo}`,
@@ -42,8 +60,7 @@ function detalhes(grupo: GrupoDreBalancete, contas: ContaResultadoJunho[]): Linh
 
 /**
  * O subtotal de deduções usa débito BRUTO dos impostos sobre vendas.
- * Portanto as linhas de detalhe precisam usar o mesmo critério; exibir saldo
- * líquido aqui faria o subtotal não fechar com a soma visual das contas.
+ * As linhas de detalhe usam o mesmo critério para a soma visual fechar.
  */
 function detalhesDeducoes(contas: ContaResultadoJunho[]): LinhaReport[] {
   return contas.map((conta) => ({
@@ -61,15 +78,32 @@ function DreReportPage() {
   useNitaplastJunho();
   const { aplicar } = useReclassificacoesInteligentes("2026-06");
 
-  // REGRA ÚNICA: o mesmo Razão ajustado que alimenta o Balancete alimenta esta DRE.
-  // Nenhum valor da DRE manual/de validação entra no cálculo deste relatório.
+  // REGRA ÚNICA: o mesmo Razão ajustado que alimenta o Balancete alimenta este Report.
+  // Nenhum valor da DRE manual/de validação entra no cálculo.
   const lancamentosComAjustes = useMemo(() => aplicar(lancamentosIntegrados), [aplicar]);
   const apuracao = useMemo(() => calcularDreBalancete(lancamentosComAjustes), [lancamentosComAjustes]);
+  const despesasPorCategoria = useMemo(
+    () => calcularDespesasOperacionaisPorCategoria(lancamentosComAjustes),
+    [lancamentosComAjustes],
+  );
+  const creditosFederais = useMemo(
+    () => calcularCreditosFederaisDespesas(lancamentosComAjustes),
+    [lancamentosComAjustes],
+  );
   const r = apuracao.resumo;
 
   const receitaLiquida = arred(r.receitaBruta - r.deducoes);
   const lucroBruto = arred(receitaLiquida - r.custos);
-  const resultadoAntesFinanceiro = arred(lucroBruto - r.despesasOperacionais);
+  const despesasOperacionaisBase = arred(
+    categoriasDespesas.reduce((total, item) => total + despesasPorCategoria[item.id], 0)
+      + despesasPorCategoria["despesas-nao-mapeadas"],
+  );
+  const financeiroLiquido = arred(r.despesasFinanceiras - r.receitasFinanceiras);
+  const despesasAntesCreditos = arred(despesasOperacionaisBase + financeiroLiquido);
+  const totalCreditosFederais = arred(creditosFederais.pis + creditosFederais.cofins);
+  const despesasLiquidas = arred(despesasAntesCreditos - totalCreditosFederais);
+  const resultadoOperacional = arred(lucroBruto - despesasLiquidas);
+  const resultadoLiquido = arred(resultadoOperacional + r.resultadoNaoOperacional + r.valorSemVinculo);
 
   const linhas = useMemo<LinhaReport[]>(() => {
     const base: LinhaReport[] = [
@@ -86,22 +120,37 @@ function DreReportPage() {
 
       { id: "lucro-bruto", descricao: "LUCRO BRUTO", valor: lucroBruto, nivel: 0, tipo: "subtotal" },
 
-      { id: "despesas-operacionais", descricao: "(-) Despesas Operacionais", valor: -r.despesasOperacionais, nivel: 0, tipo: "grupo" },
-      ...detalhes("despesas-operacionais", apuracao.contasPorGrupo["despesas-operacionais"]),
+      { id: "despesas-operacionais", descricao: "(-) Despesas Operacionais antes dos créditos", valor: -despesasAntesCreditos, nivel: 0, tipo: "grupo" },
+      ...categoriasDespesas.map<LinhaReport>((item) => ({
+        id: `desp-${item.id}`,
+        descricao: item.descricao,
+        valor: -despesasPorCategoria[item.id],
+        nivel: 1,
+        tipo: "detalhe",
+      })),
+    ];
 
-      { id: "resultado-antes-financeiro", descricao: "Resultado Antes do Financeiro", valor: resultadoAntesFinanceiro, nivel: 0, tipo: "subtotal" },
+    if (Math.abs(despesasPorCategoria["despesas-nao-mapeadas"]) >= 0.005) {
+      base.push({
+        id: "desp-nao-mapeadas",
+        descricao: "Outras despesas operacionais sem classificação gerencial",
+        valor: -despesasPorCategoria["despesas-nao-mapeadas"],
+        nivel: 1,
+        tipo: "alerta",
+      });
+    }
 
-      { id: "receitas-financeiras", descricao: "(+) Receitas Financeiras", valor: r.receitasFinanceiras, nivel: 0, tipo: "grupo" },
-      ...detalhes("receitas-financeiras", apuracao.contasPorGrupo["receitas-financeiras"]),
-
-      { id: "despesas-financeiras", descricao: "(-) Despesas Financeiras", valor: -r.despesasFinanceiras, nivel: 0, tipo: "grupo" },
-      ...detalhes("despesas-financeiras", apuracao.contasPorGrupo["despesas-financeiras"]),
-
-      { id: "resultado-operacional", descricao: "RESULTADO OPERACIONAL", valor: apuracao.resultadoOperacional, nivel: 0, tipo: "subtotal" },
-
+    base.push(
+      { id: "financeiro-liquido", descricao: "Despesas Financeiras Líquidas", valor: -financeiroLiquido, nivel: 1, tipo: "detalhe" },
+      { id: "financeiro-despesas", descricao: "(-) Despesas Financeiras", valor: -r.despesasFinanceiras, nivel: 1, tipo: "detalhe" },
+      { id: "financeiro-receitas", descricao: "(+) Receitas Financeiras", valor: r.receitasFinanceiras, nivel: 1, tipo: "detalhe" },
+      { id: "credito-pis", descricao: "(-) Crédito de PIS sobre custos e despesas", valor: creditosFederais.pis, nivel: 0, tipo: "detalhe" },
+      { id: "credito-cofins", descricao: "(-) Crédito de COFINS sobre custos e despesas", valor: creditosFederais.cofins, nivel: 0, tipo: "detalhe" },
+      { id: "despesas-liquidas", descricao: "Total Despesas Operacionais Líquidas", valor: -despesasLiquidas, nivel: 0, tipo: "subtotal" },
+      { id: "resultado-operacional", descricao: "RESULTADO OPERACIONAL", valor: resultadoOperacional, nivel: 0, tipo: "subtotal" },
       { id: "nao-operacional", descricao: "Resultado Não Operacional", valor: r.resultadoNaoOperacional, nivel: 0, tipo: "grupo" },
       ...detalhes("nao-operacional", apuracao.contasPorGrupo["nao-operacional"]),
-    ];
+    );
 
     if (r.contasSemVinculo > 0 || Math.abs(r.valorSemVinculo) >= 0.005) {
       base.push(
@@ -110,9 +159,21 @@ function DreReportPage() {
       );
     }
 
-    base.push({ id: "lucro-liquido", descricao: "LUCRO / PREJUÍZO LÍQUIDO", valor: apuracao.resultadoLiquido, nivel: 0, tipo: "resultado" });
+    base.push({ id: "lucro-liquido", descricao: "LUCRO / PREJUÍZO LÍQUIDO", valor: resultadoLiquido, nivel: 0, tipo: "resultado" });
     return base;
-  }, [apuracao, lucroBruto, r, receitaLiquida, resultadoAntesFinanceiro]);
+  }, [
+    apuracao,
+    creditosFederais,
+    despesasAntesCreditos,
+    despesasLiquidas,
+    despesasPorCategoria,
+    financeiroLiquido,
+    lucroBruto,
+    r,
+    receitaLiquida,
+    resultadoLiquido,
+    resultadoOperacional,
+  ]);
 
   const percentual = (valor: number) => r.receitaBruta ? (valor / r.receitaBruta) * 100 : 0;
 
