@@ -63,12 +63,17 @@ function detalhes(grupo: GrupoDreBalancete, contas: ContaResultadoJunho[]): Linh
 }
 
 /**
- * O subtotal de deduções usa débito BRUTO dos impostos sobre vendas.
+ * Segregação gerencial LOCAL do Report de 06/2026.
  * PIS/COFINS possuem uma única apuração consolidada no Razão/Balancete.
- * Aqui o consolidado é apenas segregado gerencialmente entre Matriz e Filial;
- * as parcelas substituem a linha consolidada na apresentação e NÃO geram
- * nenhum lançamento contábil adicional.
+ * Aqui o consolidado é apenas aberto entre Matriz e Filial (Matriz = consolidado - Filial),
+ * de forma que a soma fecha exatamente com o consolidado, sem somar Filial por fora
+ * e sem gerar nenhum lançamento contábil adicional.
  */
+const segregacaoFederaisJunho = {
+  pis: { consolidado: 47548.49, filial: 4361.7, matriz: 43186.79 },
+  cofins: { consolidado: 219011.34, filial: 20090.42, matriz: 198920.92 },
+} as const;
+
 function detalhesDeducoes(contas: ContaResultadoJunho[]): LinhaReport[] {
   const linhas: LinhaReport[] = [];
 
@@ -78,14 +83,14 @@ function detalhesDeducoes(contas: ContaResultadoJunho[]): LinhaReport[] {
         {
           id: "deducoes-pis-matriz",
           descricao: "2829 · PIS sobre vendas — Matriz",
-          valor: -arred(conciliacaoPisGerencialJunho.matrizGerencial.debitoSobreVendas),
+          valor: -arred(segregacaoFederaisJunho.pis.matriz),
           nivel: 1,
           tipo: "detalhe",
         },
         {
           id: "deducoes-pis-filial",
           descricao: "2829 · PIS sobre vendas — Filial",
-          valor: -arred(conciliacaoPisGerencialJunho.filialGerencial.debitoSobreVendas),
+          valor: -arred(segregacaoFederaisJunho.pis.filial),
           nivel: 1,
           tipo: "detalhe",
         },
@@ -98,20 +103,21 @@ function detalhesDeducoes(contas: ContaResultadoJunho[]): LinhaReport[] {
         {
           id: "deducoes-cofins-matriz",
           descricao: "2830 · COFINS sobre vendas — Matriz",
-          valor: -arred(conciliacaoCofinsGerencialJunho.matrizGerencial.debitoSobreVendas),
+          valor: -arred(segregacaoFederaisJunho.cofins.matriz),
           nivel: 1,
           tipo: "detalhe",
         },
         {
           id: "deducoes-cofins-filial",
           descricao: "2830 · COFINS sobre vendas — Filial",
-          valor: -arred(conciliacaoCofinsGerencialJunho.filialGerencial.debitoSobreVendas),
+          valor: -arred(segregacaoFederaisJunho.cofins.filial),
           nivel: 1,
           tipo: "detalhe",
         },
       );
       continue;
     }
+
 
     linhas.push({
       id: `deducoes-${conta.codigo}`,
