@@ -18,6 +18,23 @@ export type LinhaLoteContabil = {
   alertas: string[];
 };
 
+export type LoteContabilCalculado = {
+  linhas: LinhaLoteContabil[];
+  prontas: LinhaLoteContabil[];
+  pendentes: LinhaLoteContabil[];
+  alertas: LinhaLoteContabil[];
+  resumo: {
+    totalPartidas: number;
+    prontas: number;
+    alertas: number;
+    pendentes: number;
+    valorTotal: number;
+    valorAlerta: number;
+    valorPendente: number;
+    podeFinalizar: boolean;
+  };
+};
+
 const plano = new Map(saldosImplantacao.map((conta) => [conta.conta, conta]));
 const CONTAS_TRANSITORIAS_COM_ALERTA = new Set(["4859"]);
 
@@ -105,45 +122,62 @@ function validar(linha: LancamentoIntegrado) {
   return { pendencias, alertas };
 }
 
-export const loteContabilJunho: LinhaLoteContabil[] = lancamentosIntegrados
-  .map((linha, index) => {
-    const { pendencias, alertas } = validar(linha);
-    const cc = centroDeCustoDaPartida(linha);
-    const status = pendencias.length ? "pendente" as const : alertas.length ? "alerta" as const : "pronto" as const;
-    return {
-      seq: index + 1,
-      data: normalizarData(linha.data),
-      debito: linha.debitoCodigo,
-      ccDebito: cc.ccDebito,
-      credito: linha.creditoCodigo,
-      ccCredito: cc.ccCredito,
-      documento: linha.documento ?? "",
-      valor: Math.round(linha.valor * 100) / 100,
-      historico: linha.historico,
-      lancamentoId: linha.id,
-      origem: linha.origem,
-      status,
-      pendencias,
-      alertas,
-    };
-  })
-  .sort((a, b) => a.data.localeCompare(b.data) || a.seq - b.seq)
-  .map((linha, index) => ({ ...linha, seq: index + 1 }));
+export function montarLoteContabilJunho(base: LancamentoIntegrado[]): LoteContabilCalculado {
+  const linhas = base
+    .map((linha, index) => {
+      const { pendencias, alertas } = validar(linha);
+      const cc = centroDeCustoDaPartida(linha);
+      const status = pendencias.length ? "pendente" as const : alertas.length ? "alerta" as const : "pronto" as const;
+      return {
+        seq: index + 1,
+        data: normalizarData(linha.data),
+        debito: linha.debitoCodigo,
+        ccDebito: cc.ccDebito,
+        credito: linha.creditoCodigo,
+        ccCredito: cc.ccCredito,
+        documento: linha.documento ?? "",
+        valor: Math.round(linha.valor * 100) / 100,
+        historico: linha.historico,
+        lancamentoId: linha.id,
+        origem: linha.origem,
+        status,
+        pendencias,
+        alertas,
+      } satisfies LinhaLoteContabil;
+    })
+    .sort((a, b) => a.data.localeCompare(b.data) || a.seq - b.seq)
+    .map((linha, index) => ({ ...linha, seq: index + 1 }));
 
-export const loteContabilJunhoPronto = loteContabilJunho.filter((linha) => linha.status !== "pendente");
-export const loteContabilJunhoPendente = loteContabilJunho.filter((linha) => linha.status === "pendente");
-export const loteContabilJunhoAlerta = loteContabilJunho.filter((linha) => linha.status === "alerta");
+  const prontas = linhas.filter((linha) => linha.status !== "pendente");
+  const pendentes = linhas.filter((linha) => linha.status === "pendente");
+  const alertas = linhas.filter((linha) => linha.status === "alerta");
 
-export const resumoLoteContabilJunho = {
-  totalPartidas: loteContabilJunho.length,
-  prontas: loteContabilJunho.filter((linha) => linha.status === "pronto").length,
-  alertas: loteContabilJunhoAlerta.length,
-  pendentes: loteContabilJunhoPendente.length,
-  valorTotal: loteContabilJunho.reduce((total, linha) => total + linha.valor, 0),
-  valorAlerta: loteContabilJunhoAlerta.reduce((total, linha) => total + linha.valor, 0),
-  valorPendente: loteContabilJunhoPendente.reduce((total, linha) => total + linha.valor, 0),
-  podeFinalizar: loteContabilJunhoPendente.length === 0,
-} as const;
+  return {
+    linhas,
+    prontas,
+    pendentes,
+    alertas,
+    resumo: {
+      totalPartidas: linhas.length,
+      prontas: linhas.filter((linha) => linha.status === "pronto").length,
+      alertas: alertas.length,
+      pendentes: pendentes.length,
+      valorTotal: linhas.reduce((total, linha) => total + linha.valor, 0),
+      valorAlerta: alertas.reduce((total, linha) => total + linha.valor, 0),
+      valorPendente: pendentes.reduce((total, linha) => total + linha.valor, 0),
+      podeFinalizar: pendentes.length === 0,
+    },
+  };
+}
+
+// Compatibilidade para telas antigas. As telas de fechamento/exportação devem preferir
+// montarLoteContabilJunho com o Razão já acrescido das reclassificações do usuário.
+const loteBase = montarLoteContabilJunho(lancamentosIntegrados);
+export const loteContabilJunho = loteBase.linhas;
+export const loteContabilJunhoPronto = loteBase.prontas;
+export const loteContabilJunhoPendente = loteBase.pendentes;
+export const loteContabilJunhoAlerta = loteBase.alertas;
+export const resumoLoteContabilJunho = loteBase.resumo;
 
 const cabecalho = ["SEQ", "DATA", "DEBITO", "CC DEBITO", "CREDITO", "CC CREDITO", "N. DOCTO", "VALOR", "HISTÓRICO"];
 const csv = (valor: string | number) => `"${String(valor ?? "").replaceAll('"', '""')}"`;
