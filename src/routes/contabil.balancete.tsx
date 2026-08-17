@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { CheckCircle2, Download, Printer, Search } from "lucide-react";
+import { CheckCircle2, Download, FileSpreadsheet, Printer, Search } from "lucide-react";
 import { PageHeader, PageShell } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { resumoImplantacao, saldosImplantacao } from "@/data/nitaplast-implantac
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 import { usePrintMode } from "@/hooks/use-print-mode";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
+import { exportarExcel } from "@/lib/exportar-excel";
 
 export const Route = createFileRoute("/contabil/balancete")({ component: BalancetePage });
 
@@ -179,6 +180,44 @@ function BalancetePage() {
     URL.revokeObjectURL(url);
   }
 
+  function exportarBalanceteExcel() {
+    const filtros = [
+      grupo !== "Todos" ? `Grupo: ${grupo}` : null,
+      somenteMovimento ? "Somente com movimento" : null,
+      mostrarZeradas ? "Inclui contas zeradas" : "Oculta contas zeradas",
+      busca.trim() ? `Busca: ${busca.trim()}` : null,
+    ].filter(Boolean).join(" · ");
+
+    exportarExcel({
+      arquivo: "Nitaplast_Balancete_062026.xlsx",
+      aba: "Balancete",
+      titulo: "NITAPLAST IND E COM DE PLÁSTICOS INDUSTRIAIS LTDA — BALANCETE CONSOLIDADO",
+      subtitulo: `Período 01/06/2026 a 30/06/2026 · ${filtros}`,
+      colunas: [
+        { cabecalho: "Conta contábil", largura: 16 },
+        { cabecalho: "S/A", largura: 8 },
+        { cabecalho: "Classificação", largura: 22 },
+        { cabecalho: "Descrição", largura: 52 },
+        { cabecalho: "Saldo anterior", largura: 18, tipo: "numero" },
+        { cabecalho: "Débito", largura: 18, tipo: "numero" },
+        { cabecalho: "Crédito", largura: 18, tipo: "numero" },
+        { cabecalho: "Movimento", largura: 18, tipo: "numero" },
+        { cabecalho: "Saldo atual", largura: 18, tipo: "numero" },
+      ],
+      linhas: linhas.map((linha) => [
+        linha.conta,
+        linha.tipo,
+        linha.classificacao,
+        `${"  ".repeat(Math.max(0, linha.nivel - 1))}${linha.descricao}`,
+        linha.saldoAnterior,
+        linha.debitos,
+        linha.creditos,
+        linha.movimento,
+        linha.saldoAtual,
+      ]),
+    });
+  }
+
   return <PageShell>
     <PageHeader
       titulo="Balancete consolidado - Nitaplast"
@@ -187,6 +226,7 @@ function BalancetePage() {
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline">Consolidado - 06/2026</Badge>
           <Button variant="outline" size="sm" className="gap-2" onClick={exportarCsv}><Download className="size-4" />Exportar CSV</Button>
+          <Button variant="outline" size="sm" className="gap-2" onClick={exportarBalanceteExcel}><FileSpreadsheet className="size-4" />Exportar Excel</Button>
           <Button variant="outline" size="sm" className="gap-2" onClick={printAll}><Printer className="size-4" />Imprimir / PDF</Button>
         </div>
       }
