@@ -33,8 +33,15 @@ function pertenceAoGrupo(classificacao: string, grupo: (typeof grupos)[number]) 
   if (grupo === "Todos") return true;
   if (grupo === "Ativo") return classificacao === "1" || classificacao.startsWith("1.");
   if (grupo === "Passivo e PL") return classificacao === "2" || classificacao.startsWith("2.");
-  if (grupo === "Receitas") return classificacao === "4" || classificacao.startsWith("4.");
-  return classificacao === "5" || classificacao.startsWith("5.");
+  if (grupo === "Receitas") {
+    return classificacao === "4"
+      || classificacao.startsWith("4.")
+      || classificacao === "5.7.12"
+      || classificacao.startsWith("5.7.12.");
+  }
+  return (classificacao === "5" || classificacao.startsWith("5."))
+    && classificacao !== "5.7.12"
+    && !classificacao.startsWith("5.7.12.");
 }
 
 function descendente(analitica: LinhaEstruturaBalancete, sintetica: LinhaEstruturaBalancete) {
