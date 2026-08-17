@@ -1,16 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, Printer } from "lucide-react";
 import { PageHeader, PageShell } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import type { LinhaComparacaoDre } from "@/data/nitaplast-dre-detalhada";
+import { calcularDreBalancete, type ContaResultadoJunho, type GrupoDreBalancete } from "@/data/nitaplast-dre-balancete";
+import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
+import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
 
 export const Route = createFileRoute("/relatorios/dre")({
   head: () => ({
     meta: [
       { title: "DRE Report — Nitaplast — ERP Contábil" },
-      { name: "description", content: "Demonstração do Resultado calculada a partir do Razão e Balancete." },
+      { name: "description", content: "Demonstração do Resultado calculada exclusivamente pelo Razão e Balancete." },
     ],
   }),
   component: DreReportPage,
@@ -18,42 +20,84 @@ export const Route = createFileRoute("/relatorios/dre")({
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const pct = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const LINHAS_INTERNAS = new Set(["base-ir", "ajuste-jul"]);
+const arred = (valor: number) => Math.round(valor * 100) / 100;
+
+type LinhaReport = {
+  id: string;
+  descricao: string;
+  valor: number;
+  nivel: 0 | 1;
+  tipo: "grupo" | "detalhe" | "subtotal" | "resultado" | "alerta";
+};
+
+function detalhes(grupo: GrupoDreBalancete, contas: ContaResultadoJunho[]): LinhaReport[] {
+  return contas.map((conta) => ({
+    id: `${grupo}-${conta.codigo}`,
+    descricao: `${conta.codigo} · ${conta.descricao}`,
+    valor: conta.resultado,
+    nivel: 1,
+    tipo: "detalhe",
+  }));
+}
 
 function DreReportPage() {
   useNitaplastJunho();
-  const [linhasBase, setLinhasBase] = useState<LinhaComparacaoDre[] | null>(null);
-  const [erro, setErro] = useState("");
+  const { aplicar } = useReclassificacoesInteligentes("2026-06");
 
-  // A composição detalhada é pesada. Deixamos a rota montar primeiro e carregamos
-  // a estrutura no tick seguinte, evitando a tela cinza/travada durante a navegação.
-  useEffect(() => {
-    let cancelado = false;
-    const timer = window.setTimeout(() => {
-      import("@/data/nitaplast-dre-detalhada")
-        .then((modulo) => {
-          if (!cancelado) setLinhasBase(modulo.comparacaoDreDetalhada);
-        })
-        .catch((error) => {
-          console.error(error);
-          if (!cancelado) setErro("Não foi possível carregar a DRE Report.");
-        });
-    }, 0);
+  // REGRA ÚNICA: o mesmo Razão ajustado que alimenta o Balancete alimenta esta DRE.
+  // Nenhum valor da DRE manual/de validação entra no cálculo deste relatório.
+  const lancamentosComAjustes = useMemo(() => aplicar(lancamentosIntegrados), [aplicar]);
+  const apuracao = useMemo(() => calcularDreBalancete(lancamentosComAjustes), [lancamentosComAjustes]);
+  const r = apuracao.resumo;
 
-    return () => {
-      cancelado = true;
-      window.clearTimeout(timer);
-    };
-  }, []);
+  const receitaLiquida = arred(r.receitaBruta - r.deducoes);
+  const lucroBruto = arred(receitaLiquida - r.custos);
+  const resultadoAntesFinanceiro = arred(lucroBruto - r.despesasOperacionais);
 
-  const linhas = useMemo(() => (linhasBase ?? []).filter((linha) => {
-    if (LINHAS_INTERNAS.has(linha.id)) return false;
-    if (linha.tipo === "diagnostico" && Math.abs(linha.calculado) < 0.005) return false;
-    return true;
-  }), [linhasBase]);
+  const linhas = useMemo<LinhaReport[]>(() => {
+    const base: LinhaReport[] = [
+      { id: "receita", descricao: "(+) Receita Operacional Bruta", valor: r.receitaBruta, nivel: 0, tipo: "grupo" },
+      ...detalhes("receita", apuracao.contasPorGrupo.receita),
 
-  const receitaBruta = linhas.find((linha) => linha.id === "receita")?.calculado ?? 0;
-  const percentual = (valor: number) => receitaBruta ? (valor / receitaBruta) * 100 : 0;
+      { id: "deducoes", descricao: "(-) Deduções da Receita Bruta", valor: -r.deducoes, nivel: 0, tipo: "grupo" },
+      ...detalhes("deducoes", apuracao.contasPorGrupo.deducoes),
+
+      { id: "receita-liquida", descricao: "Receita Operacional Líquida", valor: receitaLiquida, nivel: 0, tipo: "subtotal" },
+
+      { id: "custos", descricao: "(-) Custos / CPV / CMV", valor: -r.custos, nivel: 0, tipo: "grupo" },
+      ...detalhes("custos", apuracao.contasPorGrupo.custos),
+
+      { id: "lucro-bruto", descricao: "LUCRO BRUTO", valor: lucroBruto, nivel: 0, tipo: "subtotal" },
+
+      { id: "despesas-operacionais", descricao: "(-) Despesas Operacionais", valor: -r.despesasOperacionais, nivel: 0, tipo: "grupo" },
+      ...detalhes("despesas-operacionais", apuracao.contasPorGrupo["despesas-operacionais"]),
+
+      { id: "resultado-antes-financeiro", descricao: "Resultado Antes do Financeiro", valor: resultadoAntesFinanceiro, nivel: 0, tipo: "subtotal" },
+
+      { id: "receitas-financeiras", descricao: "(+) Receitas Financeiras", valor: r.receitasFinanceiras, nivel: 0, tipo: "grupo" },
+      ...detalhes("receitas-financeiras", apuracao.contasPorGrupo["receitas-financeiras"]),
+
+      { id: "despesas-financeiras", descricao: "(-) Despesas Financeiras", valor: -r.despesasFinanceiras, nivel: 0, tipo: "grupo" },
+      ...detalhes("despesas-financeiras", apuracao.contasPorGrupo["despesas-financeiras"]),
+
+      { id: "resultado-operacional", descricao: "RESULTADO OPERACIONAL", valor: apuracao.resultadoOperacional, nivel: 0, tipo: "subtotal" },
+
+      { id: "nao-operacional", descricao: "Resultado Não Operacional", valor: r.resultadoNaoOperacional, nivel: 0, tipo: "grupo" },
+      ...detalhes("nao-operacional", apuracao.contasPorGrupo["nao-operacional"]),
+    ];
+
+    if (r.contasSemVinculo > 0 || Math.abs(r.valorSemVinculo) >= 0.005) {
+      base.push(
+        { id: "sem-vinculo", descricao: "Outros resultados sem classificação gerencial", valor: r.valorSemVinculo, nivel: 0, tipo: "alerta" },
+        ...detalhes("sem-vinculo", apuracao.contasPorGrupo["sem-vinculo"]),
+      );
+    }
+
+    base.push({ id: "lucro-liquido", descricao: "LUCRO / PREJUÍZO LÍQUIDO", valor: apuracao.resultadoLiquido, nivel: 0, tipo: "resultado" });
+    return base;
+  }, [apuracao, lucroBruto, r, receitaLiquida, resultadoAntesFinanceiro]);
+
+  const percentual = (valor: number) => r.receitaBruta ? (valor / r.receitaBruta) * 100 : 0;
 
   function exportarCsv() {
     const cabecalho = ["DESCRIÇÃO", "VALOR", "% RECEITA"];
@@ -61,8 +105,8 @@ function DreReportPage() {
       cabecalho,
       ...linhas.map((linha) => [
         linha.descricao,
-        linha.calculado.toFixed(2).replace(".", ","),
-        percentual(linha.calculado).toFixed(2).replace(".", ","),
+        linha.valor.toFixed(2).replace(".", ","),
+        percentual(linha.valor).toFixed(2).replace(".", ","),
       ]),
     ]
       .map((colunas) => colunas.map((valor) => `"${String(valor).replaceAll('"', '""')}"`).join(";"))
@@ -84,13 +128,13 @@ function DreReportPage() {
       <div className="print:hidden">
         <PageHeader
           titulo="DRE Report — Nitaplast"
-          descricao="Competência 06/2026 · calculada pelo Razão/Balancete"
+          descricao="Competência 06/2026 · Razão → Balancete → DRE"
           acoes={
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="gap-2" onClick={exportarCsv} disabled={!linhasBase}>
+              <Button variant="outline" size="sm" className="gap-2" onClick={exportarCsv}>
                 <Download className="size-4" /> Exportar CSV
               </Button>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()} disabled={!linhasBase}>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}>
                 <Printer className="size-4" /> Imprimir / PDF
               </Button>
             </div>
@@ -98,61 +142,46 @@ function DreReportPage() {
         />
       </div>
 
-      {!linhasBase && !erro ? (
-        <div className="mx-auto w-full max-w-5xl rounded-md border bg-background p-8 text-center text-sm text-muted-foreground">
-          Preparando DRE Report de 06/2026…
-        </div>
-      ) : erro ? (
-        <div className="mx-auto w-full max-w-5xl rounded-md border border-destructive/40 bg-destructive/5 p-6 text-sm text-destructive">
-          {erro}
-        </div>
-      ) : (
-        <section className="mx-auto w-full max-w-5xl bg-background print:max-w-none print:bg-white print:text-black">
-          <header className="border-b-2 border-foreground pb-4 text-center print:border-black">
-            <h1 className="text-lg font-bold uppercase tracking-wide">NITAPLAST IND E COM DE PLÁSTICOS INDUSTRIAIS LTDA</h1>
-            <p className="mt-1 text-sm">CNPJ 82.295.817/0001-07</p>
-            <h2 className="mt-4 text-base font-semibold uppercase">Demonstração do Resultado do Exercício</h2>
-            <p className="mt-1 text-sm">Período: 01/06/2026 a 30/06/2026</p>
-          </header>
+      <section className="mx-auto w-full max-w-5xl bg-background print:max-w-none print:bg-white print:text-black">
+        <header className="border-b-2 border-foreground pb-4 text-center print:border-black">
+          <h1 className="text-lg font-bold uppercase tracking-wide">NITAPLAST IND E COM DE PLÁSTICOS INDUSTRIAIS LTDA</h1>
+          <p className="mt-1 text-sm">CNPJ 82.295.817/0001-07</p>
+          <h2 className="mt-4 text-base font-semibold uppercase">Demonstração do Resultado do Exercício</h2>
+          <p className="mt-1 text-sm">Período: 01/06/2026 a 30/06/2026</p>
+        </header>
 
-          <table className="mt-5 w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-y border-foreground text-left text-xs uppercase print:border-black">
-                <th className="py-2 pr-3">Descrição</th>
-                <th className="w-44 py-2 text-right">Valor</th>
-                <th className="w-28 py-2 text-right">% Receita</th>
-              </tr>
-            </thead>
-            <tbody>
-              {linhas.map((linha) => {
-                const destaqueResultado = linha.tipo === "resultado";
-                const destaqueGrupo = linha.tipo === "grupo";
-                const diagnostico = linha.tipo === "diagnostico";
-                const recuo = linha.nivel === 2 ? "pl-12" : linha.nivel === 1 ? "pl-6" : "";
+        <table className="mt-5 w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-y border-foreground text-left text-xs uppercase print:border-black">
+              <th className="py-2 pr-3">Descrição</th>
+              <th className="w-44 py-2 text-right">Valor</th>
+              <th className="w-28 py-2 text-right">% Receita</th>
+            </tr>
+          </thead>
+          <tbody>
+            {linhas.map((linha) => {
+              const recuo = linha.nivel === 1 ? "pl-6" : "";
+              const classe = linha.tipo === "resultado"
+                ? "border-t-2 border-t-foreground font-bold print:border-t-black"
+                : linha.tipo === "subtotal"
+                  ? "font-bold"
+                  : linha.tipo === "grupo"
+                    ? "font-semibold"
+                    : linha.tipo === "alerta"
+                      ? "font-semibold"
+                      : "";
 
-                return (
-                  <tr
-                    key={linha.id}
-                    className={`border-b border-border print:border-neutral-300 ${
-                      destaqueResultado
-                        ? "border-t-2 border-t-foreground font-bold print:border-t-black"
-                        : destaqueGrupo
-                          ? "font-semibold"
-                          : diagnostico
-                            ? "italic"
-                            : ""
-                    }`}
-                  >
-                    <td className={`py-2 pr-3 ${recuo}`}>{linha.descricao}</td>
-                    <td className="py-2 text-right tabular-nums">{brl.format(linha.calculado)}</td>
-                    <td className="py-2 text-right tabular-nums">{pct.format(percentual(linha.calculado))}%</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </section>
-      )}
+              return (
+                <tr key={linha.id} className={`border-b border-border print:border-neutral-300 ${classe}`}>
+                  <td className={`py-2 pr-3 ${recuo}`}>{linha.descricao}</td>
+                  <td className="py-2 text-right tabular-nums">{brl.format(linha.valor)}</td>
+                  <td className="py-2 text-right tabular-nums">{pct.format(percentual(linha.valor))}%</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </section>
     </PageShell>
   );
 }
