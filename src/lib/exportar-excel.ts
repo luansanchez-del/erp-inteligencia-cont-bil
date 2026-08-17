@@ -15,7 +15,15 @@ type ExportarExcelOpcoes = {
   subtitulo?: string;
 };
 
-type EstiloLinha = "sintetica" | "subtotal" | "resultado" | "alerta";
+type EstiloLinha =
+  | "sintetica"
+  | "subtotal"
+  | "resultado"
+  | "alerta"
+  | "balancete-n1"
+  | "balancete-n2"
+  | "balancete-n3"
+  | "balancete-n4";
 
 const encoder = new TextEncoder();
 
@@ -59,12 +67,26 @@ function celulaXml(valor: ValorExcel, linha: number, coluna: number, tipo: Colun
 }
 
 /**
- * Preserva no Excel a hierarquia visual da DRE exibida na tela.
- * Linhas analíticas continuam brancas; sintéticas, subtotais e o resultado final
- * recebem preenchimentos suaves para facilitar leitura e conferência.
+ * Mantém no Excel a mesma leitura hierárquica dos relatórios visuais.
+ * Na DRE, destaca grupos/subtotais/resultado. No Balancete, usa o campo S/A e
+ * o nível da classificação para reproduzir as cores das contas sintéticas.
  */
 function classificarLinha(aba: string, valores: ValorExcel[]): EstiloLinha | undefined {
-  if (nomeAbaSeguro(aba).toLocaleUpperCase("pt-BR") !== "DRE") return undefined;
+  const abaNormalizada = nomeAbaSeguro(aba).toLocaleUpperCase("pt-BR");
+
+  if (abaNormalizada === "BALANCETE") {
+    const tipo = String(valores[1] ?? "").trim().toLocaleUpperCase("pt-BR");
+    if (tipo !== "S") return undefined;
+
+    const classificacao = String(valores[2] ?? "").trim();
+    const nivel = classificacao ? classificacao.split(".").filter(Boolean).length : 1;
+    if (nivel <= 1) return "balancete-n1";
+    if (nivel === 2) return "balancete-n2";
+    if (nivel === 3) return "balancete-n3";
+    return "balancete-n4";
+  }
+
+  if (abaNormalizada !== "DRE") return undefined;
 
   const descricao = String(valores[0] ?? "").trim();
 
@@ -98,15 +120,17 @@ function estiloCelula(estiloLinha: EstiloLinha | undefined, tipo: ColunaExcel["t
   if (!estiloLinha) return undefined;
 
   const deslocamentoTipo = tipo === "numero" ? 1 : tipo === "percentual" ? 2 : 0;
-  const base = estiloLinha === "sintetica"
-    ? 6
-    : estiloLinha === "subtotal"
-      ? 9
-      : estiloLinha === "resultado"
-        ? 12
-        : 15;
-
-  return base + deslocamentoTipo;
+  const bases: Record<EstiloLinha, number> = {
+    sintetica: 6,
+    subtotal: 9,
+    resultado: 12,
+    alerta: 15,
+    "balancete-n1": 18,
+    "balancete-n2": 21,
+    "balancete-n3": 24,
+    "balancete-n4": 27,
+  };
+  return bases[estiloLinha] + deslocamentoTipo;
 }
 
 function crc32(dados: Uint8Array) {
@@ -286,7 +310,7 @@ export function exportarExcel({ arquivo, aba, colunas, linhas, titulo, subtitulo
     <font><b/><sz val="14"/><name val="Calibri"/><family val="2"/></font>
     <font><b/><color rgb="FFFFFFFF"/><sz val="11"/><name val="Calibri"/><family val="2"/></font>
   </fonts>
-  <fills count="7">
+  <fills count="11">
     <fill><patternFill patternType="none"/></fill>
     <fill><patternFill patternType="gray125"/></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FF1F4E78"/><bgColor indexed="64"/></patternFill></fill>
@@ -294,6 +318,10 @@ export function exportarExcel({ arquivo, aba, colunas, linhas, titulo, subtitulo
     <fill><patternFill patternType="solid"><fgColor rgb="FFE2E8F0"/><bgColor indexed="64"/></patternFill></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FFE2F0D9"/><bgColor indexed="64"/></patternFill></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FFFFF2CC"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFBFDBFE"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFA7F3D0"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFD1FAE5"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFECFDF5"/><bgColor indexed="64"/></patternFill></fill>
   </fills>
   <borders count="3">
     <border><left/><right/><top/><bottom/><diagonal/></border>
@@ -301,7 +329,7 @@ export function exportarExcel({ arquivo, aba, colunas, linhas, titulo, subtitulo
     <border><left/><right/><top style="medium"><color rgb="FF548235"/></top><bottom style="double"><color rgb="FF548235"/></bottom><diagonal/></border>
   </borders>
   <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-  <cellXfs count="18">
+  <cellXfs count="30">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
     <xf numFmtId="0" fontId="3" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center"/></xf>
     <xf numFmtId="4" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
@@ -324,6 +352,22 @@ export function exportarExcel({ arquivo, aba, colunas, linhas, titulo, subtitulo
     <xf numFmtId="0" fontId="1" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
     <xf numFmtId="4" fontId="1" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
     <xf numFmtId="10" fontId="1" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
+
+    <xf numFmtId="0" fontId="1" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
+    <xf numFmtId="4" fontId="1" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
+    <xf numFmtId="10" fontId="1" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
+
+    <xf numFmtId="0" fontId="1" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
+    <xf numFmtId="4" fontId="1" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
+    <xf numFmtId="10" fontId="1" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
+
+    <xf numFmtId="0" fontId="1" fillId="9" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
+    <xf numFmtId="4" fontId="1" fillId="9" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
+    <xf numFmtId="10" fontId="1" fillId="9" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
+
+    <xf numFmtId="0" fontId="1" fillId="10" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
+    <xf numFmtId="4" fontId="1" fillId="10" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
+    <xf numFmtId="10" fontId="1" fillId="10" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
   </cellXfs>
   <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>`;
