@@ -1,37 +1,56 @@
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, Printer } from "lucide-react";
 import { PageHeader, PageShell } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { comparacaoDreDetalhada } from "@/data/nitaplast-dre-detalhada";
+import type { LinhaComparacaoDre } from "@/data/nitaplast-dre-detalhada";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 
 export const Route = createFileRoute("/relatorios/dre")({
   head: () => ({
     meta: [
-      { title: "DRE Oficial — Nitaplast — ERP Contábil" },
-      { name: "description", content: "Demonstração do Resultado oficial calculada a partir do Razão e Balancete." },
+      { title: "DRE Report — Nitaplast — ERP Contábil" },
+      { name: "description", content: "Demonstração do Resultado calculada a partir do Razão e Balancete." },
     ],
   }),
-  component: DreOficialPage,
+  component: DreReportPage,
 });
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const pct = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
 const LINHAS_INTERNAS = new Set(["base-ir", "ajuste-jul"]);
 
-function DreOficialPage() {
+function DreReportPage() {
   useNitaplastJunho();
+  const [linhasBase, setLinhasBase] = useState<LinhaComparacaoDre[] | null>(null);
+  const [erro, setErro] = useState("");
 
-  // A DRE OFICIAL usa a coluna CALCULADO da mesma estrutura detalhada que valida
-  // o Razão/Balancete. A referência manual/enviada nunca é exibida nem usada como valor.
-  const linhas = comparacaoDreDetalhada.filter((linha) => {
+  // A composição detalhada é pesada. Deixamos a rota montar primeiro e carregamos
+  // a estrutura no tick seguinte, evitando a tela cinza/travada durante a navegação.
+  useEffect(() => {
+    let cancelado = false;
+    const timer = window.setTimeout(() => {
+      import("@/data/nitaplast-dre-detalhada")
+        .then((modulo) => {
+          if (!cancelado) setLinhasBase(modulo.comparacaoDreDetalhada);
+        })
+        .catch((error) => {
+          console.error(error);
+          if (!cancelado) setErro("Não foi possível carregar a DRE Report.");
+        });
+    }, 0);
+
+    return () => {
+      cancelado = true;
+      window.clearTimeout(timer);
+    };
+  }, []);
+
+  const linhas = useMemo(() => (linhasBase ?? []).filter((linha) => {
     if (LINHAS_INTERNAS.has(linha.id)) return false;
-    // Diagnósticos zerados são internos. Se houver valor real sem classificação,
-    // ele permanece visível para não esconder resultado contábil.
     if (linha.tipo === "diagnostico" && Math.abs(linha.calculado) < 0.005) return false;
     return true;
-  });
+  }), [linhasBase]);
 
   const receitaBruta = linhas.find((linha) => linha.id === "receita")?.calculado ?? 0;
   const percentual = (valor: number) => receitaBruta ? (valor / receitaBruta) * 100 : 0;
@@ -53,7 +72,7 @@ function DreOficialPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "Nitaplast_DRE_Oficial_062026.csv";
+    link.download = "Nitaplast_DRE_Report_062026.csv";
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -64,14 +83,14 @@ function DreOficialPage() {
     <PageShell>
       <div className="print:hidden">
         <PageHeader
-          titulo="DRE Oficial — Nitaplast"
+          titulo="DRE Report — Nitaplast"
           descricao="Competência 06/2026 · calculada pelo Razão/Balancete"
           acoes={
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="gap-2" onClick={exportarCsv}>
+              <Button variant="outline" size="sm" className="gap-2" onClick={exportarCsv} disabled={!linhasBase}>
                 <Download className="size-4" /> Exportar CSV
               </Button>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()} disabled={!linhasBase}>
                 <Printer className="size-4" /> Imprimir / PDF
               </Button>
             </div>
@@ -79,51 +98,61 @@ function DreOficialPage() {
         />
       </div>
 
-      <section className="mx-auto w-full max-w-5xl bg-background print:max-w-none print:bg-white print:text-black">
-        <header className="border-b-2 border-foreground pb-4 text-center print:border-black">
-          <h1 className="text-lg font-bold uppercase tracking-wide">NITAPLAST IND E COM DE PLÁSTICOS INDUSTRIAIS LTDA</h1>
-          <p className="mt-1 text-sm">CNPJ 82.295.817/0001-07</p>
-          <h2 className="mt-4 text-base font-semibold uppercase">Demonstração do Resultado do Exercício</h2>
-          <p className="mt-1 text-sm">Período: 01/06/2026 a 30/06/2026</p>
-        </header>
+      {!linhasBase && !erro ? (
+        <div className="mx-auto w-full max-w-5xl rounded-md border bg-background p-8 text-center text-sm text-muted-foreground">
+          Preparando DRE Report de 06/2026…
+        </div>
+      ) : erro ? (
+        <div className="mx-auto w-full max-w-5xl rounded-md border border-destructive/40 bg-destructive/5 p-6 text-sm text-destructive">
+          {erro}
+        </div>
+      ) : (
+        <section className="mx-auto w-full max-w-5xl bg-background print:max-w-none print:bg-white print:text-black">
+          <header className="border-b-2 border-foreground pb-4 text-center print:border-black">
+            <h1 className="text-lg font-bold uppercase tracking-wide">NITAPLAST IND E COM DE PLÁSTICOS INDUSTRIAIS LTDA</h1>
+            <p className="mt-1 text-sm">CNPJ 82.295.817/0001-07</p>
+            <h2 className="mt-4 text-base font-semibold uppercase">Demonstração do Resultado do Exercício</h2>
+            <p className="mt-1 text-sm">Período: 01/06/2026 a 30/06/2026</p>
+          </header>
 
-        <table className="mt-5 w-full border-collapse text-sm">
-          <thead>
-            <tr className="border-y border-foreground text-left text-xs uppercase print:border-black">
-              <th className="py-2 pr-3">Descrição</th>
-              <th className="w-44 py-2 text-right">Valor</th>
-              <th className="w-28 py-2 text-right">% Receita</th>
-            </tr>
-          </thead>
-          <tbody>
-            {linhas.map((linha) => {
-              const destaqueResultado = linha.tipo === "resultado";
-              const destaqueGrupo = linha.tipo === "grupo";
-              const diagnostico = linha.tipo === "diagnostico";
-              const recuo = linha.nivel === 2 ? "pl-12" : linha.nivel === 1 ? "pl-6" : "";
+          <table className="mt-5 w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-y border-foreground text-left text-xs uppercase print:border-black">
+                <th className="py-2 pr-3">Descrição</th>
+                <th className="w-44 py-2 text-right">Valor</th>
+                <th className="w-28 py-2 text-right">% Receita</th>
+              </tr>
+            </thead>
+            <tbody>
+              {linhas.map((linha) => {
+                const destaqueResultado = linha.tipo === "resultado";
+                const destaqueGrupo = linha.tipo === "grupo";
+                const diagnostico = linha.tipo === "diagnostico";
+                const recuo = linha.nivel === 2 ? "pl-12" : linha.nivel === 1 ? "pl-6" : "";
 
-              return (
-                <tr
-                  key={linha.id}
-                  className={`border-b border-border print:border-neutral-300 ${
-                    destaqueResultado
-                      ? "border-t-2 border-t-foreground font-bold print:border-t-black"
-                      : destaqueGrupo
-                        ? "font-semibold"
-                        : diagnostico
-                          ? "italic"
-                          : ""
-                  }`}
-                >
-                  <td className={`py-2 pr-3 ${recuo}`}>{linha.descricao}</td>
-                  <td className="py-2 text-right tabular-nums">{brl.format(linha.calculado)}</td>
-                  <td className="py-2 text-right tabular-nums">{pct.format(percentual(linha.calculado))}%</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </section>
+                return (
+                  <tr
+                    key={linha.id}
+                    className={`border-b border-border print:border-neutral-300 ${
+                      destaqueResultado
+                        ? "border-t-2 border-t-foreground font-bold print:border-t-black"
+                        : destaqueGrupo
+                          ? "font-semibold"
+                          : diagnostico
+                            ? "italic"
+                            : ""
+                    }`}
+                  >
+                    <td className={`py-2 pr-3 ${recuo}`}>{linha.descricao}</td>
+                    <td className="py-2 text-right tabular-nums">{brl.format(linha.calculado)}</td>
+                    <td className="py-2 text-right tabular-nums">{pct.format(percentual(linha.calculado))}%</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </section>
+      )}
     </PageShell>
   );
 }
