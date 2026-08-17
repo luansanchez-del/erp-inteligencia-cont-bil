@@ -15,7 +15,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Topbar } from "@/components/topbar";
-import { ErpProvider } from "@/context/erp-context";
+import { ErpProvider, useErp } from "@/context/erp-context";
 
 function NotFoundComponent() {
   return (
@@ -137,26 +137,35 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ErpProvider>
-        <SidebarProvider>
-          <div className="flex min-h-screen w-full bg-background print:block print:min-h-0 print:bg-white">
-            <div className="print:hidden">
-              <AppSidebar />
-            </div>
-            <div className="flex min-w-0 flex-1 flex-col print:block print:w-full">
-              <div className="print:hidden">
-                <Topbar />
-              </div>
-              <main className="min-w-0 flex-1 print:w-full print:min-w-0">
-                {/* Required: nested routes render here. */}
-                <Outlet />
-              </main>
-            </div>
-          </div>
-        </SidebarProvider>
+        <ErpApplication />
       </ErpProvider>
       <div className="print:hidden">
         <Toaster />
       </div>
     </QueryClientProvider>
+  );
+}
+
+function ErpApplication() {
+  const { empresa, competencia } = useErp();
+  const renderKey = `${empresa.id}:${competencia.id}`;
+
+  return (
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-background print:block print:min-h-0 print:bg-white">
+        <div className="print:hidden">
+          <AppSidebar />
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col print:block print:w-full">
+          <div className="print:hidden">
+            <Topbar />
+          </div>
+          <main key={renderKey} className="min-w-0 flex-1 print:w-full print:min-w-0">
+            {/* Ao trocar empresa/competência, remonta a rota para eliminar qualquer estado visual da competência anterior. */}
+            <Outlet />
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
   );
 }
