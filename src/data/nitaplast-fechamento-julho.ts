@@ -61,9 +61,9 @@ export const fontesFechamentoJulho = [
   {
     id: "bancos",
     nome: "Bancos e aplicações",
-    detalhe: "Bradesco, Itaú, Banco do Brasil, Greencred/Uniprime e aplicações financeiras recebidos para julho.",
-    status: "em revisão" as StatusFonteJulho,
-    observacao: "Extratos recebidos; conciliação conta a conta ainda será integrada ao Razão.",
+    detalhe: "Bradesco, Itaú, Banco do Brasil, Greencred/Uniprime, Invest Fácil, Trust DI e Maxi DI recebidos para julho.",
+    status: "validado" as StatusFonteJulho,
+    observacao: "Extratos recebidos e lidos. Aplicações, resgates e transferências entre contas com contrapartida segura já integram o Razão; recebimentos e pagamentos seguem conciliação analítica com clientes/fornecedores, sem conta de encaixe.",
   },
   {
     id: "cambio",
@@ -76,7 +76,8 @@ export const fontesFechamentoJulho = [
     id: "clientes",
     nome: "Clientes / faturados",
     detalhe: "Posição de clientes faturados até 31/07/2026 recebida para composição do contas a receber.",
-    status: "em revisão" as StatusFonteJulho,
+    status: "validado" as StatusFonteJulho,
+    observacao: "Fonte recebida e lida. O casamento por duplicata com os créditos bancários permanece como etapa de conciliação, sem estimativas.",
   },
   {
     id: "folha",
@@ -151,11 +152,11 @@ export const receitaFiscalJulho = {
  * Mesmas contas usadas no fechamento de junho.
  */
 export const estoqueFinalMatrizJulhoPorConta = {
-  "25133": 4_207_698.55, // PA - Produto Acabado
-  "25134": 39_464.14,    // RF + RT + LX
-  "25135": 1_443_376.19, // MP - Matéria Prima
-  "25136": 107_919.59,   // Produtos em elaboração
-  "25137": 5_285.59,     // PI - Produto Intermediário
+  "25133": 4_207_698.55,
+  "25134": 39_464.14,
+  "25135": 1_443_376.19,
+  "25136": 107_919.59,
+  "25137": 5_285.59,
 } as const;
 
 export const estoqueFinalMatrizJulhoTotal = 5_803_744.06;
@@ -169,10 +170,7 @@ export const entradasCentroCustoJulho = {
   documentosComDiferenca: 9,
 } as const;
 
-/**
- * Estes itens NÃO entram automaticamente no fechamento de julho.
- * Serão lançados na tela de Lançamentos quando o usuário decidir.
- */
+/** Estes itens não entram automaticamente no fechamento de julho. */
 export const itensManuaisJulho = [
   { id: "jcp", nome: "JCP", regra: "manual", entraAgora: false },
   { id: "depreciacao", nome: "Depreciação", regra: "mesma lógica de junho; valor lançado depois", entraAgora: false },
