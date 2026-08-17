@@ -25,12 +25,12 @@ export function Topbar() {
 
   return (
     <header className="sticky top-0 z-30 border-b bg-card/95 backdrop-blur">
-      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2">
-        <div className="flex items-center gap-2">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-2 py-2 sm:gap-3 sm:px-3">
+        <div className="flex min-w-0 items-center gap-2">
           <SidebarTrigger />
           <Separator orientation="vertical" className="hidden h-6 sm:block" />
           <Select value={empresa.id} onValueChange={setEmpresaId}>
-            <SelectTrigger className="h-9 w-[180px] sm:w-[260px]">
+            <SelectTrigger className="h-9 w-[128px] sm:w-[220px] md:w-[260px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -42,7 +42,7 @@ export function Topbar() {
             </SelectContent>
           </Select>
           <Select value={competencia.id} onValueChange={setCompetenciaId}>
-            <SelectTrigger className="hidden h-9 w-[130px] md:flex">
+            <SelectTrigger className="h-9 w-[102px] sm:w-[118px] md:w-[130px]" aria-label="Selecionar competência">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -69,7 +69,7 @@ export function Topbar() {
             <p className="text-xs font-medium leading-tight">Luan Sanchez</p>
             <p className="text-[11px] leading-tight text-muted-foreground">{funcao}</p>
           </div>
-          <span className="grid size-9 place-items-center rounded-full bg-muted">
+          <span className="hidden size-9 place-items-center rounded-full bg-muted sm:grid">
             <User className="size-4" />
           </span>
         </div>
@@ -78,7 +78,7 @@ export function Topbar() {
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-t bg-muted/40 px-3 py-1.5">
         <div className="flex min-w-0 items-center gap-2">
           <span className="truncate text-xs font-medium">{empresa.razaoSocial}</span>
-          <Badge variant="outline" className="shrink-0 text-[10px] uppercase">
+          <Badge variant="outline" className="hidden shrink-0 text-[10px] uppercase sm:inline-flex">
             {empresa.tipo === "matriz" ? "Matriz" : "Filial"}
           </Badge>
           <span className="hidden truncate font-mono text-xs text-muted-foreground sm:inline">
@@ -89,7 +89,7 @@ export function Topbar() {
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <span className="font-mono text-xs text-muted-foreground">
+          <span className="hidden font-mono text-xs text-muted-foreground sm:inline">
             Competência {competencia.label}
           </span>
           <Badge variant={competencia.status === "aberta" ? "secondary" : "outline"}>
