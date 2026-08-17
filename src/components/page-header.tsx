@@ -13,7 +13,6 @@ const rotasSensíveisCompetencia = [
   "/contabil/diario",
   "/contabil/dre",
   "/contabil/fechamento",
-  "/contabil/conciliacao",
   "/contabil/lancamentos",
   "/contabil/lotes",
   "/contabil/encerramento",
