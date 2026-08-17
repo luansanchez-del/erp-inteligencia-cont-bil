@@ -17,79 +17,73 @@ export const cadastroFiscalNitaplast = {
 export const receitaBrutaJunho = 3402624.71;
 
 /**
- * DRE de referência de 06/2026.
+ * DRE de referência de 06/2026 conforme composição contábil validada.
  *
- * O ajuste de estoque de R$ 82.536,10 pertence à competência 07/2026 e não pode
- * alterar o Razão, Balancete ou DRE de junho.
+ * Regra: Razão -> Balancete -> DRE.
+ * O CPV é composto somente pelas contas 25944 e 25945 já contabilizadas.
+ * Não existe ajuste adicional de R$ 82.536,10 na DRE.
  *
- * Referência validada para 06/2026 antes do ajuste de julho:
- * - Custo Total: R$ 1.188.509,50;
- * - Resultado Operacional: R$ 215.039,01;
+ * Referência de 06/2026:
+ * - Receita Bruta: R$ 3.402.624,71;
+ * - Deduções: R$ 811.074,77;
+ * - Receita Líquida: R$ 2.591.549,94;
+ * - CPV/CMV: R$ 1.271.045,60;
+ * - Lucro Bruto: R$ 1.320.504,34;
+ * - Despesas Operacionais Líquidas: R$ 1.187.406,05;
+ * - Resultado Operacional: R$ 133.098,29;
  * - Resultado Não Operacional: R$ 7.295,86;
- * - Lucro Líquido: R$ 222.334,87.
- *
- * A coluna calculada continua nascendo exclusivamente do Razão/Balancete.
+ * - Lucro Líquido: R$ 140.394,15.
  */
 export const dreCompletaJunho: LinhaDre[] = [
   { id: "receita", descricao: "(+) Receita Operacional Bruta", valor: 3402624.71, nivel: 0, tipo: "grupo", origem: "DRE FINAL 06/2026" },
-  { id: "rec-matriz-prod", descricao: "Receita Venda Produção Matriz", valor: 2890314.30, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "rec-matriz-rev", descricao: "Receita Revenda Matriz", valor: 162137.33, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "rec-serv", descricao: "Receita Venda de Serviços", valor: 0, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "rec-filial-prod", descricao: "Receita Venda Produção Filial", valor: 350173.08, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "rec-filial-rev", descricao: "Receita Revenda Filial", valor: 0, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
+  { id: "rec-matriz-prod", descricao: "2606 · Vendas de Produtos a Prazo", valor: 2840574.32, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "rec-st", descricao: "25025 · Mercado Interno com ST", valor: 7619.18, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "rec-vista", descricao: "2629 · Vendas de Produtos a Vista", valor: 57415.55, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "rec-matriz-rev", descricao: "2655 · Vendas de Mercadorias a Prazo", valor: 497015.66, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
 
   { id: "deducoes", descricao: "(-) Deduções da Receita Bruta", valor: 811074.77, nivel: 0, tipo: "grupo", origem: "DRE FINAL 06/2026" },
-  { id: "dev", descricao: "Devoluções de Produtos", valor: 30997.14, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "desc", descricao: "Descontos Concedidos", valor: 0, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "ipi-m", descricao: "IPI Matriz", valor: 171148.81, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "icms-m", descricao: "ICMS Matriz", valor: 239206.46, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "pis-m", descricao: "PIS Matriz", valor: 47548.49, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "cofins-m", descricao: "COFINS Matriz", valor: 219011.34, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "icms-st", descricao: "ICMS ST", valor: 1496.86, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "icms-f", descricao: "ICMS s/ vendas Filial", valor: 56744.23, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "ipi-f", descricao: "IPI Filial", valor: 20469.32, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "pis-f", descricao: "PIS Filial", valor: 4361.70, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "cofins-f", descricao: "COFINS Filial", valor: 20090.42, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
+  { id: "dev", descricao: "25943 · DEVOLUÇÃO DE PRODUTOS", valor: 30997.14, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "ipi-m", descricao: "2826 · (-) IPI", valor: 171148.81, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "icms-m", descricao: "2827 · (-) ICMS", valor: 239206.46, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "pis-m", descricao: "2829 · PIS sobre vendas — Matriz", valor: 47548.49, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "pis-f", descricao: "2829 · PIS sobre vendas — Filial", valor: 4361.70, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "cofins-m", descricao: "2830 · COFINS sobre vendas — Matriz", valor: 219011.34, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "cofins-f", descricao: "2830 · COFINS sobre vendas — Filial", valor: 20090.42, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "icms-st", descricao: "2832 · (-) ICMS Substiruição Tributária", valor: 1496.86, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "icms-f", descricao: "25054 · ICMS S/ VENDAS FILIAL", valor: 56744.23, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "ipi-f", descricao: "25055 · IPI FATURADO - FILIAL SÃO PAULO", valor: 20469.32, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "receita-liquida", descricao: "Receita Operacional Líquida", valor: 2591549.94, nivel: 0, tipo: "resultado", origem: "RAZÃO/BALANCETE 06/2026" },
 
-  { id: "custos", descricao: "(-) Custo TOTAL", valor: 1188509.50, nivel: 0, tipo: "grupo", origem: "DRE FINAL 06/2026" },
-  { id: "cpv-m", descricao: "(-) CPV Matriz", valor: 1075274.84, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026", composicaoPendente: true },
-  { id: "cmv-m", descricao: "(-) CMV Matriz", valor: 0, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "cpv-f", descricao: "(-) CPV Filial", valor: 113234.66, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026", composicaoPendente: true },
-  { id: "cmv-f", descricao: "(-) CMV Filial", valor: 0, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "lucro-bruto", descricao: "LUCRO BRUTO", valor: 1403040.44, nivel: 0, tipo: "resultado", origem: "DRE FINAL 06/2026" },
+  { id: "custos", descricao: "(-) Custos / CPV / CMV", valor: 1271045.60, nivel: 0, tipo: "grupo", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "cpv-m", descricao: "25944 · Custos de produtos vendidos", valor: 1157810.94, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "cpv-f", descricao: "25945 · Custos de Produtos Vendidos - Filial", valor: 113234.66, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "lucro-bruto", descricao: "LUCRO BRUTO", valor: 1320504.34, nivel: 0, tipo: "resultado", origem: "RAZÃO/BALANCETE 06/2026" },
 
-  { id: "despesas", descricao: "(-) Despesas Operacionais", valor: 1256946.43, nivel: 0, tipo: "grupo", origem: "DRE FINAL 06/2026" },
-  { id: "adm", descricao: "Despesas Administrativas", valor: 132400.28, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026", composicaoPendente: true },
-  { id: "nplog", descricao: "Despesas com Serviço - NPLog", valor: 115364.37, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "comerciais", descricao: "Despesas Comerciais", valor: 237639.64, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026", composicaoPendente: true },
-  { id: "producao", descricao: "Despesas Produção", valor: 180057.01, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026", composicaoPendente: true },
-  { id: "veiculos", descricao: "Despesas Veículos", valor: 42644.85, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026", composicaoPendente: true },
-  { id: "barracao", descricao: "Despesas Barracão", valor: 3304.32, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026", composicaoPendente: true },
-  { id: "imobilizado", descricao: "Despesas com Imobilizado", valor: 1429.39, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026", composicaoPendente: true },
-  { id: "industrializacao", descricao: "Despesas com Industrialização", valor: 394965.03, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026", composicaoPendente: true },
-  { id: "tributarias", descricao: "Despesas Tributárias", valor: 0, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "comercial-sp", descricao: "Despesas comercial SP", valor: 40095.68, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026", composicaoPendente: true },
-  { id: "fin-liq", descricao: "Despesas Financeiras Líquidas", valor: 109045.86, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "fin-desp", descricao: "Despesas Financeiras", valor: 153961.84, nivel: 2, tipo: "detalhe", origem: "DRE FINAL 06/2026", composicaoPendente: true },
-  { id: "fin-rec", descricao: "(-) Receitas Financeiras", valor: -44915.98, nivel: 2, tipo: "credito", origem: "DRE FINAL 06/2026", composicaoPendente: true },
+  { id: "despesas", descricao: "(-) Despesas Operacionais antes dos créditos", valor: 1256351.05, nivel: 0, tipo: "grupo", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "adm", descricao: "Despesas Administrativas", valor: 132400.28, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026", composicaoPendente: true },
+  { id: "nplog", descricao: "Despesas com Serviço - NPLog", valor: 115364.37, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "comerciais", descricao: "Despesas Comerciais", valor: 237639.64, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026", composicaoPendente: true },
+  { id: "producao", descricao: "Despesas Produção", valor: 179461.63, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026", composicaoPendente: true },
+  { id: "veiculos", descricao: "Despesas Veículos", valor: 42644.85, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026", composicaoPendente: true },
+  { id: "barracao", descricao: "Despesas Barracão", valor: 3304.32, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026", composicaoPendente: true },
+  { id: "imobilizado", descricao: "Despesas com Imobilizado", valor: 1429.39, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026", composicaoPendente: true },
+  { id: "industrializacao", descricao: "Despesas com Industrialização", valor: 394965.03, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026", composicaoPendente: true },
+  { id: "tributarias", descricao: "Despesas Tributárias", valor: 0, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "comercial-sp", descricao: "Despesas Comercial SP", valor: 40095.68, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026", composicaoPendente: true },
+  { id: "fin-liq", descricao: "Despesas Financeiras Líquidas", valor: 109045.86, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "fin-desp", descricao: "(-) Despesas Financeiras", valor: 153961.84, nivel: 2, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026", composicaoPendente: true },
+  { id: "fin-rec", descricao: "(+) Receitas Financeiras", valor: -44915.98, nivel: 2, tipo: "credito", origem: "RAZÃO/BALANCETE 06/2026", composicaoPendente: true },
 
-  { id: "credito-pis", descricao: "(-) PIS não cumulativo s/despesas", valor: -12298.30, nivel: 1, tipo: "credito", origem: "DRE FINAL 06/2026" },
-  { id: "credito-cofins", descricao: "(-) COFINS não cumulativo s/despesas", valor: -56646.70, nivel: 1, tipo: "credito", origem: "DRE FINAL 06/2026" },
-  { id: "despesas-liquidas", descricao: "TOTAL DAS DESPESAS OPERACIONAIS", valor: 1188001.43, nivel: 0, tipo: "resultado", origem: "DRE FINAL 06/2026" },
-  { id: "resultado-op", descricao: "Resultado Operacional", valor: 215039.01, nivel: 0, tipo: "resultado", origem: "DRE FINAL 06/2026" },
+  { id: "credito-pis", descricao: "(-) Crédito de PIS sobre custos e despesas", valor: -12298.30, nivel: 1, tipo: "credito", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "credito-cofins", descricao: "(-) Crédito de COFINS sobre custos e despesas", valor: -56646.70, nivel: 1, tipo: "credito", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "despesas-liquidas", descricao: "Total Despesas Operacionais Líquidas", valor: 1187406.05, nivel: 0, tipo: "resultado", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "resultado-op", descricao: "RESULTADO OPERACIONAL", valor: 133098.29, nivel: 0, tipo: "resultado", origem: "RAZÃO/BALANCETE 06/2026" },
 
-  { id: "nao-op", descricao: "RESULTADO NÃO OPERACIONAL", valor: 7295.86, nivel: 0, tipo: "grupo", origem: "DRE FINAL 06/2026" },
-  { id: "alienacao", descricao: "Receita de Alienação Imobilizado", valor: 7295.86, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026", composicaoPendente: true },
-  { id: "baixa", descricao: "Custo na Baixa/Alienação Imobilizado", valor: 0, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "prov-ant", descricao: "Provisão para Custos - meses anteriores", valor: 0, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "prov-abr", descricao: "Provisão para Custos - Abril/2026", valor: 0, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "rec-vinter", descricao: "Recuperação de Despesas Vinter", valor: 0, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "sinistros", descricao: "Ganhos ou Perdas com Sinistros de Bens", valor: 0, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "outras", descricao: "Outras Receitas não Operacionais", valor: 0, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "equiv", descricao: "Resultado da Equivalência Patrimonial", valor: 0, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "lucro-liq", descricao: "LUCRO LÍQUIDO", valor: 222334.87, nivel: 0, tipo: "resultado", origem: "DRE FINAL 06/2026" },
-  { id: "base-ir", descricao: "LUCRO APURADO PARA IRPJ E CSLL", valor: 215039.01, nivel: 0, tipo: "informativo", origem: "DRE FINAL 06/2026" },
-  { id: "ajuste-jul", descricao: "Ajuste de estoque previsto para 07/2026", valor: 82536.10, nivel: 0, tipo: "informativo", origem: "AJUSTE 07/2026 — não pertence ao Razão de junho" },
+  { id: "nao-op", descricao: "Resultado Não Operacional", valor: 7295.86, nivel: 0, tipo: "grupo", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "alienacao", descricao: "4736 · Vendas do Ativo Imobilizado", valor: 15000.00, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "baixa", descricao: "4760 · Custo Vendas do Ativo Imobilizado", valor: 7704.14, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "lucro-liq", descricao: "LUCRO / PREJUÍZO LÍQUIDO", valor: 140394.15, nivel: 0, tipo: "resultado", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "base-ir", descricao: "LUCRO APURADO PARA IRPJ E CSLL", valor: 133098.29, nivel: 0, tipo: "informativo", origem: "RAZÃO/BALANCETE 06/2026" },
 ];
 
 export const idsDespesasOperacionais = [
