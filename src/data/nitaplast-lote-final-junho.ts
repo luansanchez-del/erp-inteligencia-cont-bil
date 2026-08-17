@@ -13,12 +13,13 @@ export type LinhaLoteContabil = {
   historico: string;
   lancamentoId: string;
   origem: string;
-  status: "pronto" | "pendente";
+  status: "pronto" | "alerta" | "pendente";
   pendencias: string[];
+  alertas: string[];
 };
 
 const plano = new Map(saldosImplantacao.map((conta) => [conta.conta, conta]));
-const CONTAS_TRANSITORIAS_BLOQUEANTES = new Set(["4859"]);
+const CONTAS_TRANSITORIAS_COM_ALERTA = new Set(["4859"]);
 
 const ehResultado = (codigo: string) => {
   const classificacao = plano.get(codigo)?.classificacao ?? "";
@@ -67,17 +68,15 @@ function normalizarData(data: string) {
 }
 
 /**
- * Pendência BLOQUEANTE = problema que impede a escrituração/exportação.
+ * PENDÊNCIA = impede escrituração/exportação.
+ * ALERTA = permite escrituração, mas exige revisão posterior.
  *
- * IMPORTANTE:
- * - status "revisar" não bloqueia sozinho;
- * - rastreio "sugerido" não bloqueia sozinho;
- * - ambos continuam visíveis no Razão para auditoria;
- * - somente conta transitória ainda sem destino final (4859), conta inexistente,
- *   conta de resultado sem destino na DRE ou dado obrigatório inválido bloqueiam o lote.
+ * A conta 4859 existe no plano e pode ser usada como transitória. Portanto,
+ * movimentos nela são exportáveis e permanecem sinalizados para saneamento futuro.
  */
 function validar(linha: LancamentoIntegrado) {
   const pendencias: string[] = [];
+  const alertas: string[] = [];
 
   if (!plano.has(linha.debitoCodigo)) pendencias.push(`Conta débito ${linha.debitoCodigo} não existe no plano implantado`);
   if (!plano.has(linha.creditoCodigo)) pendencias.push(`Conta crédito ${linha.creditoCodigo} não existe no plano implantado`);
@@ -89,24 +88,28 @@ function validar(linha: LancamentoIntegrado) {
     pendencias.push(`Conta crédito ${linha.creditoCodigo} é de resultado mas ainda não possui destino na DRE`);
   }
 
-  if (CONTAS_TRANSITORIAS_BLOQUEANTES.has(linha.debitoCodigo)) {
-    pendencias.push(`Conta débito ${linha.debitoCodigo} é transitória e precisa de classificação final`);
+  if (CONTAS_TRANSITORIAS_COM_ALERTA.has(linha.debitoCodigo)) {
+    alertas.push(`Conta débito ${linha.debitoCodigo} é transitória; escriturar agora e reclassificar depois`);
   }
-  if (CONTAS_TRANSITORIAS_BLOQUEANTES.has(linha.creditoCodigo)) {
-    pendencias.push(`Conta crédito ${linha.creditoCodigo} é transitória e precisa de classificação final`);
+  if (CONTAS_TRANSITORIAS_COM_ALERTA.has(linha.creditoCodigo)) {
+    alertas.push(`Conta crédito ${linha.creditoCodigo} é transitória; escriturar agora e reclassificar depois`);
   }
+
+  if (linha.status === "revisar") alertas.push("Lançamento marcado para revisão posterior");
+  if (linha.rastreio === "sugerido") alertas.push("Classificação sugerida; revisar posteriormente");
 
   if (!linha.data) pendencias.push("Data não informada");
   if (!linha.historico.trim()) pendencias.push("Histórico não informado");
   if (!(linha.valor > 0)) pendencias.push("Valor inválido");
 
-  return pendencias;
+  return { pendencias, alertas };
 }
 
 export const loteContabilJunho: LinhaLoteContabil[] = lancamentosIntegrados
   .map((linha, index) => {
-    const pendencias = validar(linha);
+    const { pendencias, alertas } = validar(linha);
     const cc = centroDeCustoDaPartida(linha);
+    const status = pendencias.length ? "pendente" as const : alertas.length ? "alerta" as const : "pronto" as const;
     return {
       seq: index + 1,
       data: normalizarData(linha.data),
@@ -119,21 +122,25 @@ export const loteContabilJunho: LinhaLoteContabil[] = lancamentosIntegrados
       historico: linha.historico,
       lancamentoId: linha.id,
       origem: linha.origem,
-      status: pendencias.length ? "pendente" as const : "pronto" as const,
+      status,
       pendencias,
+      alertas,
     };
   })
   .sort((a, b) => a.data.localeCompare(b.data) || a.seq - b.seq)
   .map((linha, index) => ({ ...linha, seq: index + 1 }));
 
-export const loteContabilJunhoPronto = loteContabilJunho.filter((linha) => linha.status === "pronto");
+export const loteContabilJunhoPronto = loteContabilJunho.filter((linha) => linha.status !== "pendente");
 export const loteContabilJunhoPendente = loteContabilJunho.filter((linha) => linha.status === "pendente");
+export const loteContabilJunhoAlerta = loteContabilJunho.filter((linha) => linha.status === "alerta");
 
 export const resumoLoteContabilJunho = {
   totalPartidas: loteContabilJunho.length,
-  prontas: loteContabilJunhoPronto.length,
+  prontas: loteContabilJunho.filter((linha) => linha.status === "pronto").length,
+  alertas: loteContabilJunhoAlerta.length,
   pendentes: loteContabilJunhoPendente.length,
   valorTotal: loteContabilJunho.reduce((total, linha) => total + linha.valor, 0),
+  valorAlerta: loteContabilJunhoAlerta.reduce((total, linha) => total + linha.valor, 0),
   valorPendente: loteContabilJunhoPendente.reduce((total, linha) => total + linha.valor, 0),
   podeFinalizar: loteContabilJunhoPendente.length === 0,
 } as const;
