@@ -22,41 +22,46 @@ export {
 const arred = (valor: number) => Math.round(valor * 100) / 100;
 
 /**
- * Fechamento OFICIAL das deduções da DRE de 06/2026.
+ * Validação das deduções da DRE de 06/2026.
  *
- * Princípio preservado:
- * - Razão/Balancete mantêm débitos e créditos fiscais completos;
- * - DRE de receita reconhece o imposto incidente nas SAÍDAS pelo débito bruto;
- * - créditos de entradas/aquisições não reduzem a linha de dedução da receita;
- * - PIS/COFINS Matriz x Filial são apresentação gerencial do fechamento de junho,
- *   sem gerar um segundo lançamento fiscal no Razão.
+ * REGRA:
+ * - o lado CALCULADO nasce do Razão/Balancete;
+ * - impostos incidentes sobre vendas são apresentados pelo DÉBITO BRUTO;
+ * - créditos/reversões permanecem no Razão/Balancete, sem reduzir essa linha;
+ * - a apuração federal documentada possui um único débito consolidado de
+ *   PIS R$ 47.548,49 e COFINS R$ 219.011,34;
+ * - portanto PIS/COFINS "Filial" da DRE manual ficam como diferença de
+ *   validação enquanto não existir um segundo débito fiscal/documental.
  *
- * Isso elimina a falsa diferença causada por comparar débito bruto da DRE enviada
- * com saldo líquido (débito - créditos) do Razão.
+ * A DRE enviada é somente REFERÊNCIA. Nenhum valor dela é usado para montar
+ * o valor calculado.
  */
-const valoresDeducoesJunho: Record<string, number> = {
-  dev: 30997.14,
-  desc: 0,
-  "ipi-m": 171148.81,
-  "icms-m": 239206.46,
-  "pis-m": 47548.49,
-  "cofins-m": 219011.34,
-  "icms-st": 1496.86,
-  "icms-f": 56744.23,
-  "ipi-f": 20469.32,
-  "pis-f": 4361.70,
-  "cofins-f": 20090.42,
-};
-
 const idsDeducoes = [
   "dev", "desc", "ipi-m", "icms-m", "pis-m", "cofins-m",
   "icms-st", "icms-f", "ipi-f", "pis-f", "cofins-f",
 ];
 
-function composicaoSomenteDebito(
+const basePorId = new Map(comparacaoBase.map((linha) => [linha.id, linha]));
+
+function somaDebitos(composicao: ComposicaoDre[]) {
+  return arred(composicao.reduce((total, item) => total + item.debitos, 0));
+}
+
+function composicaoDebitoBruto(composicao: ComposicaoDre[], observacao: string): ComposicaoDre[] {
+  return composicao
+    .map((item) => ({
+      ...item,
+      creditos: 0,
+      valorLinha: arred(item.debitos),
+      observacao,
+    }))
+    .filter((item) => Math.abs(item.debitos) >= 0.005);
+}
+
+function composicaoFederalConsolidada(
   composicao: ComposicaoDre[],
   valor: number,
-  observacao: string,
+  tributo: "PIS" | "COFINS",
 ): ComposicaoDre[] {
   if (!composicao.length) return [];
   return composicao.map((item, index) => index === 0
@@ -65,46 +70,67 @@ function composicaoSomenteDebito(
         debitos: arred(valor),
         creditos: 0,
         valorLinha: arred(valor),
-        observacao,
+        cc: "0",
+        centroCusto: "APURAÇÃO FEDERAL CONSOLIDADA",
+        observacao: `${tributo}: débito por saídas da apuração federal documentada. Não existe segundo débito fiscal da filial no Razão.`,
       }
     : {
         ...item,
         debitos: 0,
         creditos: 0,
         valorLinha: 0,
-        observacao,
+        observacao: `${tributo}: composição gerencial não gera segundo débito contábil.`,
       });
+}
+
+function valorCalculado(id: string) {
+  const linha = basePorId.get(id);
+  if (!linha) return 0;
+
+  if (id === "dev" || id === "desc") return arred(linha.calculado);
+  if (id === "pis-m") return arred(controleFiscalFederalJunho.pis.debitoSaidas);
+  if (id === "cofins-m") return arred(controleFiscalFederalJunho.cofins.debitoSaidas);
+  if (id === "pis-f" || id === "cofins-f") return 0;
+
+  return somaDebitos(linha.composicao);
 }
 
 function criterio(id: string) {
   if (id === "dev") return "Devoluções documentadas do período, apresentadas separadamente dos impostos sobre vendas.";
-  if (id === "desc") return "Nenhum desconto concedido identificado no fechamento de junho.";
-  if (id === "pis-m" || id === "cofins-m") {
-    return "Valor de controle da DRE gerencial de junho. O fiscal federal permanece consolidado na empresa; créditos de aquisição não reduzem esta linha de dedução da receita.";
-  }
-  if (id === "pis-f" || id === "cofins-f") {
-    return "Parcela gerencial da filial validada no fechamento de junho. É abertura de apresentação da DRE e não uma segunda apuração fiscal; créditos de aquisição ficam fora desta linha.";
-  }
-  return "Imposto incidente sobre as saídas: a DRE usa o débito bruto das vendas. Créditos de entradas, energia, ativo, devoluções fiscais e outros créditos permanecem conciliados no Razão/Balancete e não reduzem esta linha.";
+  if (id === "desc") return "Nenhum desconto concedido identificado no Razão de junho.";
+  if (id === "pis-m") return "PIS calculado pelo débito por saídas da apuração federal documentada: R$ 47.548,49. O valor é consolidado no Razão.";
+  if (id === "cofins-m") return "COFINS calculada pelo débito por saídas da apuração federal documentada: R$ 219.011,34. O valor é consolidado no Razão.";
+  if (id === "pis-f") return "A DRE manual informa PIS Filial, mas não há segundo débito fiscal no Razão/apuração federal. Mantido como diferença de validação, sem criar lançamento artificial.";
+  if (id === "cofins-f") return "A DRE manual informa COFINS Filial, mas não há segundo débito fiscal no Razão/apuração federal. Mantido como diferença de validação, sem criar lançamento artificial.";
+  return "Imposto incidente sobre as saídas pelo débito bruto do Razão. Créditos/reversões permanecem conciliados no Balancete e não reduzem esta linha da DRE.";
 }
 
 export const comparacaoDreDetalhada: LinhaComparacaoDre[] = comparacaoBase.map((linha) => {
-  if (linha.id === "deducoes") return linha;
-  const valor = valoresDeducoesJunho[linha.id];
-  if (valor === undefined) return linha;
+  if (linha.id === "deducoes") return { ...linha };
+  if (!idsDeducoes.includes(linha.id)) return linha;
+
+  const calculado = valorCalculado(linha.id);
+  let composicao = linha.composicao;
+
+  if (linha.id === "pis-m") {
+    composicao = composicaoFederalConsolidada(linha.composicao, calculado, "PIS");
+  } else if (linha.id === "cofins-m") {
+    composicao = composicaoFederalConsolidada(linha.composicao, calculado, "COFINS");
+  } else if (linha.id === "pis-f" || linha.id === "cofins-f") {
+    composicao = [];
+  } else if (linha.id !== "dev" && linha.id !== "desc") {
+    composicao = composicaoDebitoBruto(
+      linha.composicao,
+      "DRE calculada pelo débito bruto das saídas. Créditos/reversões continuam no Razão/Balancete.",
+    );
+  }
 
   return {
     ...linha,
-    calculado: arred(valor),
-    diferenca: arred(valor - linha.enviado),
+    calculado,
+    diferenca: arred(calculado - linha.enviado),
     criterio: criterio(linha.id),
-    composicao: linha.id === "dev" || linha.id === "desc"
-      ? linha.composicao
-      : composicaoSomenteDebito(
-          linha.composicao,
-          valor,
-          "Composição da DRE pelo débito das saídas. Créditos fiscais continuam no Razão/Balancete, mas não diminuem a dedução da receita.",
-        ),
+    composicao,
   };
 });
 
@@ -114,7 +140,7 @@ const linhaDeducoes = mapa.get("deducoes");
 if (linhaDeducoes) {
   linhaDeducoes.calculado = totalDeducoes;
   linhaDeducoes.diferenca = arred(totalDeducoes - linhaDeducoes.enviado);
-  linhaDeducoes.criterio = "Soma das linhas de dedução da DRE pelo critério de débito das saídas. Créditos fiscais de aquisição são conciliados no Razão/Balancete e não reduzem este grupo.";
+  linhaDeducoes.criterio = "Total calculado exclusivamente pelo Razão/Balancete. A diferença para a DRE enviada corresponde a valores manuais sem segundo débito fiscal contabilizado.";
 }
 
 export const resumoDreDetalhada = {
