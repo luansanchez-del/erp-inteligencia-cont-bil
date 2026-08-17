@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { CheckCircle2, Search } from "lucide-react";
+import { CheckCircle2, Download, Printer, Search } from "lucide-react";
 import { PageHeader, PageShell } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -146,14 +146,50 @@ function BalancetePage() {
     window.location.assign(`/contabil/razao?conta=${encodeURIComponent(conta)}`);
   }
 
+  function exportarCsv() {
+    const cabecalho = ["CONTA", "S/A", "CLASSIFICAÇÃO", "DESCRIÇÃO", "SALDO ANTERIOR", "DÉBITO", "CRÉDITO", "MOVIMENTO", "SALDO ATUAL"];
+    const conteudo = [
+      cabecalho,
+      ...linhasCalculadas.map((linha) => [
+        linha.conta,
+        linha.tipo,
+        linha.classificacao,
+        linha.descricao,
+        linha.saldoAnterior.toFixed(2).replace(".", ","),
+        linha.debitos.toFixed(2).replace(".", ","),
+        linha.creditos.toFixed(2).replace(".", ","),
+        linha.movimento.toFixed(2).replace(".", ","),
+        linha.saldoAtual.toFixed(2).replace(".", ","),
+      ]),
+    ]
+      .map((colunas) => colunas.map((valor) => `"${String(valor).replaceAll('"', '""')}"`).join(";"))
+      .join("\r\n");
+
+    const blob = new Blob(["\uFEFF", conteudo], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "Nitaplast_Balancete_062026.csv";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
   return <PageShell>
     <PageHeader
       titulo="Balancete consolidado - Nitaplast"
       descricao="Saldo anterior de 31/05 + movimento integrado de junho, incluindo reclassificações inteligentes contabilizadas pelo usuário."
-      acoes={<Badge variant="outline">Consolidado - 06/2026</Badge>}
+      acoes={
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline">Consolidado - 06/2026</Badge>
+          <Button variant="outline" size="sm" className="gap-2" onClick={exportarCsv}><Download className="size-4" />Exportar CSV</Button>
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}><Printer className="size-4" />Imprimir / PDF</Button>
+        </div>
+      }
     />
 
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6 print:hidden">
       <Metric label="Ativo consolidado em 31/05" value={resumoImplantacao.ativo} />
       <Metric label="Passivo + PL consolidado em 31/05" value={resumoImplantacao.passivoPatrimonioLiquido} />
       <Metric label="Linhas do balancete" value={linhasCalculadas.filter((linha) => mostrarZeradas || !linhaZerada(linha)).length} />
@@ -162,7 +198,7 @@ function BalancetePage() {
       <Metric label="Reclassificações" value={reclassificacoes.length} />
     </div>
 
-    <Card className="border-emerald-500/40 bg-emerald-500/5">
+    <Card className="border-emerald-500/40 bg-emerald-500/5 print:hidden">
       <CardContent className="flex items-start gap-3 pt-6">
         <CheckCircle2 className="size-5 shrink-0 text-emerald-700" />
         <div>
@@ -172,14 +208,14 @@ function BalancetePage() {
       </CardContent>
     </Card>
 
-    <Card>
-      <CardHeader>
+    <Card className="print:border-0 print:shadow-none">
+      <CardHeader className="print:px-0">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <CardTitle className="text-base">Balancete consolidado - Débito, Crédito e Movimento</CardTitle>
-            <CardDescription>Por padrão, não exibe contas sem saldo anterior, sem débito/crédito no período e com saldo atual zero.</CardDescription>
+            <CardDescription className="print:text-black">NITAPLAST IND E COM DE PLÁSTICOS INDUSTRIAIS LTDA · 01/06/2026 a 30/06/2026</CardDescription>
           </div>
-          <div className="relative w-full sm:w-96">
+          <div className="relative w-full sm:w-96 print:hidden">
             <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
             <Input
               value={busca}
@@ -190,7 +226,7 @@ function BalancetePage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 pt-2">
+        <div className="flex flex-wrap gap-2 pt-2 print:hidden">
           {grupos.map((item) => <button
             key={item}
             onClick={() => { setGrupo(item); setPagina(1); }}
@@ -209,11 +245,11 @@ function BalancetePage() {
         </div>
       </CardHeader>
 
-      <CardContent className="overflow-x-auto">
-        <p className="mb-3 text-xs text-muted-foreground">{linhas.length} linhas exibidas. Contas sem saldo anterior, sem movimentação e com saldo atual zero estão ocultas.</p>
-        <table className="w-full min-w-[1450px] text-sm">
+      <CardContent className="overflow-x-auto print:px-0">
+        <p className="mb-3 text-xs text-muted-foreground print:hidden">{linhas.length} linhas exibidas. Contas sem saldo anterior, sem movimentação e com saldo atual zero estão ocultas.</p>
+        <table className="w-full min-w-[1450px] text-sm print:min-w-0 print:text-[9px]">
           <thead>
-            <tr className="border-b bg-muted/40 text-left text-xs">
+            <tr className="border-b bg-muted/40 text-left text-xs print:bg-white print:text-[8px]">
               <th className="p-2">Conta contábil</th>
               <th className="p-2 text-center">S/A</th>
               <th className="p-2">Classificação</th>
@@ -223,21 +259,21 @@ function BalancetePage() {
               <th className="p-2 text-right">Crédito</th>
               <th className="p-2 text-right">Movimento</th>
               <th className="p-2 text-right">Saldo atual</th>
-              <th className="p-2 text-right">Detalhe</th>
+              <th className="p-2 text-right print:hidden">Detalhe</th>
             </tr>
           </thead>
           <tbody>
-            {linhas.slice(inicio, fim).map((linha) => <tr key={`${linha.tipo}-${linha.conta}-${linha.classificacao}`} className={classeLinha(linha)}>
+            {(typeof window !== "undefined" && window.matchMedia?.("print").matches ? linhas : linhas.slice(inicio, fim)).map((linha) => <tr key={`${linha.tipo}-${linha.conta}-${linha.classificacao}`} className={classeLinha(linha)}>
               <td className="p-2 font-mono">{linha.conta}</td>
               <td className="p-2 text-center font-medium">{linha.tipo}</td>
-              <td className="p-2 font-mono text-xs">{linha.classificacao}</td>
+              <td className="p-2 font-mono text-xs print:text-[8px]">{linha.classificacao}</td>
               <td className="p-2" style={{ paddingLeft: `${8 + Math.max(0, linha.nivel - 1) * 12}px` }}>{linha.descricao}</td>
               <Money value={linha.saldoAnterior} strong={linha.tipo === "S"} />
               <Money value={linha.debitos} />
               <Money value={linha.creditos} />
               <Money value={linha.movimento} />
               <Money value={linha.saldoAtual} strong />
-              <td className="p-2 text-right">{linha.tipo === "A"
+              <td className="p-2 text-right print:hidden">{linha.tipo === "A"
                 ? <Button variant="outline" size="sm" onClick={() => abrirRazao(linha.conta)}>Abrir Razão</Button>
                 : <span className="text-muted-foreground">—</span>}
               </td>
@@ -246,7 +282,7 @@ function BalancetePage() {
         </table>
       </CardContent>
 
-      <CardContent className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+      <CardContent className="flex flex-wrap items-center justify-between gap-3 border-t pt-4 print:hidden">
         <p className="text-xs text-muted-foreground">Exibindo {linhas.length ? inicio + 1 : 0}-{Math.min(fim, linhas.length)} de {linhas.length} linhas.</p>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" disabled={paginaAtual <= 1} onClick={() => setPagina((valor) => Math.max(1, valor - 1))}>Anterior</Button>
@@ -259,11 +295,11 @@ function BalancetePage() {
 }
 
 function classeLinha(linha: LinhaCalculada) {
-  if (linha.tipo === "A") return "border-b last:border-0 bg-background";
-  if (linha.nivel === 1) return "border-b bg-blue-200/80 font-bold";
-  if (linha.nivel === 2) return "border-b bg-emerald-200/70 font-bold";
-  if (linha.nivel === 3) return "border-b bg-emerald-100/70 font-bold";
-  return "border-b bg-emerald-50 font-semibold";
+  if (linha.tipo === "A") return "border-b last:border-0 bg-background print:bg-white";
+  if (linha.nivel === 1) return "border-b bg-blue-200/80 font-bold print:bg-white";
+  if (linha.nivel === 2) return "border-b bg-emerald-200/70 font-bold print:bg-white";
+  if (linha.nivel === 3) return "border-b bg-emerald-100/70 font-bold print:bg-white";
+  return "border-b bg-emerald-50 font-semibold print:bg-white";
 }
 
 function Money({ value, strong = false }: { value: number; strong?: boolean }) {
