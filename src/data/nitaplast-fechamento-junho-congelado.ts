@@ -5,20 +5,18 @@ const arred = (valor: number) => Math.round(valor * 100) / 100;
 /**
  * SNAPSHOT CONTÁBIL DE 06/2026.
  *
- * Junho já foi fechado e validado. A regra de cálculo/reconstrução dinâmica de
- * CPV/estoque passa a valer para 07/2026 em diante e NÃO pode reabrir junho.
+ * Junho permanece congelado. O CPV apresentado no Razão/DRE é composto
+ * somente pelas duas contas de custo já contabilizadas:
+ * - 25944 CPV Matriz: R$ 1.157.810,94
+ * - 25945 CPV Filial: R$   113.234,66
+ * - Total CPV/CMV:    R$ 1.271.045,60
  *
- * Fechamento validado de junho:
- * - CPV Matriz: R$ 1.075.274,84
- * - CPV Filial: R$   113.234,66
- * - CPV Total:  R$ 1.188.509,50
- *
- * O ajuste de estoque de R$ 82.536,10 já está incorporado no valor líquido
- * validado do CPV Matriz e NÃO deve ser lançado novamente no Razão.
+ * Não criar linha, ajuste ou desconto adicional de R$ 82.536,10. Esse efeito
+ * já está refletido no valor da conta 25944 e não pode ser considerado de novo.
  */
-export const CPV_MATRIZ_FECHADO_JUNHO = 1075274.84;
+export const CPV_MATRIZ_FECHADO_JUNHO = 1157810.94;
 export const CPV_FILIAL_FECHADO_JUNHO = 113234.66;
-export const CPV_TOTAL_FECHADO_JUNHO = 1188509.50;
+export const CPV_TOTAL_FECHADO_JUNHO = 1271045.60;
 
 const contasCpvJunho = new Set(["25944", "25945"]);
 
@@ -41,7 +39,7 @@ const fechamentoCpvCongeladoJunho: LancamentoIntegrado[] = [
     centroCusto: "PRODUÇÃO",
     valor: CPV_MATRIZ_FECHADO_JUNHO,
     status: "validado",
-    observacao: "CPV Matriz líquido já considerando o ajuste de estoque de R$ 82.536,10. Não lançar o ajuste novamente no Razão.",
+    observacao: "CPV Matriz fechado em R$ 1.157.810,94. Não aplicar ajuste adicional de R$ 82.536,10; esse efeito já consta no valor da conta 25944.",
     rastreio: "documento",
     fonte: "Fechamento contábil validado 06/2026 / inventário e lote contábil final",
   },
@@ -59,15 +57,13 @@ const fechamentoCpvCongeladoJunho: LancamentoIntegrado[] = [
     centroCusto: "COMERCIAL SP",
     valor: CPV_FILIAL_FECHADO_JUNHO,
     status: "validado",
-    observacao: "Snapshot do lançamento de CPV Filial já validado no fechamento de 06/2026. Não recalcular por regras criadas para 07/2026.",
+    observacao: "CPV Filial fechado em R$ 113.234,66.",
     rastreio: "documento",
     fonte: "Fechamento contábil validado 06/2026 / inventário e lote contábil final",
   },
 ];
 
-export function aplicarSnapshotFechamentoJunho(
-  lancamentos: LancamentoIntegrado[],
-): LancamentoIntegrado[] {
+export function aplicarSnapshotFechamentoJunho(lancamentos: LancamentoIntegrado[]): LancamentoIntegrado[] {
   const baseSemCpvRecalculado = lancamentos.filter((linha) => !tocaCpvJunho(linha));
   return [...baseSemCpvRecalculado, ...fechamentoCpvCongeladoJunho];
 }
@@ -85,22 +81,8 @@ export function validarSnapshotFechamentoJunho(base: LancamentoIntegrado[]) {
   const cpvFilial = movimentoLiquido(base, "25945");
   const cpvTotal = arred(cpvMatriz + cpvFilial);
   const mensagens: string[] = [];
-
-  if (Math.abs(cpvMatriz - CPV_MATRIZ_FECHADO_JUNHO) > 0.01) {
-    mensagens.push(`CPV Matriz 06/2026 alterado: R$ ${cpvMatriz.toFixed(2)} / fechado R$ ${CPV_MATRIZ_FECHADO_JUNHO.toFixed(2)}.`);
-  }
-  if (Math.abs(cpvFilial - CPV_FILIAL_FECHADO_JUNHO) > 0.01) {
-    mensagens.push(`CPV Filial 06/2026 alterado: R$ ${cpvFilial.toFixed(2)} / fechado R$ ${CPV_FILIAL_FECHADO_JUNHO.toFixed(2)}.`);
-  }
-  if (Math.abs(cpvTotal - CPV_TOTAL_FECHADO_JUNHO) > 0.01) {
-    mensagens.push(`CPV Total 06/2026 alterado: R$ ${cpvTotal.toFixed(2)} / fechado R$ ${CPV_TOTAL_FECHADO_JUNHO.toFixed(2)}.`);
-  }
-
-  return {
-    cpvMatriz,
-    cpvFilial,
-    cpvTotal,
-    bloqueado: mensagens.length > 0,
-    mensagens,
-  } as const;
+  if (Math.abs(cpvMatriz - CPV_MATRIZ_FECHADO_JUNHO) > 0.01) mensagens.push(`CPV Matriz 06/2026 alterado: R$ ${cpvMatriz.toFixed(2)} / fechado R$ ${CPV_MATRIZ_FECHADO_JUNHO.toFixed(2)}.`);
+  if (Math.abs(cpvFilial - CPV_FILIAL_FECHADO_JUNHO) > 0.01) mensagens.push(`CPV Filial 06/2026 alterado: R$ ${cpvFilial.toFixed(2)} / fechado R$ ${CPV_FILIAL_FECHADO_JUNHO.toFixed(2)}.`);
+  if (Math.abs(cpvTotal - CPV_TOTAL_FECHADO_JUNHO) > 0.01) mensagens.push(`CPV Total 06/2026 alterado: R$ ${cpvTotal.toFixed(2)} / fechado R$ ${CPV_TOTAL_FECHADO_JUNHO.toFixed(2)}.`);
+  return { cpvMatriz, cpvFilial, cpvTotal, bloqueado: mensagens.length > 0, mensagens } as const;
 }
