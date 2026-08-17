@@ -26,6 +26,17 @@ function creditoAtual(base: LancamentoIntegrado[], origem: string) {
   }, 0));
 }
 
+/**
+ * Leitura dos créditos efetivamente destinados a custos/despesas no Razão.
+ * Os Reports usam esta função em vez de copiar valores da DRE manual.
+ */
+export function calcularCreditosFederaisDespesas(base: LancamentoIntegrado[]) {
+  return {
+    pis: creditoAtual(base, "APURAÇÃO PIS 06/2026"),
+    cofins: creditoAtual(base, "APURAÇÃO COFINS 06/2026"),
+  } as const;
+}
+
 function movimentoConta(base: LancamentoIntegrado[], codigo: string) {
   return arred(base.reduce((total, linha) => {
     if (linha.debitoCodigo === codigo) total += linha.valor;
