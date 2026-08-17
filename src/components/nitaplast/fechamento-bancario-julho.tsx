@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { BrainCircuit, CheckCircle2, ShieldAlert, WalletCards } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,7 +32,7 @@ export function FechamentoBancarioJulho() {
   );
 }
 
-function Metric({ icon, label, value, detail, warning = false }: { icon: React.ReactNode; label: string; value: number; detail: string; warning?: boolean }) {
+function Metric({ icon, label, value, detail, warning = false }: { icon: ReactNode; label: string; value: number; detail: string; warning?: boolean }) {
   return (
     <div className={`rounded-lg border p-3 ${warning ? "border-amber-300 bg-amber-50/50" : "bg-card"}`}>
       <div className="flex items-center gap-2 text-xs text-muted-foreground">{icon}<span>{label}</span></div>
