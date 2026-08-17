@@ -7,6 +7,7 @@ import {
 } from "@/components/nitaplast/contabil-julho";
 import { DreJulhoCompleta } from "@/components/nitaplast/dre-julho-completa";
 import { FechamentoNitaplastJulho } from "@/components/nitaplast/fechamento-julho";
+import { FechamentoBancarioJulho } from "@/components/nitaplast/fechamento-bancario-julho";
 
 const rotasSensíveisCompetencia = [
   "/contabil/balancete",
@@ -89,7 +90,7 @@ function telaContabilJulho(pathname: string) {
   if (pathname === "/contabil/razao") return <RazaoJulho />;
   if (pathname === "/contabil/dre") return <DreJulhoCompleta />;
   if (pathname === "/contabil/lancamentos") return <LancamentosJulho />;
-  if (pathname === "/contabil/fechamento") return <FechamentoNitaplastJulho />;
+  if (pathname === "/contabil/fechamento") return <><FechamentoBancarioJulho /><FechamentoNitaplastJulho /></>;
   return null;
 }
 
