@@ -128,7 +128,7 @@ function compor(movimentos: MovimentoResultado[], multiplicador = 1, observacao?
       valorLinha: 0,
       lancamentos: 0,
       fonte: `${movimento.origem} · ${movimento.fonte}`,
-      ...(observacao === undefined ? {} : { observacao }),
+      observacao,
     };
     atual.debitos += movimento.debito;
     atual.creditos += movimento.credito;
@@ -307,9 +307,7 @@ function contem(m: MovimentoResultado, valor: string) {
   return texto(m).includes(valor);
 }
 
-type BucketOperacional = "adm" | "nplog" | "comerciais" | "producao" | "veiculos" | "barracao" | "imobilizado" | "industrializacao" | "tributarias" | "comercial-sp" | "despesas-nao-mapeadas";
-
-const bucketsOperacionais: Record<BucketOperacional, MovimentoResultado[]> = {
+const bucketsOperacionais: Record<string, MovimentoResultado[]> = {
   adm: [], nplog: [], comerciais: [], producao: [], veiculos: [], barracao: [], imobilizado: [], industrializacao: [], tributarias: [], "comercial-sp": [], "despesas-nao-mapeadas": [],
 };
 
