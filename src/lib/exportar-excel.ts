@@ -15,6 +15,8 @@ type ExportarExcelOpcoes = {
   subtitulo?: string;
 };
 
+type EstiloLinha = "sintetica" | "subtotal" | "resultado" | "alerta";
+
 const encoder = new TextEncoder();
 
 function escaparXml(valor: string) {
@@ -54,6 +56,57 @@ function celulaXml(valor: ValorExcel, linha: number, coluna: number, tipo: Colun
 
   const estilo = estiloForcado !== undefined ? ` s="${estiloForcado}"` : "";
   return `<c r="${ref}" t="inlineStr"${estilo}><is><t xml:space="preserve">${escaparXml(String(valor))}</t></is></c>`;
+}
+
+/**
+ * Preserva no Excel a hierarquia visual da DRE exibida na tela.
+ * Linhas analíticas continuam brancas; sintéticas, subtotais e o resultado final
+ * recebem preenchimentos suaves para facilitar leitura e conferência.
+ */
+function classificarLinha(aba: string, valores: ValorExcel[]): EstiloLinha | undefined {
+  if (nomeAbaSeguro(aba).toLocaleUpperCase("pt-BR") !== "DRE") return undefined;
+
+  const descricao = String(valores[0] ?? "").trim();
+
+  if (descricao === "LUCRO / PREJUÍZO LÍQUIDO") return "resultado";
+
+  if ([
+    "Receita Operacional Líquida",
+    "LUCRO BRUTO",
+    "Total Despesas Operacionais Líquidas",
+    "RESULTADO OPERACIONAL",
+  ].includes(descricao)) {
+    return "subtotal";
+  }
+
+  if (descricao === "Outros resultados sem classificação gerencial") return "alerta";
+
+  if ([
+    "(+) Receita Operacional Bruta",
+    "(-) Deduções da Receita Bruta",
+    "(-) Custos / CPV / CMV",
+    "(-) Despesas Operacionais antes dos créditos",
+    "Resultado Não Operacional",
+  ].includes(descricao)) {
+    return "sintetica";
+  }
+
+  return undefined;
+}
+
+function estiloCelula(estiloLinha: EstiloLinha | undefined, tipo: ColunaExcel["tipo"]) {
+  if (!estiloLinha) return undefined;
+
+  const deslocamentoTipo = tipo === "numero" ? 1 : tipo === "percentual" ? 2 : 0;
+  const base = estiloLinha === "sintetica"
+    ? 6
+    : estiloLinha === "subtotal"
+      ? 9
+      : estiloLinha === "resultado"
+        ? 12
+        : 15;
+
+  return base + deslocamentoTipo;
 }
 
 function crc32(dados: Uint8Array) {
@@ -194,9 +247,16 @@ export function exportarExcel({ arquivo, aba, colunas, linhas, titulo, subtitulo
   numeroLinha += 1;
 
   for (const valores of linhas) {
+    const estiloLinha = classificarLinha(aba, valores);
     linhasXml.push(
       `<row r="${numeroLinha}">${colunas
-        .map((coluna, indice) => celulaXml(valores[indice], numeroLinha, indice, coluna.tipo))
+        .map((coluna, indice) => celulaXml(
+          valores[indice],
+          numeroLinha,
+          indice,
+          coluna.tipo,
+          estiloCelula(estiloLinha, coluna.tipo),
+        ))
         .join("")}</row>`,
     );
     numeroLinha += 1;
@@ -220,21 +280,50 @@ export function exportarExcel({ arquivo, aba, colunas, linhas, titulo, subtitulo
 
   const estilos = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <fonts count="3">
+  <fonts count="4">
     <font><sz val="11"/><name val="Calibri"/><family val="2"/></font>
     <font><b/><sz val="11"/><name val="Calibri"/><family val="2"/></font>
     <font><b/><sz val="14"/><name val="Calibri"/><family val="2"/></font>
+    <font><b/><color rgb="FFFFFFFF"/><sz val="11"/><name val="Calibri"/><family val="2"/></font>
   </fonts>
-  <fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>
-  <borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+  <fills count="7">
+    <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF1F4E78"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFD9EAF7"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFE2E8F0"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFE2F0D9"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFFFF2CC"/><bgColor indexed="64"/></patternFill></fill>
+  </fills>
+  <borders count="3">
+    <border><left/><right/><top/><bottom/><diagonal/></border>
+    <border><left/><right/><top/><bottom style="thin"><color rgb="FFB7C9D6"/></bottom><diagonal/></border>
+    <border><left/><right/><top style="medium"><color rgb="FF548235"/></top><bottom style="double"><color rgb="FF548235"/></bottom><diagonal/></border>
+  </borders>
   <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-  <cellXfs count="6">
+  <cellXfs count="18">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
-    <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+    <xf numFmtId="0" fontId="3" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center"/></xf>
     <xf numFmtId="4" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
     <xf numFmtId="10" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
     <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
     <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+
+    <xf numFmtId="0" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
+    <xf numFmtId="4" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
+    <xf numFmtId="10" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
+
+    <xf numFmtId="0" fontId="1" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
+    <xf numFmtId="4" fontId="1" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
+    <xf numFmtId="10" fontId="1" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
+
+    <xf numFmtId="0" fontId="1" fillId="5" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
+    <xf numFmtId="4" fontId="1" fillId="5" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
+    <xf numFmtId="10" fontId="1" fillId="5" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
+
+    <xf numFmtId="0" fontId="1" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
+    <xf numFmtId="4" fontId="1" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
+    <xf numFmtId="10" fontId="1" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
   </cellXfs>
   <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>`;
