@@ -2,11 +2,9 @@ import { lancamentosIntegrados as lancamentosBase } from "./nitaplast-razao-base
 import { saldosImplantacao } from "./nitaplast-implantacao";
 import { fechamentoCpvJunho } from "./nitaplast-cpv-junho";
 import { corrigirMapeamentosJunho } from "./nitaplast-correcoes-mapeamento-junho";
-import { ajusteEstoqueResultadoJunho } from "./nitaplast-ajuste-estoque-junho";
 import { gerarFechamentoEstoqueMatrizJunho } from "./nitaplast-fechamento-estoque-matriz-junho";
 import { aplicarFechamentoImportacoesJunho } from "./nitaplast-fechamento-importacoes-junho";
 import { aplicarFechamentoFinanceiroJunho } from "./nitaplast-fechamento-financeiro-junho";
-import { aplicarFechamentoCpvFinalJunho } from "./nitaplast-fechamento-cpv-final-junho";
 import { aplicarFechamentoCreditosFederaisJunho } from "./nitaplast-fechamento-creditos-federais-junho";
 import { aplicarFechamentoDespesasJunho } from "./nitaplast-fechamento-despesas-junho";
 import { aplicarFechamentoAlienacaoJunho } from "./nitaplast-fechamento-alienacao-junho";
@@ -22,6 +20,12 @@ garantirPlanoFechamentoJunho();
  * REGRA DE GOVERNANÇA: Razão -> Balancete -> DRE.
  * A DRE enviada é somente controle de comparação e jamais pode gerar receita,
  * custo ou despesa usada pela própria DRE calculada.
+ *
+ * REGRA DO CPV:
+ * - não existe lançamento criado a partir de valor-alvo da DRE;
+ * - não existe reconciliação artificial contra a conta 4859 para atingir CPV esperado;
+ * - o CPV nasce exclusivamente das compras/entradas, créditos fiscais, transferências,
+ *   perdas documentadas e fechamento do estoque pelo inventário físico oficial.
  */
 const lancamentosBaseSaneados = lancamentosBase.filter((linha) => {
   const icmsAntigoValido = linha.origem !== "APURAÇÃO ICMS 06/2026" || linha.id === "TAX-SAI-ICMS";
@@ -80,11 +84,12 @@ const fechamentoCpvSemIcmsMatrizObsoleto = fechamentoCpvJunho.filter(
   (linha) => !["CPV-ICMS-M-OUT", "CPV-ICMS-M-IN"].includes(linha.id),
 );
 
+// Somente fatos contábeis/documentais. O antigo AJ-EST-RESULT-062026, originado
+// da DRE enviada por R$ 82.536,10, não entra mais no Razão.
 const baseDocumentalJunho = [
   ...lancamentosBaseSaneados,
   ...receitasFilialDocumentadas,
   ...fechamentoCpvSemIcmsMatrizObsoleto,
-  ajusteEstoqueResultadoJunho,
 ];
 
 // Importação e financeiro nascem no Razão antes do Balancete/DRE.
@@ -93,15 +98,18 @@ const baseComFechamentoFinanceiro = aplicarFechamentoFinanceiroJunho(baseComImpo
 const baseCorrigida = corrigirMapeamentosJunho(baseComFechamentoFinanceiro);
 const baseComCreditosFederaisFechados = aplicarFechamentoCreditosFederaisJunho(baseCorrigida);
 const baseComDespesasFechadas = aplicarFechamentoDespesasJunho(baseComCreditosFederaisFechados);
-const fechamentoEstoqueMatriz = gerarFechamentoEstoqueMatrizJunho(baseComDespesasFechadas);
 
+// O estoque é fechado exclusivamente pelo inventário físico oficial de 30/06/2026.
+const fechamentoEstoqueMatriz = gerarFechamentoEstoqueMatrizJunho(baseComDespesasFechadas);
 const baseComEstoqueFechado = [
   ...baseComDespesasFechadas,
   ...fechamentoEstoqueMatriz,
 ];
 
-const baseComCpvFinal = aplicarFechamentoCpvFinalJunho(baseComEstoqueFechado);
-const lancamentosIntegradosFinais = aplicarFechamentoAlienacaoJunho(baseComCpvFinal);
+// Não aplicar mais nitaplast-fechamento-cpv-final-junho: aquela camada conciliava
+// o CPV a valores-alvo e criava diferenças contra a 4859. O CPV oficial passa a ser
+// exatamente o movimento produzido pela base documental + inventário.
+const lancamentosIntegradosFinais = aplicarFechamentoAlienacaoJunho(baseComEstoqueFechado);
 
 /**
  * Validação anticircularidade.
