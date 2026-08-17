@@ -10,21 +10,21 @@ import { lancamentosFinanceirosJulho, resumoFinanceiroJulho } from "./nitaplast-
 
 const arred = (v: number) => Math.round(v * 100) / 100;
 
-export const lancamentosIntegradosJulhoFinalV2: LancamentoIntegrado[] = [
+export const lancamentosIntegradosJulhoFinal: LancamentoIntegrado[] = [
   ...lancamentosBaseJulhoFinal,
   ...lancamentosFinanceirosJulho,
 ];
 
-export const totalDebitosJulhoFinalV2 = arred(lancamentosIntegradosJulhoFinalV2.reduce((s, x) => s + x.valor, 0));
-export const totalCreditosJulhoFinalV2 = totalDebitosJulhoFinalV2;
-export const pendenciasJulhoFinalV2 = lancamentosIntegradosJulhoFinalV2.filter((x) => x.status === "revisar");
+export const totalDebitosJulhoFinal = arred(lancamentosIntegradosJulhoFinal.reduce((s, x) => s + x.valor, 0));
+export const totalCreditosJulhoFinal = totalDebitosJulhoFinal;
+export const pendenciasJulhoFinal = lancamentosIntegradosJulhoFinal.filter((x) => x.status === "revisar");
 
-export const resumoFechamentoJulhoFinalV2 = {
+export const resumoFechamentoJulhoFinal = {
   ...resumoBaseJulhoFinal,
-  lancamentos: lancamentosIntegradosJulhoFinalV2.length,
-  debitos: totalDebitosJulhoFinalV2,
-  creditos: totalCreditosJulhoFinalV2,
-  pendencias: pendenciasJulhoFinalV2.length,
+  lancamentos: lancamentosIntegradosJulhoFinal.length,
+  debitos: totalDebitosJulhoFinal,
+  creditos: totalCreditosJulhoFinal,
+  pendencias: pendenciasJulhoFinal.length,
   financeiro: resumoFinanceiroJulho,
   baseAnterior: {
     debitos: totalDebitosBaseJulhoFinal,
