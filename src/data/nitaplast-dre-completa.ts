@@ -17,19 +17,18 @@ export const cadastroFiscalNitaplast = {
 export const receitaBrutaJunho = 3402624.71;
 
 /**
- * DRE FINAL de 06/2026 para conferência do fechamento.
+ * DRE de referência de 06/2026.
  *
- * A versão anterior apresentava Custo Total de R$ 1.188.509,50,
- * Resultado Operacional de R$ 215.039,01 e Lucro Líquido de R$ 222.334,87.
- * O ajuste operacional de estoque de R$ 82.536,10, porém, precisa permanecer
- * incorporado ao CPV de junho. Depois dessa correção:
- * - Custo Total: R$ 1.271.045,60;
- * - Resultado Operacional / lucro apurado informado para IRPJ e CSLL: R$ 132.502,91;
+ * O ajuste de estoque de R$ 82.536,10 pertence à competência 07/2026 e não pode
+ * alterar o Razão, Balancete ou DRE de junho.
+ *
+ * Referência validada para 06/2026 antes do ajuste de julho:
+ * - Custo Total: R$ 1.188.509,50;
+ * - Resultado Operacional: R$ 215.039,01;
  * - Resultado Não Operacional: R$ 7.295,86;
- * - Lucro Líquido final: R$ 139.798,77.
+ * - Lucro Líquido: R$ 222.334,87.
  *
- * A DRE Calculada continua nascendo do Razão/Balancete. Estes valores são a
- * referência final de conferência de junho, preservando o ajuste documentado.
+ * A coluna calculada continua nascendo exclusivamente do Razão/Balancete.
  */
 export const dreCompletaJunho: LinhaDre[] = [
   { id: "receita", descricao: "(+) Receita Operacional Bruta", valor: 3402624.71, nivel: 0, tipo: "grupo", origem: "DRE FINAL 06/2026" },
@@ -52,12 +51,12 @@ export const dreCompletaJunho: LinhaDre[] = [
   { id: "pis-f", descricao: "PIS Filial", valor: 4361.70, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
   { id: "cofins-f", descricao: "COFINS Filial", valor: 20090.42, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
 
-  { id: "custos", descricao: "(-) Custo TOTAL", valor: 1271045.60, nivel: 0, tipo: "grupo", origem: "DRE FINAL 06/2026 — ajuste de estoque incorporado ao CPV" },
-  { id: "cpv-m", descricao: "(-) CPV Matriz", valor: 1157810.94, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026 — ajuste de estoque incorporado ao CPV", composicaoPendente: true },
+  { id: "custos", descricao: "(-) Custo TOTAL", valor: 1188509.50, nivel: 0, tipo: "grupo", origem: "DRE FINAL 06/2026" },
+  { id: "cpv-m", descricao: "(-) CPV Matriz", valor: 1075274.84, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026", composicaoPendente: true },
   { id: "cmv-m", descricao: "(-) CMV Matriz", valor: 0, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
   { id: "cpv-f", descricao: "(-) CPV Filial", valor: 113234.66, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026", composicaoPendente: true },
   { id: "cmv-f", descricao: "(-) CMV Filial", valor: 0, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "lucro-bruto", descricao: "LUCRO BRUTO", valor: 1320504.34, nivel: 0, tipo: "resultado", origem: "DRE FINAL 06/2026 — ajuste de estoque incorporado ao CPV" },
+  { id: "lucro-bruto", descricao: "LUCRO BRUTO", valor: 1403040.44, nivel: 0, tipo: "resultado", origem: "DRE FINAL 06/2026" },
 
   { id: "despesas", descricao: "(-) Despesas Operacionais", valor: 1256946.43, nivel: 0, tipo: "grupo", origem: "DRE FINAL 06/2026" },
   { id: "adm", descricao: "Despesas Administrativas", valor: 132400.28, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026", composicaoPendente: true },
@@ -77,7 +76,7 @@ export const dreCompletaJunho: LinhaDre[] = [
   { id: "credito-pis", descricao: "(-) PIS não cumulativo s/despesas", valor: -12298.30, nivel: 1, tipo: "credito", origem: "DRE FINAL 06/2026" },
   { id: "credito-cofins", descricao: "(-) COFINS não cumulativo s/despesas", valor: -56646.70, nivel: 1, tipo: "credito", origem: "DRE FINAL 06/2026" },
   { id: "despesas-liquidas", descricao: "TOTAL DAS DESPESAS OPERACIONAIS", valor: 1188001.43, nivel: 0, tipo: "resultado", origem: "DRE FINAL 06/2026" },
-  { id: "resultado-op", descricao: "Resultado Operacional", valor: 132502.91, nivel: 0, tipo: "resultado", origem: "DRE FINAL 06/2026 — após ajuste de estoque no CPV" },
+  { id: "resultado-op", descricao: "Resultado Operacional", valor: 215039.01, nivel: 0, tipo: "resultado", origem: "DRE FINAL 06/2026" },
 
   { id: "nao-op", descricao: "RESULTADO NÃO OPERACIONAL", valor: 7295.86, nivel: 0, tipo: "grupo", origem: "DRE FINAL 06/2026" },
   { id: "alienacao", descricao: "Receita de Alienação Imobilizado", valor: 7295.86, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026", composicaoPendente: true },
@@ -88,9 +87,9 @@ export const dreCompletaJunho: LinhaDre[] = [
   { id: "sinistros", descricao: "Ganhos ou Perdas com Sinistros de Bens", valor: 0, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
   { id: "outras", descricao: "Outras Receitas não Operacionais", valor: 0, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
   { id: "equiv", descricao: "Resultado da Equivalência Patrimonial", valor: 0, nivel: 1, tipo: "detalhe", origem: "DRE FINAL 06/2026" },
-  { id: "lucro-liq", descricao: "LUCRO LÍQUIDO", valor: 139798.77, nivel: 0, tipo: "resultado", origem: "DRE FINAL 06/2026 — após ajuste de estoque e resultado não operacional" },
-  { id: "base-ir", descricao: "LUCRO APURADO PARA IRPJ E CSLL", valor: 132502.91, nivel: 0, tipo: "informativo", origem: "DRE FINAL 06/2026" },
-  { id: "ajuste-jul", descricao: "Ajuste de estoque incorporado ao CPV de 06/2026", valor: 82536.10, nivel: 0, tipo: "informativo", origem: "DRE FINAL 06/2026 — ajuste contabilizado no fechamento; não repetir em 07/2026" },
+  { id: "lucro-liq", descricao: "LUCRO LÍQUIDO", valor: 222334.87, nivel: 0, tipo: "resultado", origem: "DRE FINAL 06/2026" },
+  { id: "base-ir", descricao: "LUCRO APURADO PARA IRPJ E CSLL", valor: 215039.01, nivel: 0, tipo: "informativo", origem: "DRE FINAL 06/2026" },
+  { id: "ajuste-jul", descricao: "Ajuste de estoque previsto para 07/2026", valor: 82536.10, nivel: 0, tipo: "informativo", origem: "AJUSTE 07/2026 — não pertence ao Razão de junho" },
 ];
 
 export const idsDespesasOperacionais = [
