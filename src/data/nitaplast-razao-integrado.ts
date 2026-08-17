@@ -8,6 +8,7 @@ import { aplicarFechamentoFinanceiroJunho } from "./nitaplast-fechamento-finance
 import { aplicarFechamentoCreditosFederaisJunho } from "./nitaplast-fechamento-creditos-federais-junho";
 import { aplicarFechamentoDespesasJunho } from "./nitaplast-fechamento-despesas-junho";
 import { aplicarFechamentoAlienacaoJunho } from "./nitaplast-fechamento-alienacao-junho";
+import { aplicarSnapshotFechamentoJunho, validarSnapshotFechamentoJunho } from "./nitaplast-fechamento-junho-congelado";
 import { garantirPlanoFechamentoJunho } from "./nitaplast-plano-fechamento-junho";
 
 export type { LancamentoIntegrado } from "./nitaplast-razao-base";
@@ -22,8 +23,14 @@ garantirPlanoFechamentoJunho();
  * custo ou despesa usada pela própria DRE calculada.
  *
  * REGRA DE COMPETÊNCIA:
- * - o ajuste de estoque de R$ 82.536,10 pertence a 07/2026 e não entra em junho;
- * - junho não usa plug de CPV contra conta transitória para atingir valor-alvo;
+ * - 06/2026 é um fechamento CONGELADO e não pode ser recalculado por regras
+ *   criadas para 07/2026;
+ * - CPV fechado de junho: Matriz R$ 1.075.274,84 + Filial R$ 113.234,66
+ *   = R$ 1.188.509,50;
+ * - a nova lógica dinâmica de cálculo de CPV/estoque deve ser aplicada somente
+ *   a 07/2026 em diante;
+ * - em junho, as únicas inclusões posteriores autorizadas neste fluxo são fatos
+ *   contábeis reais explicitamente solicitados/validados, como o financeiro;
  * - as correções financeiras de junho permanecem integralmente no Razão.
  */
 const lancamentosBaseSaneados = lancamentosBase.filter((linha) => {
@@ -102,8 +109,13 @@ const baseComEstoqueFechado = [
   ...fechamentoEstoqueMatriz,
 ];
 
-// Sem ajuste de julho e sem rotina de CPV por valor-alvo em 06/2026.
-const lancamentosIntegradosFinais = aplicarFechamentoAlienacaoJunho(baseComEstoqueFechado);
+const baseComAlienacaoFechada = aplicarFechamentoAlienacaoJunho(baseComEstoqueFechado);
+
+// JUNHO CONGELADO: qualquer CPV reconstruído por rotinas posteriores é substituído
+// pelo snapshot do fechamento já validado. Julho terá seu próprio motor de cálculo.
+const lancamentosIntegradosFinais = aplicarSnapshotFechamentoJunho(baseComAlienacaoFechada);
+
+export const validacaoSnapshotJunho = validarSnapshotFechamentoJunho(lancamentosIntegradosFinais);
 
 /**
  * Validação anticircularidade.
