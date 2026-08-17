@@ -24,17 +24,17 @@ const arred = (valor: number) => Math.round(valor * 100) / 100;
 /**
  * Validação das deduções da DRE de 06/2026.
  *
- * REGRA:
- * - o lado CALCULADO nasce do Razão/Balancete;
- * - impostos incidentes sobre vendas são apresentados pelo DÉBITO BRUTO;
- * - créditos/reversões permanecem no Razão/Balancete, sem reduzir essa linha;
- * - a apuração federal documentada possui um único débito consolidado de
- *   PIS R$ 47.548,49 e COFINS R$ 219.011,34;
- * - portanto PIS/COFINS "Filial" da DRE manual ficam como diferença de
- *   validação enquanto não existir um segundo débito fiscal/documental.
+ * REGRA PERMANENTE PIS/COFINS:
+ * - existe UMA apuração fiscal consolidada no Razão/Balancete;
+ * - Matriz x Filial é somente ABERTURA GERENCIAL da DRE;
+ * - a parcela da filial é segregada pelo documento/nota a nota;
+ * - a parcela da matriz é o residual do consolidado após retirar a filial;
+ * - Matriz + Filial = débito consolidado;
+ * - essa segregação NÃO cria lançamento contábil adicional e NÃO polui o Razão.
  *
- * A DRE enviada é somente REFERÊNCIA. Nenhum valor dela é usado para montar
- * o valor calculado.
+ * Para os demais impostos sobre vendas, a DRE usa o débito bruto das saídas.
+ * Créditos fiscais de aquisição permanecem conciliados no Razão/Balancete e não
+ * reduzem a linha de dedução da receita.
  */
 const idsDeducoes = [
   "dev", "desc", "ipi-m", "icms-m", "pis-m", "cofins-m",
@@ -58,28 +58,30 @@ function composicaoDebitoBruto(composicao: ComposicaoDre[], observacao: string):
     .filter((item) => Math.abs(item.debitos) >= 0.005);
 }
 
-function composicaoFederalConsolidada(
+function composicaoFederalGerencial(
   composicao: ComposicaoDre[],
   valor: number,
   tributo: "PIS" | "COFINS",
+  estabelecimento: "MATRIZ" | "FILIAL",
 ): ComposicaoDre[] {
   if (!composicao.length) return [];
+  const filial = estabelecimento === "FILIAL";
   return composicao.map((item, index) => index === 0
     ? {
         ...item,
         debitos: arred(valor),
         creditos: 0,
         valorLinha: arred(valor),
-        cc: "0",
-        centroCusto: "APURAÇÃO FEDERAL CONSOLIDADA",
-        observacao: `${tributo}: débito por saídas da apuração federal documentada. Não existe segundo débito fiscal da filial no Razão.`,
+        cc: filial ? "502" : "201",
+        centroCusto: filial ? "COMERCIAL SP" : "MATRIZ / VENDAS",
+        observacao: `${tributo} ${estabelecimento}: segregação gerencial do débito consolidado. Não gera segundo lançamento no Razão.`,
       }
     : {
         ...item,
         debitos: 0,
         creditos: 0,
         valorLinha: 0,
-        observacao: `${tributo}: composição gerencial não gera segundo débito contábil.`,
+        observacao: `${tributo}: composição gerencial; sem lançamento contábil adicional.`,
       });
 }
 
@@ -88,9 +90,11 @@ function valorCalculado(id: string) {
   if (!linha) return 0;
 
   if (id === "dev" || id === "desc") return arred(linha.calculado);
-  if (id === "pis-m") return arred(controleFiscalFederalJunho.pis.debitoSaidas);
-  if (id === "cofins-m") return arred(controleFiscalFederalJunho.cofins.debitoSaidas);
-  if (id === "pis-f" || id === "cofins-f") return 0;
+
+  if (id === "pis-m") return arred(conciliacaoPisGerencialJunho.matrizGerencial.debitoSobreVendas);
+  if (id === "pis-f") return arred(conciliacaoPisGerencialJunho.filialGerencial.debitoSobreVendas);
+  if (id === "cofins-m") return arred(conciliacaoCofinsGerencialJunho.matrizGerencial.debitoSobreVendas);
+  if (id === "cofins-f") return arred(conciliacaoCofinsGerencialJunho.filialGerencial.debitoSobreVendas);
 
   return somaDebitos(linha.composicao);
 }
@@ -98,11 +102,11 @@ function valorCalculado(id: string) {
 function criterio(id: string) {
   if (id === "dev") return "Devoluções documentadas do período, apresentadas separadamente dos impostos sobre vendas.";
   if (id === "desc") return "Nenhum desconto concedido identificado no Razão de junho.";
-  if (id === "pis-m") return "PIS calculado pelo débito por saídas da apuração federal documentada: R$ 47.548,49. O valor é consolidado no Razão.";
-  if (id === "cofins-m") return "COFINS calculada pelo débito por saídas da apuração federal documentada: R$ 219.011,34. O valor é consolidado no Razão.";
-  if (id === "pis-f") return "A DRE manual informa PIS Filial, mas não há segundo débito fiscal no Razão/apuração federal. Mantido como diferença de validação, sem criar lançamento artificial.";
-  if (id === "cofins-f") return "A DRE manual informa COFINS Filial, mas não há segundo débito fiscal no Razão/apuração federal. Mantido como diferença de validação, sem criar lançamento artificial.";
-  return "Imposto incidente sobre as saídas pelo débito bruto do Razão. Créditos/reversões permanecem conciliados no Balancete e não reduzem esta linha da DRE.";
+  if (id === "pis-m") return "PIS Matriz = parcela residual do débito consolidado após a segregação documental da filial. Abertura gerencial, sem novo lançamento.";
+  if (id === "pis-f") return "PIS Filial = parcela do débito consolidado identificada nos documentos da filial. Abertura gerencial, sem novo lançamento.";
+  if (id === "cofins-m") return "COFINS Matriz = parcela residual do débito consolidado após a segregação documental da filial. Abertura gerencial, sem novo lançamento.";
+  if (id === "cofins-f") return "COFINS Filial = parcela do débito consolidado identificada nos documentos da filial. Abertura gerencial, sem novo lançamento.";
+  return "Imposto incidente sobre as saídas pelo débito bruto do Razão. Créditos de aquisição permanecem conciliados no Balancete e não reduzem esta linha da DRE.";
 }
 
 export const comparacaoDreDetalhada: LinhaComparacaoDre[] = comparacaoBase.map((linha) => {
@@ -113,15 +117,17 @@ export const comparacaoDreDetalhada: LinhaComparacaoDre[] = comparacaoBase.map((
   let composicao = linha.composicao;
 
   if (linha.id === "pis-m") {
-    composicao = composicaoFederalConsolidada(linha.composicao, calculado, "PIS");
+    composicao = composicaoFederalGerencial(linha.composicao, calculado, "PIS", "MATRIZ");
+  } else if (linha.id === "pis-f") {
+    composicao = composicaoFederalGerencial(linha.composicao, calculado, "PIS", "FILIAL");
   } else if (linha.id === "cofins-m") {
-    composicao = composicaoFederalConsolidada(linha.composicao, calculado, "COFINS");
-  } else if (linha.id === "pis-f" || linha.id === "cofins-f") {
-    composicao = [];
+    composicao = composicaoFederalGerencial(linha.composicao, calculado, "COFINS", "MATRIZ");
+  } else if (linha.id === "cofins-f") {
+    composicao = composicaoFederalGerencial(linha.composicao, calculado, "COFINS", "FILIAL");
   } else if (linha.id !== "dev" && linha.id !== "desc") {
     composicao = composicaoDebitoBruto(
       linha.composicao,
-      "DRE calculada pelo débito bruto das saídas. Créditos/reversões continuam no Razão/Balancete.",
+      "DRE calculada pelo débito bruto das saídas. Créditos fiscais continuam no Razão/Balancete.",
     );
   }
 
@@ -140,7 +146,7 @@ const linhaDeducoes = mapa.get("deducoes");
 if (linhaDeducoes) {
   linhaDeducoes.calculado = totalDeducoes;
   linhaDeducoes.diferenca = arred(totalDeducoes - linhaDeducoes.enviado);
-  linhaDeducoes.criterio = "Total calculado exclusivamente pelo Razão/Balancete. A diferença para a DRE enviada corresponde a valores manuais sem segundo débito fiscal contabilizado.";
+  linhaDeducoes.criterio = "Total do Razão/Balancete. PIS/COFINS são consolidados e apenas segregados gerencialmente entre Matriz e Filial, sem duplicação e sem novo lançamento.";
 }
 
 function atualizarResultado(id: string, calculado: number, criterioResultado: string) {
@@ -151,8 +157,6 @@ function atualizarResultado(id: string, calculado: number, criterioResultado: st
   linha.criterio = criterioResultado;
 }
 
-// Qualquer mudança nas deduções precisa percorrer a cadeia inteira da DRE.
-// Nada de manter subtotal antigo depois que a origem Razão/Balancete mudou.
 const receitaCalculada = arred(mapa.get("receita")?.calculado ?? resumoBase.receitaCalculada ?? 0);
 const custosCalculados = arred(mapa.get("custos")?.calculado ?? resumoBase.custosCalculados ?? 0);
 const despesasLiquidasCalculadas = arred(mapa.get("despesas-liquidas")?.calculado ?? resumoBase.despesasLiquidasCalculadas ?? 0);
@@ -164,7 +168,7 @@ const resultadoLiquidoCalculado = arred(resultadoOperacionalCalculado + resultad
 atualizarResultado(
   "lucro-bruto",
   lucroBrutoCalculado,
-  "Receita calculada pelo Razão menos deduções brutas documentadas menos custos/CPV do Razão.",
+  "Receita calculada pelo Razão menos deduções consolidadas/segregadas gerencialmente menos custos do Razão.",
 );
 atualizarResultado(
   "resultado-op",
