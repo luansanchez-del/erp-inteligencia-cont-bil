@@ -10,6 +10,7 @@ import { estruturaBalanceteNitaplast, type LinhaEstruturaBalancete } from "@/dat
 import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
 import { resumoImplantacao, saldosImplantacao } from "@/data/nitaplast-implantacao";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
+import { usePrintMode } from "@/hooks/use-print-mode";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
 
 export const Route = createFileRoute("/contabil/balancete")({ component: BalancetePage });
@@ -50,6 +51,7 @@ function linhaZerada(linha: LinhaCalculada) {
 function BalancetePage() {
   useNitaplastJunho();
   const { reclassificacoes, aplicar } = useReclassificacoesInteligentes("2026-06");
+  const { printing, printAll } = usePrintMode();
   const [busca, setBusca] = useState("");
   const [grupo, setGrupo] = useState<(typeof grupos)[number]>("Todos");
   const [somenteMovimento, setSomenteMovimento] = useState(false);
@@ -141,6 +143,7 @@ function BalancetePage() {
   const paginaAtual = Math.min(pagina, totalPaginas);
   const inicio = (paginaAtual - 1) * POR_PAGINA;
   const fim = inicio + POR_PAGINA;
+  const linhasVisiveis = printing ? linhas : linhas.slice(inicio, fim);
 
   function abrirRazao(conta: string) {
     window.location.assign(`/contabil/razao?conta=${encodeURIComponent(conta)}`);
@@ -179,12 +182,12 @@ function BalancetePage() {
   return <PageShell>
     <PageHeader
       titulo="Balancete consolidado - Nitaplast"
-      descricao="Saldo anterior de 31/05 + movimento integrado de junho, incluindo reclassificações inteligentes contabilizadas pelo usuário."
+      descricao="Saldos anteriores em 31/05/2026 e movimentação contábil da competência 06/2026."
       acoes={
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline">Consolidado - 06/2026</Badge>
           <Button variant="outline" size="sm" className="gap-2" onClick={exportarCsv}><Download className="size-4" />Exportar CSV</Button>
-          <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}><Printer className="size-4" />Imprimir / PDF</Button>
+          <Button variant="outline" size="sm" className="gap-2" onClick={printAll}><Printer className="size-4" />Imprimir / PDF</Button>
         </div>
       }
     />
@@ -263,7 +266,7 @@ function BalancetePage() {
             </tr>
           </thead>
           <tbody>
-            {(typeof window !== "undefined" && window.matchMedia?.("print").matches ? linhas : linhas.slice(inicio, fim)).map((linha) => <tr key={`${linha.tipo}-${linha.conta}-${linha.classificacao}`} className={classeLinha(linha)}>
+            {linhasVisiveis.map((linha) => <tr key={`${linha.tipo}-${linha.conta}-${linha.classificacao}`} className={classeLinha(linha)}>
               <td className="p-2 font-mono">{linha.conta}</td>
               <td className="p-2 text-center font-medium">{linha.tipo}</td>
               <td className="p-2 font-mono text-xs print:text-[8px]">{linha.classificacao}</td>
