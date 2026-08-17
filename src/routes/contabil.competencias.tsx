@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import { PageHeader, PageShell } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
+import { useErp } from "@/context/erp-context";
 
 export const Route = createFileRoute("/contabil/competencias")({
   head: () => ({
@@ -21,11 +22,26 @@ type Registro = Record<string, string>;
 const colunas: Column<Registro>[] = [
   { key: "periodo", header: "Período", className: "font-mono w-28", render: (r) => r["periodo"] ?? "", valor: (r) => r["periodo"] ?? "" },
   { key: "empresa", header: "Empresa", render: (r) => r["empresa"] ?? "", valor: (r) => r["empresa"] ?? "" },
-  { key: "status", header: "Situação", className: "w-32", render: (r) => r["status"] ?? "", valor: (r) => r["status"] ?? "" },
+  { key: "status", header: "Situação", className: "w-40", render: (r) => r["status"] ?? "", valor: (r) => r["status"] ?? "" },
   { key: "fechadaEm", header: "Fechada em", className: "w-36", render: (r) => r["fechadaEm"] ?? "", valor: (r) => r["fechadaEm"] ?? "" },
 ];
 
+const nomeStatus = (status: string) => ({
+  aberta: "Aberta",
+  em_fechamento: "Em fechamento",
+  fechada: "Fechada",
+}[status] ?? status);
+
 function Competencias() {
+  const { empresa, competencias } = useErp();
+  const dados: Registro[] = competencias.map((competencia) => ({
+    id: `${empresa.id}-${competencia.id}`,
+    periodo: competencia.label,
+    empresa: empresa.nomeFantasia,
+    status: nomeStatus(competencia.status),
+    fechadaEm: competencia.status === "fechada" ? "Histórico" : "—",
+  }));
+
   return (
     <PageShell>
       <PageHeader
@@ -39,7 +55,7 @@ function Competencias() {
       />
       <DataTable
         colunas={colunas}
-        dados={[]}
+        dados={dados}
         chave={(r) => r["id"]!}
         placeholderBusca="Buscar competência…"
         vazio="Nenhuma competência cadastrada."
