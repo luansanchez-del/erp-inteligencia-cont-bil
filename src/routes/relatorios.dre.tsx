@@ -9,10 +9,6 @@ import {
   type CategoriaDespesaJunho,
 } from "@/data/nitaplast-fechamento-despesas-junho";
 import { calcularCreditosFederaisDespesas } from "@/data/nitaplast-fechamento-creditos-federais-junho";
-import {
-  conciliacaoPisGerencialJunho,
-  conciliacaoCofinsGerencialJunho,
-} from "@/data/nitaplast-dre-detalhada-v3";
 import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
@@ -63,15 +59,13 @@ function detalhes(grupo: GrupoDreBalancete, contas: ContaResultadoJunho[]): Linh
 }
 
 /**
- * Segregação gerencial LOCAL do Report de 06/2026.
- * PIS/COFINS possuem uma única apuração consolidada no Razão/Balancete.
- * Aqui o consolidado é apenas aberto entre Matriz e Filial (Matriz = consolidado - Filial),
- * de forma que a soma fecha exatamente com o consolidado, sem somar Filial por fora
- * e sem gerar nenhum lançamento contábil adicional.
+ * Junho/2026: PIS/COFINS da matriz e da filial estão documentados separadamente
+ * nas respectivas apurações fiscais e são fatos contábeis reais do período.
+ * O Report apenas apresenta a abertura por estabelecimento; não cria lançamentos.
  */
-const segregacaoFederaisJunho = {
-  pis: { consolidado: 47548.49, filial: 4361.7, matriz: 43186.79 },
-  cofins: { consolidado: 219011.34, filial: 20090.42, matriz: 198920.92 },
+const federaisJunho = {
+  pis: { matriz: 47548.49, filial: 4361.70, total: 51910.19 },
+  cofins: { matriz: 219011.34, filial: 20090.42, total: 239101.76 },
 } as const;
 
 function detalhesDeducoes(contas: ContaResultadoJunho[]): LinhaReport[] {
@@ -83,14 +77,14 @@ function detalhesDeducoes(contas: ContaResultadoJunho[]): LinhaReport[] {
         {
           id: "deducoes-pis-matriz",
           descricao: "2829 · PIS sobre vendas — Matriz",
-          valor: -arred(segregacaoFederaisJunho.pis.matriz),
+          valor: -arred(federaisJunho.pis.matriz),
           nivel: 1,
           tipo: "detalhe",
         },
         {
           id: "deducoes-pis-filial",
           descricao: "2829 · PIS sobre vendas — Filial",
-          valor: -arred(segregacaoFederaisJunho.pis.filial),
+          valor: -arred(federaisJunho.pis.filial),
           nivel: 1,
           tipo: "detalhe",
         },
@@ -103,21 +97,20 @@ function detalhesDeducoes(contas: ContaResultadoJunho[]): LinhaReport[] {
         {
           id: "deducoes-cofins-matriz",
           descricao: "2830 · COFINS sobre vendas — Matriz",
-          valor: -arred(segregacaoFederaisJunho.cofins.matriz),
+          valor: -arred(federaisJunho.cofins.matriz),
           nivel: 1,
           tipo: "detalhe",
         },
         {
           id: "deducoes-cofins-filial",
           descricao: "2830 · COFINS sobre vendas — Filial",
-          valor: -arred(segregacaoFederaisJunho.cofins.filial),
+          valor: -arred(federaisJunho.cofins.filial),
           nivel: 1,
           tipo: "detalhe",
         },
       );
       continue;
     }
-
 
     linhas.push({
       id: `deducoes-${conta.codigo}`,
