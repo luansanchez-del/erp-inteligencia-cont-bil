@@ -19,30 +19,9 @@ garantirPlanoFechamentoJunho();
 
 /**
  * Razão definitivo de junho/2026.
- *
- * REGRA DE GOVERNANÇA:
- * Razão -> Balancete -> DRE.
+ * REGRA DE GOVERNANÇA: Razão -> Balancete -> DRE.
  * A DRE enviada é somente controle de comparação e jamais pode gerar receita,
  * custo ou despesa usada pela própria DRE calculada.
- */
-
-/**
- * Fontes fora do fechamento oficial enquanto não houver validação individual:
- *
- * - APURAÇÃO ICMS antiga da matriz: os créditos daquela versão foram invalidados;
- *   permanece somente TAX-SAI-ICMS, débito das saídas de R$ 239.206,46.
- *
- * - CAR-LOTE: lançamentos agregados do cartão ficam fora até conciliação individual.
- *
- * - PON-DEP: depreciações replicadas de maio ficam fora até existir ficha de bens de junho.
- *
- * - FIL-DOC-PROD-001: lançamento da filial que jogava R$ 350.173,08 integralmente em
- *   Produção com base na apresentação da DRE enviada. Ele é excluído e substituído
- *   abaixo pela composição fiscal real das saídas da filial.
- *
- * - EST-REV / EST-FIN: fechamento de estoque legado, com valores anteriores ao
- *   inventário oficial. Foi substituído pela rotina gerarFechamentoEstoqueMatrizJunho,
- *   que fecha diretamente nos saldos físicos oficiais de 30/06/2026.
  */
 const lancamentosBaseSaneados = lancamentosBase.filter((linha) => {
   const icmsAntigoValido = linha.origem !== "APURAÇÃO ICMS 06/2026" || linha.id === "TAX-SAI-ICMS";
@@ -58,15 +37,6 @@ const lancamentosBaseSaneados = lancamentosBase.filter((linha) => {
     && !estoqueLegadoSubstituido;
 });
 
-/**
- * Receita FILIAL 06/2026 reconstruída exclusivamente pelas saídas fiscais:
- * - CFOP 5123: R$ 15.294,75 -> Produção / operação triangular;
- * - CFOP 5102 + 6102: R$ 334.878,33 -> Revenda;
- * - Total externo: R$ 350.173,08.
- *
- * A DRE enviada apresenta os R$ 350.173,08 integralmente como Produção Filial.
- * Essa apresentação permanece como controle, mas NÃO altera o Razão calculado.
- */
 const receitasFilialDocumentadas = [
   {
     id: "FIL-REC-PROD-FISCAL-062026",
@@ -106,8 +76,6 @@ const receitasFilialDocumentadas = [
   },
 ];
 
-// Duas reclassificações antigas do CPV Matriz dependiam diretamente dos créditos
-// da apuração de ICMS invalidada. Elas também saem da base oficial.
 const fechamentoCpvSemIcmsMatrizObsoleto = fechamentoCpvJunho.filter(
   (linha) => !["CPV-ICMS-M-OUT", "CPV-ICMS-M-IN"].includes(linha.id),
 );
@@ -119,19 +87,11 @@ const baseDocumentalJunho = [
   ajusteEstoqueResultadoJunho,
 ];
 
-// Primeiro reconhecemos a obrigação integral da importação no Razão. O lançamento
-// é de R$ 1.092.407,58; nunca é calculado pela diferença necessária para zerar 25116.
+// Importação e financeiro nascem no Razão antes do Balancete/DRE.
 const baseComImportacoesFechadas = aplicarFechamentoImportacoesJunho(baseDocumentalJunho);
-
-// O financeiro também nasce no Razão. Só depois Balancete/DRE consomem a base.
 const baseComFechamentoFinanceiro = aplicarFechamentoFinanceiroJunho(baseComImportacoesFechadas);
-
 const baseCorrigida = corrigirMapeamentosJunho(baseComFechamentoFinanceiro);
-
-// A parcela PIS/COFINS sobre despesas é reclassificada dentro do MESMO crédito fiscal.
 const baseComCreditosFederaisFechados = aplicarFechamentoCreditosFederaisJunho(baseCorrigida);
-
-// Ajuste contábil remanescente das despesas. A DRE é controle; o lançamento nasce no Razão.
 const baseComDespesasFechadas = aplicarFechamentoDespesasJunho(baseComCreditosFederaisFechados);
 const fechamentoEstoqueMatriz = gerarFechamentoEstoqueMatrizJunho(baseComDespesasFechadas);
 
@@ -144,9 +104,9 @@ const baseComCpvFinal = aplicarFechamentoCpvFinalJunho(baseComEstoqueFechado);
 const lancamentosIntegradosFinais = aplicarFechamentoAlienacaoJunho(baseComCpvFinal);
 
 /**
- * Trava anticircularidade.
- * Nenhuma conta de receita bruta (4.1.01) pode ser alimentada por lançamento cuja
- * origem/fonte mencione DRE. Se isso ocorrer, o fechamento para antes do Balancete/DRE.
+ * Validação anticircularidade.
+ * Nunca derruba a aplicação em import-time. A inconsistência fica disponível
+ * como bloqueio contábil para ser exibida nas telas de fechamento/validação.
  */
 const classificacaoPorConta = new Map(saldosImplantacao.map((conta) => [conta.conta, conta.classificacao]));
 const receitaCircular = lancamentosIntegradosFinais.find((linha) => {
@@ -156,11 +116,17 @@ const receitaCircular = lancamentosIntegradosFinais.find((linha) => {
   return proveniencia.includes("DRE");
 });
 
-if (receitaCircular) {
-  throw new Error(
-    `Fechamento bloqueado: receita ${receitaCircular.id} está sendo alimentada pela própria DRE (${receitaCircular.fonte}).`,
-  );
-}
+export const bloqueioReceitaCircular = receitaCircular
+  ? {
+      bloqueado: true,
+      lancamentoId: receitaCircular.id,
+      mensagem: `Receita ${receitaCircular.id} está sendo alimentada pela própria DRE (${receitaCircular.fonte}).`,
+    }
+  : {
+      bloqueado: false,
+      lancamentoId: null,
+      mensagem: null,
+    };
 
 export const lancamentosIntegrados = lancamentosIntegradosFinais;
 
