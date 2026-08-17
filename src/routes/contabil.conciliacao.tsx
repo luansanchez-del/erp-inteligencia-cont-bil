@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { BrainCircuit, CheckCircle2, FileCheck2, ShieldAlert, WalletCards } from "lucide-react";
 import { PageHeader, PageShell } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
@@ -163,7 +163,7 @@ function Conciliacao() {
   );
 }
 
-function ResumoCard({ icone, label, valor, detalhe, destaque = false }: { icone: React.ReactNode; label: string; valor: string; detalhe: string; destaque?: boolean }) {
+function ResumoCard({ icone, label, valor, detalhe, destaque = false }: { icone: ReactNode; label: string; valor: string; detalhe: string; destaque?: boolean }) {
   return (
     <div className={`rounded-lg border p-4 ${destaque ? "border-amber-300 bg-amber-50/60" : "bg-card"}`}>
       <div className="flex items-center gap-2 text-xs text-muted-foreground">{icone}<span>{label}</span></div>
