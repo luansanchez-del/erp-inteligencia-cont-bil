@@ -74,7 +74,7 @@ export const navGroups: NavGroup[] = [
   },
   { id: "administracao", label: "Administração", icon: Settings, to: "/administracao" },
   { id: "fiscal", label: "Fiscal", icon: Receipt, to: "/fiscal", futuro: true },
-  { id: "patrimonio", label: "Patrimônio", icon: Landmark, to: "/patrimonio", futuro: true },
+  { id: "patrimonio", label: "Imobilizado", icon: Landmark, to: "/patrimonio" },
   { id: "ecd_ecf", label: "ECD / ECF", icon: FileSpreadsheet, to: "/ecd-ecf", futuro: true },
   {
     id: "obrigacoes",
