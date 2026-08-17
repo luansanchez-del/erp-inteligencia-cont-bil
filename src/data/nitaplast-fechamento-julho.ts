@@ -1,3 +1,5 @@
+import { saldoAberturaJulhoPorConta } from "./nitaplast-saldos-julho";
+
 export type StatusFonteJulho = "validado" | "em revisão" | "pendente" | "manual";
 
 export const competenciaNitaplastJulho = {
@@ -170,9 +172,71 @@ export const entradasCentroCustoJulho = {
   documentosComDiferenca: 9,
 } as const;
 
+const arred = (valor: number) => Math.round(valor * 100) / 100;
+const saldoCredorAbertura = (conta: string) => Math.max(0, -(saldoAberturaJulhoPorConta.get(conta) ?? 0));
+
+/**
+ * Cálculo gerencial/fiscal do JCP de 07/2026.
+ *
+ * IMPORTANTE:
+ * - cálculo NÃO é lançamento;
+ * - não entra no Razão enquanto não houver deliberação/crédito individualizado ao sócio;
+ * - enquanto permanecer apenas calculado, IRRF reconhecido = zero;
+ * - se houver deliberação/crédito, a rotina de lançamento deverá reconhecer o JCP bruto,
+ *   o passivo líquido ao beneficiário e o IRRF de 17,5% separadamente.
+ *
+ * A reserva de capital 25239 permanece fora da base até a natureza societária ser
+ * documentalmente validada, pois nem toda rubrica contábil chamada "reserva de capital"
+ * integra automaticamente a base fiscal do JCP.
+ */
+const capitalSocialIntegralizado = saldoCredorAbertura("2348");
+const reservaCapitalContabil = saldoCredorAbertura("25239");
+const reservasLucros = saldoCredorAbertura("25240");
+const lucrosAcumuladosAnteriores = saldoCredorAbertura("2515");
+const reservaCapitalConsiderada = 0;
+const baseJcpJulho = arred(
+  capitalSocialIntegralizado
+  + reservaCapitalConsiderada
+  + reservasLucros
+  + lucrosAcumuladosAnteriores,
+);
+const tjlpMensalJulho = 0.007617;
+const jcpPelaTjlpJulho = arred(baseJcpJulho * tjlpMensalJulho);
+const limiteLucrosReservasJulho = arred((reservasLucros + lucrosAcumuladosAnteriores) * 0.5);
+const jcpCalculadoJulho = Math.min(jcpPelaTjlpJulho, limiteLucrosReservasJulho);
+const irrfPotencialJcpJulho = arred(jcpCalculadoJulho * 0.175);
+
+export const calculoJcpJulho = {
+  competencia: "07/2026",
+  dataBase: "31/07/2026",
+  status: "calculado-nao-deliberado",
+  entraNoRazao: false,
+  geraIrrfAgora: false,
+  base: {
+    capitalSocialIntegralizado,
+    reservaCapitalContabil,
+    reservaCapitalConsiderada,
+    reservasLucros,
+    lucrosAcumuladosAnteriores,
+    total: baseJcpJulho,
+  },
+  tjlp: {
+    taxaMensalPercentual: 0.7617,
+    taxaDecimal: tjlpMensalJulho,
+  },
+  limites: {
+    pelaTjlp: jcpPelaTjlpJulho,
+    cinquentaPorCentoLucrosEReservas: limiteLucrosReservasJulho,
+  },
+  jcpCalculado: jcpCalculadoJulho,
+  irrfReconhecidoAgora: 0,
+  irrfPotencialSeCreditado: irrfPotencialJcpJulho,
+  observacao: "Cálculo de julho mantido fora do Razão até deliberação/crédito individualizado. Não alterar junho.",
+} as const;
+
 /** Estes itens não entram automaticamente no fechamento de julho. */
 export const itensManuaisJulho = [
-  { id: "jcp", nome: "JCP", regra: "manual", entraAgora: false },
+  { id: "jcp", nome: "JCP", regra: "calculado; aguarda deliberação/crédito para virar lançamento", entraAgora: false },
   { id: "depreciacao", nome: "Depreciação", regra: "mesma lógica de junho; valor lançado depois", entraAgora: false },
   { id: "juros-ativo", nome: "Juros ativos", regra: "resultado financeiro manual", entraAgora: false },
   { id: "juros-passivo", nome: "Juros passivos", regra: "resultado financeiro manual", entraAgora: false },
