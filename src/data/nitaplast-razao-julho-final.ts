@@ -3,6 +3,7 @@ import { lancamentosIntegradosJulho as baseJulho } from "./nitaplast-razao-julho
 import { lancamentosBancariosOperacionaisJulho, resumoLancamentosBancariosOperacionaisJulho } from "./nitaplast-lancamentos-bancarios-julho";
 import { descricaoContaJulho, saldoAberturaJulhoPorConta } from "./nitaplast-saldos-julho";
 import { calcularDepreciacaoImobilizado } from "./nitaplast-imobilizado";
+import { lancamentosFolhaJulho, resumoFolhaJulho } from "./nitaplast-folha-julho";
 
 const nome = (c:string) => `${c} - ${descricaoContaJulho.get(c) ?? "Conta a revisar"}`;
 const arred = (v:number) => Math.round(v*100)/100;
@@ -48,7 +49,8 @@ const filialCompras: LancamentoIntegrado[] = [
   l({id:"JUL-FIL-COMP-1102",data:"31/07/2026",origem:"ENTRADAS FILIAL 07/2026",debitoCodigo:"25139",creditoCodigo:"1496",historico:"Compras externas da filial - mercadorias para revenda",documento:"CFOP 1102",cc:"502",centroCusto:"COMERCIAL SP",valor:493098.04,observacao:"Compra externa documentada da filial. Créditos tributários são contabilizados separadamente.",fonte:"RESUMO NOTAS FISCAIS ENTRADA FILIAL 07/2026"}),
 ];
 
-const antesEstoque = [...baseSaneada,...lancamentosBancariosOperacionaisJulho,...impostosEstaduaisFederais,...creditosPisCofins,...filialCompras];
+// Folha matriz + filial e suas provisões entram no Razão antes do fechamento de estoque/depreciação.
+const antesEstoque = [...baseSaneada,...lancamentosBancariosOperacionaisJulho,...impostosEstaduaisFederais,...creditosPisCofins,...filialCompras,...lancamentosFolhaJulho];
 function movConta(c:string,base:LancamentoIntegrado[]) { return arred(base.reduce((s,x)=>s+(x.debitoCodigo===c?x.valor:0)-(x.creditoCodigo===c?x.valor:0),0)); }
 
 const estoqueMatriz:Record<string,number>={"25133":4207698.55,"25134":39464.14,"25135":1443376.19,"25136":107919.59,"25137":5285.59};
@@ -93,7 +95,8 @@ export const resumoFechamentoJulhoFinal={
   depreciacaoJulho:calculoDepreciacaoJulho.totalDepreciacaoCalculada,
   gruposDepreciacaoCalculados:calculoDepreciacaoJulho.gruposCalculaveis,
   gruposImobilizadoSemRegra:calculoDepreciacaoJulho.gruposSemRegra,
-  itensSemFonteJulho:["Folha/provisões 07/2026"],
+  folhaJulho:resumoFolhaJulho,
+  itensSemFonteJulho:[],
   itensMantidosForaPorDecisao:["JCP","Juros de mora/ativos não suportados","Juros passivos","Variação cambial"],
 } as const;
 
