@@ -1,241 +1,73 @@
 import { useMemo, useState } from "react";
-import { CheckCircle2, Search, TriangleAlert } from "lucide-react";
+import { CheckCircle2, CircleAlert, Download, Printer, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { estruturaBalanceteNitaplast, type LinhaEstruturaBalancete } from "@/data/nitaplast-balancete-estrutura";
-import { estoqueFinalMatrizJulhoPorConta, estoqueFinalMatrizJulhoTotal } from "@/data/nitaplast-fechamento-julho";
-import { composicaoResultadoJulho, dreParcialJulho } from "@/data/nitaplast-dre-julho";
+import { saldoAberturaJulhoPorConta } from "@/data/nitaplast-saldos-julho";
 import {
-  diagnosticoFechamentoJulho,
-  lancamentosIntegradosJulho,
-  pendenciasRazaoJulho,
-  totalCreditosJulho,
-  totalDebitosJulho,
-  valorEntradasMapeadasJulho,
-  valorEntradasPendentesMapeamentoJulho,
-} from "@/data/nitaplast-razao-julho";
-import { saldoAberturaJulhoPorConta, saldosAberturaJulho } from "@/data/nitaplast-saldos-julho";
+  lancamentosIntegradosJulhoFinal,
+  pendenciasJulhoFinal,
+  resumoFechamentoJulhoFinal,
+  totalCreditosJulhoFinal,
+  totalDebitosJulhoFinal,
+} from "@/data/nitaplast-razao-julho-final";
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
-const arred = (valor: number) => Math.round(valor * 100) / 100;
+const arred=(v:number)=>Math.round(v*100)/100;
 
-type LinhaBalanceteJulho = LinhaEstruturaBalancete & {
-  saldoAnterior: number;
-  debitos: number;
-  creditos: number;
-  movimento: number;
-  saldoAtual: number;
-  lancamentos: number;
-};
-
-function descendente(analitica: LinhaEstruturaBalancete, sintetica: LinhaEstruturaBalancete) {
-  return analitica.classificacao === sintetica.classificacao || analitica.classificacao.startsWith(`${sintetica.classificacao}.`);
-}
-
-function calcularBalanceteJulho() {
-  const movimentos = new Map<string, { debitos: number; creditos: number; lancamentos: number }>();
-  for (const lancamento of lancamentosIntegradosJulho) {
-    const debito = movimentos.get(lancamento.debitoCodigo) ?? { debitos: 0, creditos: 0, lancamentos: 0 };
-    debito.debitos += lancamento.valor;
-    debito.lancamentos += 1;
-    movimentos.set(lancamento.debitoCodigo, debito);
-
-    const credito = movimentos.get(lancamento.creditoCodigo) ?? { debitos: 0, creditos: 0, lancamentos: 0 };
-    credito.creditos += lancamento.valor;
-    credito.lancamentos += 1;
-    movimentos.set(lancamento.creditoCodigo, credito);
+type LinhaBalancete = LinhaEstruturaBalancete & {saldoAnterior:number;debitos:number;creditos:number;movimento:number;saldoAtual:number;lancamentos:number};
+function descendente(a:LinhaEstruturaBalancete,s:LinhaEstruturaBalancete){return a.classificacao===s.classificacao||a.classificacao.startsWith(`${s.classificacao}.`);}
+function calcularBalancete():LinhaBalancete[]{
+  const mov=new Map<string,{debitos:number;creditos:number;lancamentos:number}>();
+  for(const x of lancamentosIntegradosJulhoFinal){
+    const d=mov.get(x.debitoCodigo)??{debitos:0,creditos:0,lancamentos:0};d.debitos+=x.valor;d.lancamentos++;mov.set(x.debitoCodigo,d);
+    const c=mov.get(x.creditoCodigo)??{debitos:0,creditos:0,lancamentos:0};c.creditos+=x.valor;c.lancamentos++;mov.set(x.creditoCodigo,c);
   }
-
-  const analiticas = estruturaBalanceteNitaplast.filter((linha) => linha.tipo === "A");
-  const valores = new Map<string, Omit<LinhaBalanceteJulho, keyof LinhaEstruturaBalancete>>();
-  for (const linha of analiticas) {
-    const movimento = movimentos.get(linha.conta) ?? { debitos: 0, creditos: 0, lancamentos: 0 };
-    const saldoAnterior = saldoAberturaJulhoPorConta.get(linha.conta) ?? 0;
-    const liquido = arred(movimento.debitos - movimento.creditos);
-    valores.set(linha.conta, {
-      saldoAnterior,
-      debitos: arred(movimento.debitos),
-      creditos: arred(movimento.creditos),
-      movimento: liquido,
-      saldoAtual: arred(saldoAnterior + liquido),
-      lancamentos: movimento.lancamentos,
-    });
-  }
-
-  return estruturaBalanceteNitaplast.map<LinhaBalanceteJulho>((linha) => {
-    if (linha.tipo === "A") {
-      return { ...linha, ...(valores.get(linha.conta) ?? { saldoAnterior: 0, debitos: 0, creditos: 0, movimento: 0, saldoAtual: 0, lancamentos: 0 }) };
-    }
-    const total = { saldoAnterior: 0, debitos: 0, creditos: 0, movimento: 0, saldoAtual: 0, lancamentos: 0 };
-    for (const analitica of analiticas) {
-      if (!descendente(analitica, linha)) continue;
-      const valor = valores.get(analitica.conta);
-      if (!valor) continue;
-      total.saldoAnterior += valor.saldoAnterior;
-      total.debitos += valor.debitos;
-      total.creditos += valor.creditos;
-      total.movimento += valor.movimento;
-      total.saldoAtual += valor.saldoAtual;
-      total.lancamentos += valor.lancamentos;
-    }
-    return {
-      ...linha,
-      saldoAnterior: arred(total.saldoAnterior),
-      debitos: arred(total.debitos),
-      creditos: arred(total.creditos),
-      movimento: arred(total.movimento),
-      saldoAtual: arred(total.saldoAtual),
-      lancamentos: total.lancamentos,
-    };
+  const analiticas=estruturaBalanceteNitaplast.filter(x=>x.tipo==="A");
+  const vals=new Map<string,{saldoAnterior:number;debitos:number;creditos:number;movimento:number;saldoAtual:number;lancamentos:number}>();
+  for(const x of analiticas){const m=mov.get(x.conta)??{debitos:0,creditos:0,lancamentos:0};const sa=saldoAberturaJulhoPorConta.get(x.conta)??0;const liq=arred(m.debitos-m.creditos);vals.set(x.conta,{saldoAnterior:sa,debitos:arred(m.debitos),creditos:arred(m.creditos),movimento:liq,saldoAtual:arred(sa+liq),lancamentos:m.lancamentos});}
+  return estruturaBalanceteNitaplast.map(x=>{
+    if(x.tipo==="A")return {...x,...(vals.get(x.conta)??{saldoAnterior:0,debitos:0,creditos:0,movimento:0,saldoAtual:0,lancamentos:0})};
+    const t={saldoAnterior:0,debitos:0,creditos:0,movimento:0,saldoAtual:0,lancamentos:0};
+    for(const a of analiticas){if(!descendente(a,x))continue;const v=vals.get(a.conta);if(!v)continue;t.saldoAnterior+=v.saldoAnterior;t.debitos+=v.debitos;t.creditos+=v.creditos;t.movimento+=v.movimento;t.saldoAtual+=v.saldoAtual;t.lancamentos+=v.lancamentos;}
+    return {...x,saldoAnterior:arred(t.saldoAnterior),debitos:arred(t.debitos),creditos:arred(t.creditos),movimento:arred(t.movimento),saldoAtual:arred(t.saldoAtual),lancamentos:t.lancamentos};
   });
 }
+const balancete=calcularBalancete();
 
-const balanceteJulho = calcularBalanceteJulho();
+function Header({titulo,descricao,acoes}:{titulo:string;descricao:string;acoes?:React.ReactNode}){return <div className="flex flex-wrap items-start justify-between gap-3 border-b pb-4"><div><h1 className="text-xl font-semibold tracking-tight">{titulo}</h1><p className="mt-1 text-sm text-muted-foreground">{descricao}</p></div><div className="flex flex-wrap gap-2">{acoes}<Badge variant="outline" className="border-amber-400 text-amber-800">Consolidado · 07/2026 · Em fechamento</Badge></div></div>}
+function Metric({label,value,money=true}:{label:string;value:number;money?:boolean}){return <Card><CardContent className="pt-5"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 text-xl font-semibold tabular-nums">{money?brl.format(value):value.toLocaleString("pt-BR")}</p></CardContent></Card>}
+function Money({value,strong=false}:{value:number;strong?:boolean}){return <td className={`p-2 text-right tabular-nums ${strong?"font-semibold":""}`}>{value<0?`(${brl.format(Math.abs(value))})`:brl.format(value)}</td>}
+function exportar(nome:string,linhas:string[][],sep=";"){const texto=linhas.map(r=>r.map(v=>String(v).replaceAll('"','""')).map(v=>`"${v}"`).join(sep)).join("\n");const blob=new Blob(["\ufeff",texto],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=nome;a.click();URL.revokeObjectURL(a.href);}
 
-function HeaderJulho({ titulo, descricao }: { titulo: string; descricao: string }) {
-  return (
-    <div className="flex flex-wrap items-start justify-between gap-3 border-b pb-4">
-      <div><h1 className="text-xl font-semibold tracking-tight">{titulo}</h1><p className="mt-1 text-sm text-muted-foreground">{descricao}</p></div>
-      <Badge variant="outline" className="border-amber-400 text-amber-800">PARCIAL · 07/2026 · EM FECHAMENTO</Badge>
-    </div>
-  );
-}
-
-function Metric({ label, value, money = true, warning = false }: { label: string; value: number; money?: boolean; warning?: boolean }) {
-  return (
-    <Card className={warning ? "border-amber-400/50" : undefined}>
-      <CardContent className="pt-5"><p className="text-xs text-muted-foreground">{label}</p><p className={`mt-1 text-lg font-semibold tabular-nums ${warning ? "text-amber-700" : ""}`}>{money ? brl.format(value) : value.toLocaleString("pt-BR")}</p></CardContent>
-    </Card>
-  );
-}
-
-function PendenciasJulho() {
-  return (
-    <Card className="border-amber-400/50 bg-amber-50/40">
-      <CardContent className="pt-5">
-        <div className="flex items-start gap-3">
-          <TriangleAlert className="mt-0.5 size-5 shrink-0 text-amber-700" />
-          <div className="w-full">
-            <p className="font-semibold">Fechamento ainda parcial — sem lançamentos de encaixe</p>
-            <p className="mt-1 text-sm text-muted-foreground">Os valores abaixo permanecem visíveis como pendência. Nenhum deles foi lançado em conta genérica apenas para fechar o Balancete/DRE.</p>
-            <div className="mt-4 grid gap-2 text-xs sm:grid-cols-2 xl:grid-cols-3">
-              <Pending label="Entradas sem mapeamento seguro" value={brl.format(diagnosticoFechamentoJulho.valorEntradasPendentesMapeamento)} />
-              <Pending label="Diferença sem CC completo" value={brl.format(diagnosticoFechamentoJulho.valorSemCcCompleto)} />
-              <Pending label="Créditos PIS a abrir" value={brl.format(diagnosticoFechamentoJulho.pisCreditosPendentesAbertura)} />
-              <Pending label="Créditos COFINS a abrir" value={brl.format(diagnosticoFechamentoJulho.cofinsCreditosPendentesAbertura)} />
-              <Pending label="ICMS matriz a classificar" value={brl.format(diagnosticoFechamentoJulho.icmsMatrizPendenteClassificacao)} />
-              <Pending label="ICMS filial a classificar" value={brl.format(diagnosticoFechamentoJulho.icmsFilialPendenteClassificacao)} />
-              <Pending label="Folha 07/2026" value="Documento não recebido" />
-              <Pending label="Bancos / Clientes / Fornecedores" value="Em conciliação" />
-              <Pending label="Estoque / CPV" value="Ajuste bloqueado até completar movimentos" />
-            </div>
-            <p className="mt-3 text-xs text-muted-foreground">Fora desta etapa por decisão operacional: {diagnosticoFechamentoJulho.itensManuaisExcluidos.join(" · ")}.</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function Pending({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-md border bg-background p-3"><p className="text-muted-foreground">{label}</p><p className="mt-1 font-medium">{value}</p></div>;
-}
-
-export function BalanceteJulho() {
-  const [busca, setBusca] = useState("");
-  const [mostrarZeradas, setMostrarZeradas] = useState(false);
-  const linhas = useMemo(() => {
-    const q = busca.trim().toLocaleLowerCase("pt-BR");
-    return balanceteJulho.filter((linha) => {
-      const zero = Math.abs(linha.saldoAnterior) < 0.005 && Math.abs(linha.debitos) < 0.005 && Math.abs(linha.creditos) < 0.005 && Math.abs(linha.saldoAtual) < 0.005;
-      if (!mostrarZeradas && zero) return false;
-      if (!q) return true;
-      return [linha.conta, linha.classificacao, linha.descricao].join(" ").toLocaleLowerCase("pt-BR").includes(q);
-    });
-  }, [busca, mostrarZeradas]);
-
-  return (
-    <div className="grid gap-5">
-      <HeaderJulho titulo="Balancete consolidado — Nitaplast 07/2026" descricao="Saldo anterior calculado em 30/06/2026 + fatos contábeis já documentados de julho. A abertura é referência de cálculo, nunca lançamento no Razão." />
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <Metric label="Débitos já escriturados" value={totalDebitosJulho} />
-        <Metric label="Créditos já escriturados" value={totalCreditosJulho} />
-        <Metric label="Partidas no Razão" value={lancamentosIntegradosJulho.length} money={false} />
-        <Metric label="Entradas/CC mapeadas" value={valorEntradasMapeadasJulho} />
-        <Metric label="Entradas sem mapeamento" value={valorEntradasPendentesMapeamentoJulho} warning />
-      </div>
-      <PendenciasJulho />
-      <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div><CardTitle className="text-base">Balancete conta a conta — parcial</CardTitle><p className="mt-1 text-xs text-muted-foreground">O saldo atual muda exclusivamente pelos lançamentos existentes no Razão 07/2026.</p></div>
-            <div className="flex w-full gap-2 sm:w-auto"><div className="relative w-full sm:w-80"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" /><Input className="pl-9" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Conta, classificação ou descrição" /></div><Button variant="outline" onClick={() => setMostrarZeradas((v) => !v)}>{mostrarZeradas ? "Ocultar zeradas" : "Exibir zeradas"}</Button></div>
-          </div>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <table className="w-full min-w-[1350px] text-sm"><thead><tr className="border-b bg-muted/40 text-left text-xs"><th className="p-2">Conta</th><th className="p-2">S/A</th><th className="p-2">Classificação</th><th className="p-2">Descrição</th><th className="p-2 text-right">Saldo 30/06</th><th className="p-2 text-right">Débito 07</th><th className="p-2 text-right">Crédito 07</th><th className="p-2 text-right">Movimento</th><th className="p-2 text-right">Saldo atual</th><th className="p-2 text-right">Razão</th></tr></thead>
-            <tbody>{linhas.map((linha) => <tr key={`${linha.tipo}-${linha.conta}-${linha.classificacao}`} className={`border-b ${linha.tipo === "S" ? "bg-muted/30 font-semibold" : ""}`}><td className="p-2 font-mono">{linha.conta}</td><td className="p-2">{linha.tipo}</td><td className="p-2 font-mono text-xs">{linha.classificacao}</td><td className="p-2" style={{ paddingLeft: 8 + Math.max(0, linha.nivel - 1) * 10 }}>{linha.descricao}</td><Money value={linha.saldoAnterior} /><Money value={linha.debitos} /><Money value={linha.creditos} /><Money value={linha.movimento} /><Money value={linha.saldoAtual} strong />
-              <td className="p-2 text-right">{linha.tipo === "A" ? <Button variant="outline" size="sm" onClick={() => window.location.assign(`/contabil/razao?conta=${encodeURIComponent(linha.conta)}`)}>Abrir</Button> : "—"}</td></tr>)}</tbody></table>
-        </CardContent>
-      </Card>
-      <Card><CardContent className="pt-5"><p className="font-medium">Inventário oficial 31/07 — alvo patrimonial, ainda sem lançamento de fechamento</p><div className="mt-3 grid gap-2 sm:grid-cols-3 xl:grid-cols-6">{Object.entries(estoqueFinalMatrizJulhoPorConta).map(([conta, valor]) => <Pending key={conta} label={`Conta ${conta}`} value={brl.format(valor)} />)}<Pending label="Total" value={brl.format(estoqueFinalMatrizJulhoTotal)} /></div></CardContent></Card>
-    </div>
-  );
-}
-
-export function RazaoJulho() {
-  const contaUrl = typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("conta") ?? "";
-  const [busca, setBusca] = useState("");
-  const [conta, setConta] = useState(contaUrl);
-  const linhas = useMemo(() => {
-    const q = busca.trim().toLocaleLowerCase("pt-BR");
-    return lancamentosIntegradosJulho.filter((linha) => {
-      if (conta && linha.debitoCodigo !== conta && linha.creditoCodigo !== conta) return false;
-      if (!q) return true;
-      return [linha.id, linha.origem, linha.debito, linha.credito, linha.historico, linha.documento, linha.centroCusto].join(" ").toLocaleLowerCase("pt-BR").includes(q);
-    });
-  }, [busca, conta]);
-  const saldoAnterior = conta ? saldoAberturaJulhoPorConta.get(conta) ?? 0 : 0;
-  const movimentoConta = conta ? linhas.reduce((t, l) => t + (l.debitoCodigo === conta ? l.valor : 0) - (l.creditoCodigo === conta ? l.valor : 0), 0) : 0;
-
+export function BalanceteJulho(){
+  const [busca,setBusca]=useState("");const [grupo,setGrupo]=useState("todos");const [soMov,setSoMov]=useState(false);const [zeradas,setZeradas]=useState(false);
+  const linhas=useMemo(()=>balancete.filter(x=>{const q=busca.trim().toLocaleLowerCase("pt-BR");const zero=Math.abs(x.saldoAnterior)<.005&&Math.abs(x.debitos)<.005&&Math.abs(x.creditos)<.005&&Math.abs(x.saldoAtual)<.005;if(!zeradas&&zero)return false;if(soMov&&Math.abs(x.debitos)+Math.abs(x.creditos)<.005)return false;if(grupo!=="todos"&&x.grupo!==grupo)return false;if(q&&![x.conta,x.classificacao,x.descricao].join(" ").toLocaleLowerCase("pt-BR").includes(q))return false;return true;}),[busca,grupo,soMov,zeradas]);
+  const ativo=Math.abs(balancete.find(x=>x.classificacao==="1")?.saldoAnterior??0);const passivo=Math.abs(balancete.find(x=>x.classificacao==="2")?.saldoAnterior??0);
+  const csv=()=>exportar("Balancete_Nitaplast_07-2026.csv",[["Conta","S/A","Classificação","Descrição","Saldo anterior","Débito","Crédito","Movimento","Saldo atual"],...linhas.map(x=>[x.conta,x.tipo,x.classificacao,x.descricao,String(x.saldoAnterior),String(x.debitos),String(x.creditos),String(x.movimento),String(x.saldoAtual)])]);
   return <div className="grid gap-5">
-    <HeaderJulho titulo="Razão contábil — Nitaplast 07/2026" descricao="Partidas reais já formadas para julho. JCP, depreciação, juros, variação cambial e abertura não integram esta base." />
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"><Metric label="Débitos" value={totalDebitosJulho} /><Metric label="Créditos" value={totalCreditosJulho} /><Metric label="Partidas" value={lancamentosIntegradosJulho.length} money={false} /><Metric label="Em revisão" value={pendenciasRazaoJulho} money={false} warning /><Metric label="Sem mapeamento" value={valorEntradasPendentesMapeamentoJulho} warning /></div>
-    {conta ? <Card><CardContent className="grid gap-3 pt-5 sm:grid-cols-3"><Pending label="Conta filtrada" value={conta} /><Pending label="Saldo anterior 30/06" value={brl.format(saldoAnterior)} /><Pending label="Saldo após partidas exibidas" value={brl.format(arred(saldoAnterior + movimentoConta))} /></CardContent></Card> : null}
-    <PendenciasJulho />
-    <Card><CardHeader><div className="flex flex-wrap items-center justify-between gap-3"><CardTitle className="text-base">Partidas do Razão — 07/2026</CardTitle><div className="flex w-full gap-2 sm:w-auto"><select className="h-9 max-w-[280px] rounded-md border bg-background px-3 text-sm" value={conta} onChange={(e) => setConta(e.target.value)}><option value="">Todas as contas</option>{saldosAberturaJulho.map((c) => <option key={c.conta} value={c.conta}>{c.conta} — {c.descricao}</option>)}</select><div className="relative w-full sm:w-80"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" /><Input className="pl-9" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Histórico, documento, conta..." /></div></div></div></CardHeader><CardContent className="overflow-x-auto"><table className="w-full min-w-[1700px] text-sm"><thead><tr className="border-b bg-muted/40 text-left text-xs"><th className="p-2">ID</th><th className="p-2">Data</th><th className="p-2">Origem</th><th className="p-2">Débito</th><th className="p-2">Crédito</th><th className="p-2">Histórico</th><th className="p-2">Documento</th><th className="p-2">CC</th><th className="p-2 text-right">Valor</th><th className="p-2">Rastreio</th><th className="p-2">Status</th></tr></thead><tbody>{linhas.map((linha) => <tr key={linha.id} className="border-b"><td className="p-2 font-mono text-xs">{linha.id}</td><td className="p-2">{linha.data}</td><td className="p-2">{linha.origem}</td><td className="p-2">{linha.debito}</td><td className="p-2">{linha.credito}</td><td className="p-2">{linha.historico}</td><td className="p-2 font-mono text-xs">{linha.documento}</td><td className="p-2">{linha.cc} — {linha.centroCusto}</td><Money value={linha.valor} /><td className="p-2">{linha.rastreio}</td><td className="p-2">{linha.status === "validado" ? <span className="inline-flex items-center gap-1 text-emerald-700"><CheckCircle2 className="size-4" />Validado</span> : <span className="inline-flex items-center gap-1 text-amber-700"><TriangleAlert className="size-4" />Revisar</span>}</td></tr>)}</tbody></table></CardContent></Card>
+    <Header titulo="Balancete consolidado - Nitaplast" descricao="Saldos anteriores em 30/06/2026 e movimentação contábil da competência 07/2026." acoes={<><Button variant="outline" size="sm" onClick={csv}><Download className="mr-2 size-4"/>Exportar CSV</Button><Button variant="outline" size="sm" onClick={csv}><Download className="mr-2 size-4"/>Exportar Excel</Button><Button variant="outline" size="sm" onClick={()=>window.print()}><Printer className="mr-2 size-4"/>Imprimir / PDF</Button></>}/>
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6"><Metric label="Ativo consolidado em 30/06" value={ativo}/><Metric label="Passivo + PL consolidado em 30/06" value={passivo}/><Metric label="Linhas do balancete" value={linhas.length} money={false}/><Metric label="Débitos consolidados 07" value={totalDebitosJulhoFinal}/><Metric label="Créditos consolidados 07" value={totalCreditosJulhoFinal}/><Metric label="Lançamentos em revisão" value={pendenciasJulhoFinal.length} money={false}/></div>
+    <Card className="border-emerald-500/40 bg-emerald-50/40"><CardContent className="pt-6"><div className="flex gap-3"><CheckCircle2 className="mt-0.5 size-5 text-emerald-700"/><div><p className="font-semibold">Balancete consolidado e recalculável</p><p className="mt-1 text-sm text-muted-foreground">Matriz e filial são apresentadas no mesmo balancete. O saldo de 30/06 é apenas referência de cálculo; os movimentos de 07/2026 nascem do Razão. Débitos e créditos permanecem equilibrados em {brl.format(totalDebitosJulhoFinal)}.</p></div></div></CardContent></Card>
+    <Card><CardHeader><div className="flex flex-wrap items-center justify-between gap-3"><div><CardTitle className="text-base">Balancete consolidado - Débito, Crédito e Movimento</CardTitle><p className="mt-1 text-xs text-muted-foreground">NITAPLAST IND E COM DE PLÁSTICOS INDUSTRIAIS LTDA · 01/07/2026 a 31/07/2026</p></div><div className="relative w-full sm:w-96"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground"/><Input className="pl-9" value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar conta, classificação ou descrição"/></div></div></CardHeader><CardContent>
+      <div className="mb-4 flex flex-wrap gap-2"><Button size="sm" variant={grupo==="todos"?"default":"outline"} onClick={()=>setGrupo("todos")}>Todos</Button><Button size="sm" variant={grupo==="Ativo"?"default":"outline"} onClick={()=>setGrupo("Ativo")}>Ativo</Button><Button size="sm" variant={grupo==="Passivo e patrimônio líquido"?"default":"outline"} onClick={()=>setGrupo("Passivo e patrimônio líquido")}>Passivo e PL</Button><Button size="sm" variant={grupo==="Receitas acumuladas"?"default":"outline"} onClick={()=>setGrupo("Receitas acumuladas")}>Receitas</Button><Button size="sm" variant={grupo==="Custos e despesas acumulados"?"default":"outline"} onClick={()=>setGrupo("Custos e despesas acumulados")}>Custos e despesas</Button><Button size="sm" variant={soMov?"default":"outline"} onClick={()=>setSoMov(v=>!v)}>Somente com movimento</Button><Button size="sm" variant={zeradas?"default":"outline"} onClick={()=>setZeradas(v=>!v)}>Exibir contas zeradas</Button></div>
+      <p className="mb-3 text-xs text-muted-foreground">{linhas.length} linhas exibidas. Contas sem saldo anterior, sem movimentação e com saldo atual zero ficam ocultas por padrão.</p>
+      <div className="overflow-x-auto"><table className="w-full min-w-[1350px] text-sm"><thead><tr className="border-b bg-muted text-left text-xs"><th className="p-2">Conta contábil</th><th className="p-2">S/A</th><th className="p-2">Classificação</th><th className="p-2">Descrição</th><th className="p-2 text-right">Saldo anterior</th><th className="p-2 text-right">Débito</th><th className="p-2 text-right">Crédito</th><th className="p-2 text-right">Movimento</th><th className="p-2 text-right">Saldo atual</th><th className="p-2 text-right">Detalhe</th></tr></thead><tbody>{linhas.map(x=><tr key={`${x.tipo}-${x.conta}-${x.classificacao}`} className={`border-b ${x.tipo==="S"?(x.nivel<=2?"bg-blue-100/70":"bg-emerald-50/60")+" font-semibold":""}`}><td className="p-2 font-mono">{x.conta}</td><td className="p-2">{x.tipo}</td><td className="p-2 font-mono text-xs">{x.classificacao}</td><td className="p-2" style={{paddingLeft:8+Math.max(0,x.nivel-1)*10}}>{x.descricao}</td><Money value={x.saldoAnterior}/><Money value={x.debitos}/><Money value={x.creditos}/><Money value={x.movimento}/><Money value={x.saldoAtual} strong/><td className="p-2 text-right">{x.tipo==="A"?<Button size="sm" variant="outline" onClick={()=>window.location.assign(`/contabil/razao?conta=${encodeURIComponent(x.conta)}`)}>Abrir Razão</Button>:"—"}</td></tr>)}</tbody></table></div>
+    </CardContent></Card>
+    <PendenciaFonte/>
   </div>;
 }
 
-export function LancamentosJulho() {
-  const [busca, setBusca] = useState("");
-  const linhas = useMemo(() => {
-    const q = busca.trim().toLocaleLowerCase("pt-BR");
-    return lancamentosIntegradosJulho.filter((linha) => !q || [linha.id, linha.debito, linha.credito, linha.historico, linha.documento, linha.origem].join(" ").toLocaleLowerCase("pt-BR").includes(q));
-  }, [busca]);
-  return <div className="grid gap-5"><HeaderJulho titulo="Lançamentos — Nitaplast 07/2026" descricao="Partidas já escrituradas no Razão parcial. Exportação final permanece bloqueada enquanto existirem fontes estruturais pendentes." /><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"><Metric label="Partidas" value={lancamentosIntegradosJulho.length} money={false} /><Metric label="Débitos" value={totalDebitosJulho} /><Metric label="Créditos" value={totalCreditosJulho} /><Metric label="Em revisão" value={pendenciasRazaoJulho} money={false} warning /><Metric label="Sem mapeamento" value={valorEntradasPendentesMapeamentoJulho} warning /></div><Card className="border-red-400/40 bg-red-50/30"><CardContent className="flex items-start gap-3 pt-5"><TriangleAlert className="mt-0.5 size-5 text-red-700" /><div><p className="font-semibold">CSV final bloqueado</p><p className="text-sm text-muted-foreground">Ainda faltam mapeamentos, folha, bancos/AR/AP, créditos federais e fechamento técnico do estoque. O sistema não considera este lote definitivo para importação no Questor.</p></div></CardContent></Card><PendenciasJulho /><Card><CardHeader><div className="flex items-center justify-between gap-3"><CardTitle className="text-base">Partidas formadas</CardTitle><div className="relative w-full max-w-sm"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" /><Input className="pl-9" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar partida" /></div></div></CardHeader><CardContent className="overflow-x-auto"><table className="w-full min-w-[1450px] text-sm"><thead><tr className="border-b bg-muted/40 text-left text-xs"><th className="p-2">ID</th><th className="p-2">Data</th><th className="p-2">Débito</th><th className="p-2">Crédito</th><th className="p-2">CC</th><th className="p-2">Documento</th><th className="p-2">Histórico</th><th className="p-2 text-right">Valor</th><th className="p-2">Status</th></tr></thead><tbody>{linhas.map((linha) => <tr key={linha.id} className="border-b"><td className="p-2 font-mono text-xs">{linha.id}</td><td className="p-2">{linha.data}</td><td className="p-2 font-mono">{linha.debitoCodigo}</td><td className="p-2 font-mono">{linha.creditoCodigo}</td><td className="p-2">{linha.cc}</td><td className="p-2">{linha.documento}</td><td className="p-2">{linha.historico}</td><Money value={linha.valor} /><td className="p-2">{linha.status}</td></tr>)}</tbody></table></CardContent></Card></div>;
-}
+function filtroLancamentos(busca:string,conta:string){const q=busca.trim().toLocaleLowerCase("pt-BR");return lancamentosIntegradosJulhoFinal.filter(x=>(!conta||x.debitoCodigo===conta||x.creditoCodigo===conta)&&(!q||[x.id,x.origem,x.historico,x.documento,x.debito,x.credito,x.cc,x.centroCusto,x.fonte].join(" ").toLocaleLowerCase("pt-BR").includes(q)));}
 
-export function DreJulho() {
-  const linhas = [
-    ["(+) Receita Operacional Bruta", dreParcialJulho.receitaBruta],
-    ["(-) Devoluções", -dreParcialJulho.devolucoes],
-    ["(-) ICMS sobre vendas", -dreParcialJulho.icms],
-    ["(-) ICMS-ST", -dreParcialJulho.icmsSt],
-    ["(-) IPI", -dreParcialJulho.ipi],
-    ["(-) PIS", -dreParcialJulho.pis],
-    ["(-) COFINS", -dreParcialJulho.cofins],
-    ["(=) Receita Líquida Parcial", dreParcialJulho.receitaLiquida],
-    ["(-) Custos reconhecidos no Razão até agora", -dreParcialJulho.custosReconhecidos],
-    ["(-) Despesas reconhecidas no Razão até agora", -dreParcialJulho.despesasReconhecidas],
-    ["(=) Resultado Parcial", dreParcialJulho.resultadoParcial],
-  ] as const;
-  return <div className="grid gap-5"><HeaderJulho titulo="DRE calculada parcial — Nitaplast 07/2026" descricao="Nasce exclusivamente do Razão de julho. Não existe DRE enviada de julho alimentando este cálculo e o resultado ainda não é fechamento final." /><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"><Metric label="Receita bruta" value={dreParcialJulho.receitaBruta} /><Metric label="Deduções" value={dreParcialJulho.deducoes} /><Metric label="Receita líquida" value={dreParcialJulho.receitaLiquida} /><Metric label="Custos + despesas reconhecidos" value={dreParcialJulho.custosDespesasReconhecidos} /><Metric label="Resultado parcial" value={dreParcialJulho.resultadoParcial} warning /></div><PendenciasJulho /><Card><CardHeader><CardTitle className="text-base">DRE parcial derivada do Razão</CardTitle></CardHeader><CardContent><table className="w-full text-sm"><tbody>{linhas.map(([descricao, valor], index) => <tr key={descricao} className={`border-b ${index === 0 || descricao.startsWith("(=") ? "font-semibold bg-muted/20" : ""}`}><td className="p-3">{descricao}</td><td className={`p-3 text-right tabular-nums ${valor < 0 ? "text-rose-700" : ""}`}>{brl.format(valor)}</td></tr>)}</tbody></table></CardContent></Card><Card><CardHeader><CardTitle className="text-base">Composição de custos/despesas já reconhecidos</CardTitle></CardHeader><CardContent className="overflow-x-auto"><table className="w-full min-w-[1000px] text-sm"><thead><tr className="border-b bg-muted/40 text-left text-xs"><th className="p-2">Conta</th><th className="p-2">Classificação</th><th className="p-2">Descrição</th><th className="p-2">Centro de custo</th><th className="p-2 text-right">Valor</th><th className="p-2">Status</th></tr></thead><tbody>{composicaoResultadoJulho.map((linha) => <tr key={linha.id} className="border-b"><td className="p-2 font-mono">{linha.conta}</td><td className="p-2 font-mono text-xs">{linha.classificacao}</td><td className="p-2">{linha.descricao}</td><td className="p-2">{linha.cc} — {linha.centroCusto}</td><Money value={linha.valor} /><td className="p-2">{linha.status}</td></tr>)}</tbody></table></CardContent></Card></div>;
-}
+export function RazaoJulho(){const contaUrl=typeof window==="undefined"?"":new URLSearchParams(window.location.search).get("conta")??"";const[conta,setConta]=useState(contaUrl);const[busca,setBusca]=useState("");const linhas=useMemo(()=>filtroLancamentos(busca,conta),[busca,conta]);const abertura=conta?(saldoAberturaJulhoPorConta.get(conta)??0):0;const mov=conta?linhas.reduce((s,x)=>s+(x.debitoCodigo===conta?x.valor:0)-(x.creditoCodigo===conta?x.valor:0),0):0;return <div className="grid gap-5"><Header titulo="Razão contábil - Nitaplast 07/2026" descricao="Movimentação contábil da competência 07/2026, formada pelos documentos fiscais, bancos, aplicações, impostos e fechamento de estoque."/><div className="grid gap-3 sm:grid-cols-3"><Metric label="Partidas exibidas" value={linhas.length} money={false}/><Metric label="Saldo anterior da conta" value={abertura}/><Metric label="Saldo atual da conta" value={arred(abertura+mov)}/></div><Card><CardHeader><div className="flex flex-wrap gap-2"><Input className="w-full sm:w-48" value={conta} onChange={e=>setConta(e.target.value)} placeholder="Filtrar conta"/><div className="relative w-full sm:flex-1"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground"/><Input className="pl-9" value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar histórico, documento, origem, CC..."/></div></div></CardHeader><CardContent className="overflow-x-auto"><TabelaLancamentos linhas={linhas}/></CardContent></Card><PendenciaFonte/></div>}
 
-function Money({ value, strong = false }: { value: number; strong?: boolean }) {
-  const texto = value < 0 ? `(${brl.format(Math.abs(value))})` : value ? brl.format(value) : "—";
-  return <td className={`p-2 text-right tabular-nums ${strong ? "font-semibold" : ""}`}>{texto}</td>;
-}
+export function DiarioJulho(){const[busca,setBusca]=useState("");const linhas=useMemo(()=>[...filtroLancamentos(busca,"")].sort((a,b)=>a.data.localeCompare(b.data)||a.id.localeCompare(b.id)),[busca]);return <div className="grid gap-5"><Header titulo="Diário contábil - Nitaplast 07/2026" descricao="Livro Diário da competência 07/2026. Cada partida mantém débito, crédito, documento, histórico, centro de custo e fonte."/><div className="grid gap-3 sm:grid-cols-3"><Metric label="Partidas" value={linhas.length} money={false}/><Metric label="Total Débitos" value={totalDebitosJulhoFinal}/><Metric label="Total Créditos" value={totalCreditosJulhoFinal}/></div><Card><CardHeader><div className="relative"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground"/><Input className="pl-9" value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar no Diário"/></div></CardHeader><CardContent className="overflow-x-auto"><TabelaLancamentos linhas={linhas}/></CardContent></Card><PendenciaFonte/></div>}
+
+export function LancamentosJulho(){const[busca,setBusca]=useState("");const linhas=useMemo(()=>filtroLancamentos(busca,""),[busca]);const csv=()=>exportar("Lancamentos_Nitaplast_07-2026.csv",[["ID","Data","Origem","Débito","Crédito","Histórico","Documento","CC","Centro de Custo","Valor","Status","Fonte"],...linhas.map(x=>[x.id,x.data,x.origem,x.debito,x.credito,x.historico,x.documento,x.cc,x.centroCusto,String(x.valor),x.status,x.fonte])]);return <div className="grid gap-5"><Header titulo="Lançamentos contábeis - Nitaplast 07/2026" descricao="Partidas que formam o Razão, Balancete e DRE de julho. Nenhuma abertura gerencial é lançada no Razão." acoes={<Button variant="outline" size="sm" onClick={csv}><Download className="mr-2 size-4"/>Exportar CSV</Button>}/><div className="grid gap-3 sm:grid-cols-4"><Metric label="Lançamentos" value={lancamentosIntegradosJulhoFinal.length} money={false}/><Metric label="Débitos" value={totalDebitosJulhoFinal}/><Metric label="Créditos" value={totalCreditosJulhoFinal}/><Metric label="Em revisão" value={pendenciasJulhoFinal.length} money={false}/></div><Card><CardHeader><div className="relative"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground"/><Input className="pl-9" value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar lançamento, conta, documento ou fonte"/></div></CardHeader><CardContent className="overflow-x-auto"><TabelaLancamentos linhas={linhas}/></CardContent></Card><PendenciaFonte/></div>}
+
+function TabelaLancamentos({linhas}:{linhas:typeof lancamentosIntegradosJulhoFinal}){return <table className="w-full min-w-[1450px] text-xs"><thead><tr className="border-b bg-muted text-left"><th className="p-2">Data</th><th className="p-2">ID / Origem</th><th className="p-2">Débito</th><th className="p-2">Crédito</th><th className="p-2">Histórico / Documento</th><th className="p-2">CC</th><th className="p-2 text-right">Valor</th><th className="p-2">Status</th></tr></thead><tbody>{linhas.map(x=><tr key={x.id} className="border-b align-top"><td className="p-2 whitespace-nowrap">{x.data}</td><td className="p-2"><p className="font-mono font-medium">{x.id}</p><p className="text-[10px] text-muted-foreground">{x.origem}</p></td><td className="p-2"><p className="font-mono">{x.debitoCodigo}</p><p>{x.debito.replace(`${x.debitoCodigo} - `,"")}</p></td><td className="p-2"><p className="font-mono">{x.creditoCodigo}</p><p>{x.credito.replace(`${x.creditoCodigo} - `,"")}</p></td><td className="p-2 max-w-[420px]"><p>{x.historico}</p><p className="text-[10px] text-muted-foreground">{x.documento} · {x.fonte}</p></td><td className="p-2"><span className="font-mono">{x.cc}</span><br/>{x.centroCusto}</td><td className="p-2 text-right font-semibold tabular-nums">{brl.format(x.valor)}</td><td className="p-2">{x.status==="validado"?<span className="inline-flex items-center gap-1 text-emerald-700"><CheckCircle2 className="size-4"/>Validado</span>:<span className="inline-flex items-center gap-1 text-amber-700"><CircleAlert className="size-4"/>Revisar</span>}</td></tr>)}</tbody></table>}
+
+function PendenciaFonte(){return <Card className="border-amber-400/50 bg-amber-50/40"><CardContent className="pt-5"><div className="flex items-start gap-3"><CircleAlert className="mt-0.5 size-5 text-amber-700"/><div><p className="font-semibold">Itens sem fonte documental de julho localizada no pacote</p><p className="mt-1 text-sm text-muted-foreground">A escrituração já incorpora bancos, aplicações e rendimentos documentados, impostos a recuperar/recolher, PIS/COFINS, ICMS/IPI, compras, centro de custo, matriz/filial e fechamento de estoques. Permanecem sem lançamento somente <strong>Folha/provisões de 07/2026</strong> e <strong>Depreciação de 07/2026</strong>, porque os arquivos localizados são de junho. JCP e variação cambial continuam fora por decisão operacional. Não foi copiado valor de junho para fabricar julho.</p><p className="mt-2 text-xs text-muted-foreground">Pendências analíticas existentes no próprio material continuam em revisão, sem conta genérica de encaixe. Valor bancário em revisão: {brl.format(resumoFechamentoJulhoFinal.pendenciasBancariasValor)}.</p></div></div></CardContent></Card>}
