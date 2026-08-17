@@ -9,6 +9,10 @@ import {
   type CategoriaDespesaJunho,
 } from "@/data/nitaplast-fechamento-despesas-junho";
 import { calcularCreditosFederaisDespesas } from "@/data/nitaplast-fechamento-creditos-federais-junho";
+import {
+  conciliacaoPisGerencialJunho,
+  conciliacaoCofinsGerencialJunho,
+} from "@/data/nitaplast-dre-detalhada-v4";
 import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
@@ -60,18 +64,67 @@ function detalhes(grupo: GrupoDreBalancete, contas: ContaResultadoJunho[]): Linh
 
 /**
  * O subtotal de deduções usa débito BRUTO dos impostos sobre vendas.
- * As linhas de detalhe usam o mesmo critério para a soma visual fechar.
+ * PIS/COFINS possuem uma única apuração consolidada no Razão/Balancete.
+ * Aqui o consolidado é apenas segregado gerencialmente entre Matriz e Filial;
+ * as parcelas substituem a linha consolidada na apresentação e NÃO geram
+ * nenhum lançamento contábil adicional.
  */
 function detalhesDeducoes(contas: ContaResultadoJunho[]): LinhaReport[] {
-  return contas.map((conta) => ({
-    id: `deducoes-${conta.codigo}`,
-    descricao: `${conta.codigo} · ${conta.descricao}`,
-    valor: conta.classificacao.startsWith("4.1.03.005")
-      ? -arred(conta.debitos)
-      : conta.resultado,
-    nivel: 1,
-    tipo: "detalhe",
-  }));
+  const linhas: LinhaReport[] = [];
+
+  for (const conta of contas) {
+    if (conta.codigo === "2829") {
+      linhas.push(
+        {
+          id: "deducoes-pis-matriz",
+          descricao: "2829 · PIS sobre vendas — Matriz",
+          valor: -arred(conciliacaoPisGerencialJunho.matrizGerencial.debitoSobreVendas),
+          nivel: 1,
+          tipo: "detalhe",
+        },
+        {
+          id: "deducoes-pis-filial",
+          descricao: "2829 · PIS sobre vendas — Filial",
+          valor: -arred(conciliacaoPisGerencialJunho.filialGerencial.debitoSobreVendas),
+          nivel: 1,
+          tipo: "detalhe",
+        },
+      );
+      continue;
+    }
+
+    if (conta.codigo === "2830") {
+      linhas.push(
+        {
+          id: "deducoes-cofins-matriz",
+          descricao: "2830 · COFINS sobre vendas — Matriz",
+          valor: -arred(conciliacaoCofinsGerencialJunho.matrizGerencial.debitoSobreVendas),
+          nivel: 1,
+          tipo: "detalhe",
+        },
+        {
+          id: "deducoes-cofins-filial",
+          descricao: "2830 · COFINS sobre vendas — Filial",
+          valor: -arred(conciliacaoCofinsGerencialJunho.filialGerencial.debitoSobreVendas),
+          nivel: 1,
+          tipo: "detalhe",
+        },
+      );
+      continue;
+    }
+
+    linhas.push({
+      id: `deducoes-${conta.codigo}`,
+      descricao: `${conta.codigo} · ${conta.descricao}`,
+      valor: conta.classificacao.startsWith("4.1.03.005")
+        ? -arred(conta.debitos)
+        : conta.resultado,
+      nivel: 1,
+      tipo: "detalhe",
+    });
+  }
+
+  return linhas;
 }
 
 function DreReportPage() {
