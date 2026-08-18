@@ -2,7 +2,13 @@ import { useMemo } from "react";
 import { Download, FileSpreadsheet, Printer } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { calcularDreJulhoFinal, type ComposicaoResultadoJulho } from "@/data/nitaplast-dre-julho-final";
+import {
+  calcularDreJulhoFinal,
+  ehCustoDreJulho,
+  ehDespesaFinanceiraDreJulho,
+  ehDespesaOperacionalDreJulho,
+  type ComposicaoResultadoJulho,
+} from "@/data/nitaplast-dre-julho-final";
 import { receitaFiscalJulho } from "@/data/nitaplast-fechamento-julho";
 import { lancamentosIntegradosJulhoFinal } from "@/data/nitaplast-razao-julho-final-v2";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
@@ -43,20 +49,11 @@ export function DreJulhoReport() {
     ));
   }
 
-  const grupos = useMemo(() => {
-    const custos = composicao.filter((item) => item.classificacao.startsWith("4.2") || item.classificacao.startsWith("5.1") || item.classificacao.startsWith("5.3"));
-    const financeira = composicao.filter((item) => item.classificacao.startsWith("5.8"));
-    const despesas = composicao.filter((item) => item.classificacao.startsWith("5.") && !item.classificacao.startsWith("5.1") && !item.classificacao.startsWith("5.3") && !item.classificacao.startsWith("5.8"));
-    return {
-      custos,
-      financeira,
-      despesas,
-      producao: despesas.filter((item) => ccProd.has(item.cc)),
-      comerciais: despesas.filter((item) => ccCom.has(item.cc)),
-      administrativas: despesas.filter((item) => ccAdm.has(item.cc)),
-      outras: despesas.filter((item) => !ccProd.has(item.cc) && !ccCom.has(item.cc) && !ccAdm.has(item.cc)),
-    };
-  }, [composicao]);
+  const baseGrupos = useMemo(() => ({
+    custos: composicao.filter(ehCustoDreJulho),
+    financeira: composicao.filter(ehDespesaFinanceiraDreJulho),
+    despesas: composicao.filter(ehDespesaOperacionalDreJulho),
+  }), [composicao]);
 
   const lancamentosNplog = useMemo(
     () => razaoAjustado.filter((linha) => linha.documento?.startsWith("11.02.003")),
@@ -66,16 +63,26 @@ export function DreJulhoReport() {
   const nplogCreditos = arred(lancamentosNplog.reduce((total, linha) => total + (linha.creditoCodigo === "25938" ? linha.valor : 0), 0));
   const valorNplog = arred(nplogDebitos - nplogCreditos);
 
-  const custosSemNplog = useMemo<Item[]>(() => grupos.custos
+  const despesasSemNplog = useMemo<Item[]>(() => baseGrupos.despesas
     .map((item) => {
       if (item.conta !== "25938" || item.cc !== "304" || Math.abs(valorNplog) < 0.005) return item;
       const debitos = arred(item.debitos - nplogDebitos);
       const creditos = arred(item.creditos - nplogCreditos);
       return { ...item, debitos, creditos, valor: arred(debitos - creditos) };
     })
-    .filter((item) => Math.abs(item.valor) >= 0.005), [grupos.custos, nplogCreditos, nplogDebitos, valorNplog]);
+    .filter((item) => Math.abs(item.valor) >= 0.005), [baseGrupos.despesas, nplogCreditos, nplogDebitos, valorNplog]);
 
-  const custosDre = soma(custosSemNplog);
+  const grupos = useMemo(() => ({
+    custos: baseGrupos.custos,
+    financeira: baseGrupos.financeira,
+    despesas: despesasSemNplog,
+    producao: despesasSemNplog.filter((item) => ccProd.has(item.cc)),
+    comerciais: despesasSemNplog.filter((item) => ccCom.has(item.cc)),
+    administrativas: despesasSemNplog.filter((item) => ccAdm.has(item.cc)),
+    outras: despesasSemNplog.filter((item) => !ccProd.has(item.cc) && !ccCom.has(item.cc) && !ccAdm.has(item.cc)),
+  }), [baseGrupos.custos, baseGrupos.financeira, despesasSemNplog]);
+
+  const custosDre = soma(grupos.custos);
   const despesasOperacionais = arred(soma(grupos.despesas) + valorNplog);
   const despesasFinanceiras = soma(grupos.financeira);
   const receitaLiquida = dre.receitaLiquida;
@@ -102,7 +109,7 @@ export function DreJulhoReport() {
 
     { id: "receita-liquida", descricao: "Receita Operacional Líquida", valor: receitaLiquida, nivel: 0, tipo: "subtotal" },
     { id: "custos", descricao: "(-) Custos / CPV / CMV", valor: -custosDre, nivel: 0, tipo: "grupo" },
-    ...custosSemNplog.map<LinhaReport>((item) => ({
+    ...grupos.custos.map<LinhaReport>((item) => ({
       id: `custo-${item.id}`,
       descricao: `${item.conta} · ${item.descricao}${item.centroCusto ? ` — ${item.centroCusto}` : ""}`,
       valor: -item.valor,
@@ -124,7 +131,6 @@ export function DreJulhoReport() {
     { id: "resultado", descricao: "LUCRO / PREJUÍZO LÍQUIDO", valor: resultadoFinal, nivel: 0, tipo: "resultado" },
   ], [
     custosDre,
-    custosSemNplog,
     despesasFinanceiras,
     despesasOperacionais,
     dre,
