@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Info } from "lucide-react";
 import { calcularBalanceteJulho } from "@/data/nitaplast-balancete-julho-engine";
 import { calcularDreJulhoFinal } from "@/data/nitaplast-dre-julho-final";
 import { lancamentosIntegradosJulhoFinal } from "@/data/nitaplast-razao-julho-final-v2";
@@ -18,34 +18,49 @@ export function DreJulhoDiagnostico() {
   const mov4760 = balancete.movimentoPorConta.get("4760")?.movimento ?? 0;
   const resultadoAntesAlienacao = arred(dre.resultado - dre.resultadoAlienacaoImobilizado);
   const alienacoesNoRazao = razao.filter((x) => x.id.startsWith("JUL-ALIEN-")).length;
+  const componentesCpv = arred(dre.outrosCustosMatriz + dre.outrosCustosFilial);
   const conciliado =
     Math.abs(-mov4736 - dre.receitaAlienacaoImobilizado) < 0.01 &&
     Math.abs(mov4760 - dre.custoAlienacaoImobilizado) < 0.01 &&
     Math.abs(arred(dre.receitaAlienacaoImobilizado - dre.custoAlienacaoImobilizado) - dre.resultadoAlienacaoImobilizado) < 0.01;
 
   return (
-    <div className="mb-4 rounded-lg border border-emerald-500/40 bg-emerald-50/50 p-4 text-sm">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <p className="font-semibold text-emerald-950">Conciliação do resultado de julho</p>
-          <p className="text-xs text-emerald-900/70">Razão → Balancete → DRE. Este quadro usa exatamente a mesma base da DRE abaixo.</p>
+    <div className="mb-4 grid gap-3">
+      <div className="rounded-lg border border-emerald-500/40 bg-emerald-50/50 p-4 text-sm">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="font-semibold text-emerald-950">Alienação de Imobilizado — 07/2026</p>
+            <p className="text-xs text-emerald-900/70">Mini Cooper + Corolla já reconhecidos no Razão, Balancete e DRE. A receita de alienação fica fora da Receita Operacional Bruta.</p>
+          </div>
+          <span className="inline-flex items-center gap-1 font-medium text-emerald-700">
+            <CheckCircle2 className="size-4" /> {conciliado ? "Alienação conciliada" : "Revisar conciliação"}
+          </span>
         </div>
-        <span className="inline-flex items-center gap-1 font-medium text-emerald-700">
-          <CheckCircle2 className="size-4" /> {conciliado ? "Alienação conciliada" : "Revisar conciliação"}
-        </span>
+
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <div><p className="text-xs text-muted-foreground">Resultado antes da alienação</p><p className="font-semibold tabular-nums">{brl.format(resultadoAntesAlienacao)}</p></div>
+          <div><p className="text-xs font-medium text-emerald-900">(+) Receita de Alienação de Imobilizado</p><p className="font-semibold tabular-nums text-emerald-800">{brl.format(dre.receitaAlienacaoImobilizado)}</p><p className="text-[11px] text-muted-foreground">Conta 4736</p></div>
+          <div><p className="text-xs font-medium">(-) Custo dos Ativos Vendidos</p><p className="font-semibold tabular-nums">{brl.format(dre.custoAlienacaoImobilizado)}</p><p className="text-[11px] text-muted-foreground">Conta 4760</p></div>
+          <div><p className="text-xs font-medium text-emerald-900">(=) Ganho na Alienação</p><p className="font-semibold tabular-nums text-emerald-700">{brl.format(dre.resultadoAlienacaoImobilizado)}</p><p className="text-[11px] text-muted-foreground">Mini + Corolla</p></div>
+          <div><p className="text-xs font-medium text-emerald-900">Resultado final 07/2026</p><p className="font-semibold tabular-nums text-emerald-700">{brl.format(dre.resultado)}</p></div>
+        </div>
+
+        <p className="mt-3 text-xs text-muted-foreground">
+          Razão contém {alienacoesNoRazao} partidas de alienação. Balancete: conta 4736 = {brl.format(mov4736)} de movimento assinado; conta 4760 = {brl.format(mov4760)}. O transformador de R$ 60.000,00 permanece fora do resultado até definição do valor residual.
+        </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <div><p className="text-xs text-muted-foreground">Resultado antes da alienação</p><p className="font-semibold tabular-nums">{brl.format(resultadoAntesAlienacao)}</p></div>
-        <div><p className="text-xs text-muted-foreground">4736 · Receita alienação</p><p className="font-semibold tabular-nums">{brl.format(dre.receitaAlienacaoImobilizado)}</p></div>
-        <div><p className="text-xs text-muted-foreground">4760 · Custo residual</p><p className="font-semibold tabular-nums">{brl.format(dre.custoAlienacaoImobilizado)}</p></div>
-        <div><p className="text-xs text-muted-foreground">Ganho Mini + Corolla</p><p className="font-semibold tabular-nums text-emerald-700">+ {brl.format(dre.resultadoAlienacaoImobilizado)}</p></div>
-        <div><p className="text-xs text-muted-foreground">Resultado final 07/2026</p><p className="font-semibold tabular-nums text-emerald-700">{brl.format(dre.resultado)}</p></div>
+      <div className="rounded-lg border border-blue-500/30 bg-blue-50/40 p-4 text-sm">
+        <div className="flex gap-3">
+          <Info className="mt-0.5 size-5 shrink-0 text-blue-700" />
+          <div>
+            <p className="font-semibold text-blue-950">“Outros custos” não é uma nova conta nem uma despesa extra</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Na DRE de julho, esse residual representa somente <strong>compras, fretes e demais componentes do CPV</strong> além do fechamento/variação de estoque. Total dessa composição: <strong>{brl.format(componentesCpv)}</strong>. O valor já está dentro do CPV e não é somado novamente ao resultado.
+            </p>
+          </div>
+        </div>
       </div>
-
-      <p className="mt-3 text-xs text-muted-foreground">
-        Razão contém {alienacoesNoRazao} partidas de alienação. Balancete: conta 4736 = {brl.format(mov4736)} de movimento assinado; conta 4760 = {brl.format(mov4760)}. O transformador de R$ 60.000,00 permanece fora do resultado até definição do valor residual.
-      </p>
     </div>
   );
 }
