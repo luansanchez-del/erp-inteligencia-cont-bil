@@ -3,7 +3,13 @@ import { CheckCircle2, ChevronDown, ChevronRight, CircleAlert, FileSpreadsheet }
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { calcularDreJulhoFinal, type ComposicaoResultadoJulho } from "@/data/nitaplast-dre-julho-final";
+import {
+  calcularDreJulhoFinal,
+  ehCustoDreJulho,
+  ehDespesaFinanceiraDreJulho,
+  ehDespesaOperacionalDreJulho,
+  type ComposicaoResultadoJulho,
+} from "@/data/nitaplast-dre-julho-final";
 import { receitaFiscalJulho } from "@/data/nitaplast-fechamento-julho";
 import { lancamentosIntegradosJulhoFinal } from "@/data/nitaplast-razao-julho-final-v2";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
@@ -39,22 +45,17 @@ export function DreJulhoCompleta() {
     return arred(razaoAjustado.reduce((s, x) => s + (x.debitoCodigo === c ? x.valor : 0) - (x.creditoCodigo === c ? x.valor : 0), 0));
   }
 
-  const grupos = useMemo(() => {
-    const custos = composicao.filter((x) => x.classificacao.startsWith("4.2") || x.classificacao.startsWith("5.1") || x.classificacao.startsWith("5.3"));
-    const financeira = composicao.filter((x) => x.classificacao.startsWith("5.8"));
-    const despesas = composicao.filter((x) => x.classificacao.startsWith("5.") && !x.classificacao.startsWith("5.1") && !x.classificacao.startsWith("5.3") && !x.classificacao.startsWith("5.8"));
-    const prod = despesas.filter((x) => ccProd.has(x.cc));
-    const comerciais = despesas.filter((x) => ccCom.has(x.cc));
-    const adm = despesas.filter((x) => ccAdm.has(x.cc));
-    const outras = despesas.filter((x) => !ccProd.has(x.cc) && !ccCom.has(x.cc) && !ccAdm.has(x.cc));
-    return { custos, financeira, despesas, prod, comerciais, adm, outras };
-  }, [composicao]);
+  const baseGrupos = useMemo(() => ({
+    custos: composicao.filter(ehCustoDreJulho),
+    financeira: composicao.filter(ehDespesaFinanceiraDreJulho),
+    despesas: composicao.filter(ehDespesaOperacionalDreJulho),
+  }), [composicao]);
 
   /*
-   * O gerencial 11.02.003 é a despesa de Transporte e Logística / NPLog.
-   * A conta 25938 pertence formalmente ao grupo 5.3 no plano e, sem esta abertura,
-   * a DRE acabava exibindo o valor dentro de Custos. Aqui fazemos somente a
-   * apresentação gerencial correta: o Razão permanece intacto e o resultado não muda.
+   * NPLog usa a mesma conta contábil 25938 de outros serviços de terceiros do CC 304.
+   * Para a apresentação gerencial, separamos somente os documentos 11.02.003 da NPLog
+   * e preservamos o restante de 25938/304 dentro de Despesas Administrativas.
+   * Nenhuma partida é criada ou alterada por esta abertura.
    */
   const lancamentosNplog = useMemo(
     () => razaoAjustado.filter((x) => x.documento?.startsWith("11.02.003")),
@@ -83,16 +84,24 @@ export function DreJulhoCompleta() {
     }];
   }, [lancamentosNplog, nplogCreditos, nplogDebitos, valorNplog]);
 
-  const custosSemNplog = useMemo<Item[]>(() => grupos.custos
+  const despesasSemNplog = useMemo<Item[]>(() => baseGrupos.despesas
     .map((x) => {
       if (x.conta !== "25938" || x.cc !== "304" || Math.abs(valorNplog) < 0.005) return x;
       const debitos = arred(x.debitos - nplogDebitos);
       const creditos = arred(x.creditos - nplogCreditos);
       return { ...x, debitos, creditos, valor: arred(debitos - creditos) };
     })
-    .filter((x) => Math.abs(x.valor) >= 0.005), [grupos.custos, nplogCreditos, nplogDebitos, valorNplog]);
+    .filter((x) => Math.abs(x.valor) >= 0.005), [baseGrupos.despesas, nplogCreditos, nplogDebitos, valorNplog]);
 
-  const custosDre = soma(custosSemNplog);
+  const grupos = useMemo(() => {
+    const prod = despesasSemNplog.filter((x) => ccProd.has(x.cc));
+    const comerciais = despesasSemNplog.filter((x) => ccCom.has(x.cc));
+    const adm = despesasSemNplog.filter((x) => ccAdm.has(x.cc));
+    const outras = despesasSemNplog.filter((x) => !ccProd.has(x.cc) && !ccCom.has(x.cc) && !ccAdm.has(x.cc));
+    return { custos: baseGrupos.custos, financeira: baseGrupos.financeira, despesas: despesasSemNplog, prod, comerciais, adm, outras };
+  }, [baseGrupos.custos, baseGrupos.financeira, despesasSemNplog]);
+
+  const custosDre = soma(grupos.custos);
   const despesasComNplog = [...grupos.despesas, ...composicaoNplog];
   const lucroBruto = arred(dre.receitaLiquida - custosDre);
   const despOper = soma(despesasComNplog);
@@ -116,15 +125,15 @@ export function DreJulhoCompleta() {
     { id: "cof", descricao: "COFINS", nivel: 1, valor: dre.cofins, criterio: "Movimento líquido da conta de COFINS sobre vendas." },
     { id: "st", descricao: "ICMS ST", nivel: 1, valor: dre.icmsSt, criterio: "Apuração ICMS-ST de julho." },
     { id: "rl", descricao: "(=) Receita Operacional Líquida", nivel: 0, valor: dre.receitaLiquida, criterio: "Receita bruta menos deduções formadas no Razão." },
-    { id: "custos", descricao: "(-) Custos / CPV / CMV", nivel: 0, valor: custosDre, criterio: "Custos resultantes das compras, créditos fiscais e fechamento físico de estoques da matriz e filial. O gerencial NPLog é apresentado separadamente em Despesas Operacionais.", composicao: custosSemNplog },
-    { id: "lb", descricao: "(=) LUCRO BRUTO", nivel: 0, valor: lucroBruto, criterio: "Receita líquida menos custos contabilizados, com NPLog apresentado na linha gerencial própria." },
-    { id: "despesas", descricao: "(-) Despesas Operacionais", nivel: 0, valor: despOper, criterio: "Despesas operacionais líquidas contabilizadas por documento/centro de custo, incluindo folha, provisões reais, depreciação e NPLog.", composicao: despesasComNplog },
-    { id: "nplog", descricao: "Despesa com Serviço - NPLog", nivel: 1, valor: valorNplog, criterio: "Gerencial 11.02.003 — Serviços de Transporte e Logística, CC 304 ADM GERAL. Reapresentação gerencial sem criar ou alterar lançamento no Razão.", composicao: composicaoNplog },
-    { id: "prod", descricao: "Despesas Produção", nivel: 1, valor: soma(grupos.prod), criterio: "Centros produtivos.", composicao: grupos.prod },
-    { id: "com", descricao: "Despesas Comerciais", nivel: 1, valor: soma(grupos.comerciais), criterio: "Centros comerciais, inclusive filial SP.", composicao: grupos.comerciais },
-    { id: "adm", descricao: "Despesas Administrativas", nivel: 1, valor: soma(grupos.adm), criterio: "Centros administrativos, exceto NPLog que possui linha própria.", composicao: grupos.adm },
-    { id: "outras", descricao: "Outras Despesas Operacionais", nivel: 1, valor: soma(grupos.outras), criterio: "Contas de resultado operacionais fora dos grupos anteriores.", composicao: grupos.outras },
-    { id: "ro", descricao: "(=) Resultado Operacional", nivel: 0, valor: resultadoOper, criterio: "Lucro bruto menos despesas operacionais contabilizadas. A mudança de apresentação do NPLog não altera o resultado." },
+    { id: "custos", descricao: "(-) Custos / CPV / CMV", nivel: 0, valor: custosDre, criterio: "Somente contas de custo efetivo: CPV/CMV, compras/fretes de matéria-prima e industrialização. Contas 5.3 de serviços e despesas não são mais classificadas como custo apenas pelo prefixo do plano.", composicao: grupos.custos },
+    { id: "lb", descricao: "(=) LUCRO BRUTO", nivel: 0, valor: lucroBruto, criterio: "Receita líquida menos os custos efetivamente identificados pela natureza contábil/documental." },
+    { id: "despesas", descricao: "(-) Despesas Operacionais", nivel: 0, valor: despOper, criterio: "Despesas operacionais líquidas contabilizadas por documento e centro de custo, incluindo as contas 5.3 que têm natureza de despesa, folha, provisões reais, depreciação e NPLog.", composicao: despesasComNplog },
+    { id: "nplog", descricao: "Despesa com Serviço - NPLog", nivel: 1, valor: valorNplog, criterio: "Gerencial 11.02.003 — Serviços de Transporte e Logística, CC 304 ADM GERAL. Separação gerencial dentro da conta 25938, sem criar ou alterar lançamento no Razão.", composicao: composicaoNplog },
+    { id: "prod", descricao: "Despesas Produção", nivel: 1, valor: soma(grupos.prod), criterio: "Despesas operacionais dos centros produtivos que não compõem CPV/CMV.", composicao: grupos.prod },
+    { id: "com", descricao: "Despesas Comerciais", nivel: 1, valor: soma(grupos.comerciais), criterio: "Despesas operacionais dos centros comerciais, inclusive filial SP.", composicao: grupos.comerciais },
+    { id: "adm", descricao: "Despesas Administrativas", nivel: 1, valor: soma(grupos.adm), criterio: "Centros 301 a 306. Inclui serviços administrativos da conta 25938/5.3; NPLog permanece em linha própria.", composicao: grupos.adm },
+    { id: "outras", descricao: "Outras Despesas Operacionais", nivel: 1, valor: soma(grupos.outras), criterio: "Despesas operacionais fora dos centros produtivos, comerciais e administrativos definidos.", composicao: grupos.outras },
+    { id: "ro", descricao: "(=) Resultado Operacional", nivel: 0, valor: resultadoOper, criterio: "Lucro bruto menos despesas operacionais contabilizadas. A classificação gerencial por centro de custo não cria fatos contábeis." },
     { id: "fin-d", descricao: "(-) Despesas Financeiras", nivel: 0, valor: despFin, criterio: "Tarifas, IOF, JCP, variação cambial passiva e demais despesas financeiras efetivamente contabilizadas.", composicao: grupos.financeira },
     { id: "fin-r", descricao: "(+) Receitas Financeiras", nivel: 0, valor: dre.receitasFinanceiras, criterio: "Rendimentos, juros ativos e variações cambiais ativas efetivamente contabilizados no Razão." },
     { id: "resultado", descricao: "(=) RESULTADO CONTÁBIL 07/2026", nivel: 0, valor: dre.resultado, criterio: "Resultado calculado exclusivamente pelo Razão final de julho, já incluindo lançamentos/reclassificações manuais da competência." },
@@ -171,7 +180,7 @@ export function DreJulhoCompleta() {
     </div>
 
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Resumo label="Receita Operacional Bruta" value={dre.receitaBruta}/><Resumo label="Deduções da Receita Bruta" value={dre.deducoes}/><Resumo label="Resultado Contábil" value={dre.resultado} success={dre.resultado >= 0}/><Resumo label="Partidas no Razão" value={razaoAjustado.length} money={false}/></div>
-    <Card className="border-blue-500/30 bg-blue-500/5"><CardContent className="pt-6"><p className="font-medium">Regra única aplicada à DRE inteira</p><p className="mt-1 text-sm text-muted-foreground">Documentos → Lançamentos → Razão → Balancete → DRE. O saldo de 30/06 é referência de cálculo, nunca lançamento de abertura. Matriz e filial permanecem identificadas na origem e consolidadas no relatório.</p></CardContent></Card>
+    <Card className="border-blue-500/30 bg-blue-500/5"><CardContent className="pt-6"><p className="font-medium">Regra única aplicada à DRE inteira</p><p className="mt-1 text-sm text-muted-foreground">Documentos → Lançamentos → Razão → Balancete → DRE. O saldo de 30/06 é referência de cálculo, nunca lançamento de abertura. Custos são classificados pela natureza do fato; despesas operacionais são abertas por centro de custo.</p></CardContent></Card>
     <Card><CardHeader><div className="flex flex-wrap items-start justify-between gap-3"><div><CardTitle className="text-base">DRE 07/2026 — detalhamento completo</CardTitle><CardDescription>Abra as linhas para conferir o critério e a composição contábil por conta e centro de custo.</CardDescription></div><Badge variant="outline">07/2026 · FECHADO COM PENDÊNCIAS</Badge></div></CardHeader><CardContent className="overflow-x-auto"><table className="w-full min-w-[1080px] text-sm"><thead><tr className="border-b bg-muted text-left text-xs"><th className="p-2">Linha da DRE</th><th className="p-2 text-right">DRE Calculada 07/2026</th><th className="p-2 text-center">Status</th></tr></thead><tbody>{linhas.map((x) => { const exp = x.nivel === 0 || (x.composicao?.length ?? 0) > 0; const aberta = abertas.has(x.id); const destaque = ["rl", "lb", "ro", "resultado"].includes(x.id); return [<tr key={x.id} className={`border-b ${x.nivel === 0 ? "bg-slate-100/70 font-semibold" : ""} ${destaque ? "border-y-2" : ""}`}><td className="p-2" style={{ paddingLeft: 8 + x.nivel * 22 }}>{exp ? <button className="inline-flex items-center gap-1.5 hover:text-primary" onClick={() => alternar(x.id)}>{aberta ? <ChevronDown className="size-4"/> : <ChevronRight className="size-4"/>}{x.descricao}</button> : <span className="pl-[22px]">{x.descricao}</span>}</td><td className="p-2 text-right font-semibold tabular-nums">{brl.format(x.valor)}</td><td className="p-2 text-center"><span className="inline-flex items-center gap-1 text-emerald-700"><CheckCircle2 className="size-4"/>Calculado</span></td></tr>, exp && aberta ? <tr key={`${x.id}-d`} className="border-b bg-slate-50/70"><td colSpan={3} className="p-4 pl-8"><p className="text-xs text-muted-foreground"><strong className="text-foreground">Critério:</strong> {x.criterio}</p>{x.composicao?.length ? <Composicao itens={x.composicao}/> : null}</td></tr> : null]; })}</tbody></table></CardContent></Card>
     <Card className="border-amber-400/50 bg-amber-50/40"><CardContent className="pt-5"><div className="flex gap-3"><CircleAlert className="mt-0.5 size-5 text-amber-700"/><div><p className="font-semibold">Pendências não bloqueantes</p><p className="mt-1 text-sm text-muted-foreground">Folha, provisões reais, depreciação, JCP e as variações cambiais já comprovadas estão contabilizados. Permanecem em conciliação somente fatos sem evidência suficiente, inclusive contratos de câmbio ainda sem amarração do valor contábil de origem e valores mantidos na Conta Transitória.</p></div></div></CardContent></Card>
   </div>;
