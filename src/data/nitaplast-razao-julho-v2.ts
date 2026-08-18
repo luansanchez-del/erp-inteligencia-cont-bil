@@ -144,6 +144,7 @@ export const lancamentosAtivoImobilizadoJulho: LancamentoIntegrado[] = [
 export const movimentosFiscaisSemEfeitoResultadoJulho = [
   { gerencial:"11.01.002", cc:"102", cfop:"1902", documento:"29 documentos", valor:1087030.41, tratamento:"retorno de industrialização - excluído de custo e fornecedor" },
   { gerencial:"11.01.002", cc:"102", cfop:"1949", documento:"NF 78161", valor:12728.30, tratamento:"entrada sem valor comercial - excluída de custo e fornecedor" },
+  { gerencial:"15.02.015", cc:"102", cfop:"retorno", documento:"17 documentos", valor:9668.11, tratamento:"retorno - excluído de custo e fornecedor, sem lançamento de compensação" },
   { gerencial:"11.01.002", cc:"102", cfop:"2557", documento:"1 documento", valor:750.00, tratamento:"transferência - excluída de custo e fornecedor" },
   { gerencial:"11.02.001", cc:"101", cfop:"1903", documento:"24 documentos", valor:123388.52, tratamento:"retorno de mercadoria não aplicada - excluído de custo e fornecedor" },
   { gerencial:"11.02.001", cc:"503", cfop:"1916", documento:"NF 1532", valor:9080.00, tratamento:"retorno de conserto - excluído de custo e fornecedor" },
