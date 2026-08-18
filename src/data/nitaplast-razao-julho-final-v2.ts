@@ -27,12 +27,18 @@ export const totalDebitosJulhoFinal = arred(lancamentosIntegradosJulhoFinal.redu
 export const totalCreditosJulhoFinal = totalDebitosJulhoFinal;
 export const pendenciasJulhoFinal = lancamentosIntegradosJulhoFinal.filter((x) => x.status === "revisar");
 
+const itensMantidosForaPorDecisao = resumoBaseJulhoFinal.itensMantidosForaPorDecisao.filter(
+  (item) => item !== "JCP" && item !== "Variação cambial",
+);
+
 export const resumoFechamentoJulhoFinal = {
   ...resumoBaseJulhoFinal,
   lancamentos: lancamentosIntegradosJulhoFinal.length,
   debitos: totalDebitosJulhoFinal,
   creditos: totalCreditosJulhoFinal,
   pendencias: pendenciasJulhoFinal.length,
+  itensMantidosForaPorDecisao,
+  criterioContabil: "Fato/documento real → Razão → Balancete → DRE. Nenhum valor é criado a partir da DRE para fechar diferença.",
   financeiro: resumoFinanceiroJulho,
   folhaJulho: {
     ...resumoBaseJulhoFinal.folhaJulho,
@@ -58,3 +64,8 @@ export const resumoFechamentoJulhoFinal = {
 
 const provisaoEstimadaRestante = lancamentosIntegradosJulhoFinal.find((x) => ehProvisaoEstimadaJulho(x.id));
 if (provisaoEstimadaRestante) throw new Error(`Provisão estimada indevida permaneceu no Razão de julho: ${provisaoEstimadaRestante.id}`);
+
+const cambioSemRastreio = lancamentosIntegradosJulhoFinal.find(
+  (x) => x.origem.startsWith("CONTRATO DE CÂMBIO") && (!x.documento || !x.fonte),
+);
+if (cambioSemRastreio) throw new Error(`Lançamento cambial sem documento/fonte: ${cambioSemRastreio.id}`);
