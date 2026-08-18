@@ -11,7 +11,9 @@ const nomeConta = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(cod
  * - base em 30/06/2026: capital social integralizado + reservas de lucros +
  *   lucros/prejuízos acumulados, considerando as contas redutoras do mesmo grupo;
  * - reserva de capital genérica (25239) fica fora até comprovar enquadramento legal;
- * - TJLP julho/2026 = 0,7617%.
+ * - TJLP julho/2026 = 0,7617%;
+ * - somente o JCP bruto entra no Razão nesta etapa;
+ * - IRRF permanece apenas como informação/pendência tributária, sem partida contábil.
  *
  * Câmbio:
  * - contrato por si só não cria receita/despesa cambial;
@@ -45,27 +47,9 @@ export const lancamentosJcpJulho: LancamentoIntegrado[] = [
     centroCusto: "DESPESAS FINANCEIRAS",
     valor: jcpBrutoJulho,
     status: "validado",
-    observacao: `Base elegível em 30/06 R$ ${baseJcpJulho.toFixed(2)}; TJLP 0,7617%; JCP bruto R$ ${jcpBrutoJulho.toFixed(2)}. Reserva de capital genérica 25239 excluída por prudência até comprovar natureza legal.`,
+    observacao: `Base elegível em 30/06 R$ ${baseJcpJulho.toFixed(2)}; TJLP 0,7617%; JCP bruto R$ ${jcpBrutoJulho.toFixed(2)}. Reserva de capital genérica 25239 excluída por prudência. IRRF não contabilizado nesta etapa.`,
     rastreio: "derivado",
-    fonte: "Balancete 30/06/2026 + Lei 9.249/1995 art. 9 + TJLP Receita Federal 07/2026",
-  },
-  {
-    id: "JUL-JCP-IRRF",
-    data: "31/07/2026",
-    origem: "CÁLCULO JCP 07/2026",
-    debitoCodigo: "25253",
-    debito: nomeConta("25253"),
-    creditoCodigo: "1546",
-    credito: nomeConta("1546"),
-    historico: "IRRF sobre JCP creditado em julho/2026",
-    documento: "JCP 07/2026",
-    cc: "902",
-    centroCusto: "DESPESAS FINANCEIRAS",
-    valor: irrfJcpJulho,
-    status: "validado",
-    observacao: `IRRF 17,5% sobre JCP bruto de R$ ${jcpBrutoJulho.toFixed(2)}; líquido a pagar ao beneficiário R$ ${jcpLiquidoJulho.toFixed(2)}.`,
-    rastreio: "derivado",
-    fonte: "Lei 9.249/1995 art. 9, §2º, redação vigente em 2026",
+    fonte: "Balancete 30/06/2026 + cálculo JCP 07/2026",
   },
 ];
 
@@ -133,7 +117,9 @@ export const resumoFinanceiroJulho = {
   baseJcpJulho,
   taxaTjlpJulho,
   jcpBrutoJulho,
+  jcpContabilizadoJulho: jcpBrutoJulho,
   irrfJcpJulho,
+  irrfContabilizadoJulho: 0,
   jcpLiquidoJulho,
   variacaoCambialAtivaValidada: cambioJhs93556.variacaoAtiva,
   contratosCambioPendentes: contratosCambioJulhoPendentes.length,
