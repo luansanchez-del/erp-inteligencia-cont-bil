@@ -43,6 +43,9 @@ export function ehDespesaOperacionalDreJulho(x:Pick<ComposicaoResultadoJulho,"co
 
 export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   function mov(codigo:string){return arred(base.reduce((s,l)=>s+(l.debitoCodigo===codigo?l.valor:0)-(l.creditoCodigo===codigo?l.valor:0),0));}
+  function movExcluindo(codigo:string,idsExcluidos:Set<string>){
+    return arred(base.reduce((s,l)=>idsExcluidos.has(l.id)?s:s+(l.debitoCodigo===codigo?l.valor:0)-(l.creditoCodigo===codigo?l.valor:0),0));
+  }
   function movEstabelecimento(codigo:string,estabelecimento:EstabelecimentoResultado){
     return arred(base.reduce((s,l)=>{
       const est=estabelecimentoResultadoNitaplast(l,codigo);
@@ -58,8 +61,14 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   const receitaBruta=arred(receitaProducao+receitaRevenda);
   const devolucoes=Math.max(0,mov("25943"));
   const icmsMatriz=Math.max(0,mov("2827"));
-  const icmsFilial=Math.max(0,mov("25054"));
+
+  // A apuração da Filial contém R$ 3.894,05 de ICMS de transferências internas.
+  // O fato permanece no Razão, mas não é dedução de receita de venda na DRE.
+  const idsIcmsTransferenciaInterna=new Set(["JUL-ICMS-F-DEB-TRANSF"]);
+  const icmsFilial=Math.max(0,movExcluindo("25054",idsIcmsTransferenciaInterna));
+  const icmsFilialTransferenciasInternas=Math.max(0,arred(base.filter(l=>idsIcmsTransferenciaInterna.has(l.id)).reduce((s,l)=>s+(l.debitoCodigo==="25054"?l.valor:0)-(l.creditoCodigo==="25054"?l.valor:0),0)));
   const icms=arred(icmsMatriz+icmsFilial);
+
   const icmsSt=Math.max(0,mov("2832"));
   const ipiMatriz=Math.max(0,mov("2826"));
   const ipiFilial=Math.max(0,mov("25055"));
@@ -104,12 +113,20 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   const custos=arred(custosItens.reduce((s,x)=>s+x.valor,0));
   const custosMatriz=arred(custosItens.filter(x=>x.estabelecimento==="Matriz").reduce((s,x)=>s+x.valor,0));
   const custosFilial=arred(custosItens.filter(x=>x.estabelecimento==="Filial SP").reduce((s,x)=>s+x.valor,0));
-  const cpvMatriz=arred(custosItens.filter(x=>x.conta==="25944").reduce((s,x)=>s+x.valor,0));
-  const cpvFilial=arred(custosItens.filter(x=>x.conta==="25945").reduce((s,x)=>s+x.valor,0));
-  const outrosCustosMatriz=arred(custosMatriz-cpvMatriz);
-  const outrosCustosFilial=arred(custosFilial-cpvFilial);
-  if(Math.abs(arred(custosMatriz+custosFilial)-custos)>0.01)throw new Error("Custos Matriz + Filial não conciliam com o Razão.");
-  if(Math.abs(arred(cpvMatriz+cpvFilial+outrosCustosMatriz+outrosCustosFilial)-custos)>0.01)throw new Error("Abertura CPV Matriz/Filial não concilia com custos.");
+
+  // CPV é o custo completo formado no Razão. 25944/25945 são somente a parcela
+  // de fechamento/variação de estoque, não o CPV inteiro.
+  const fechamentoEstoqueMatriz=arred(custosItens.filter(x=>x.conta==="25944").reduce((s,x)=>s+x.valor,0));
+  const fechamentoEstoqueFilial=arred(custosItens.filter(x=>x.conta==="25945").reduce((s,x)=>s+x.valor,0));
+  const cpvMatriz=custosMatriz;
+  const cpvFilial=custosFilial;
+  // Compatibilidade com componentes já existentes: agora significam componentes
+  // do CPV além do fechamento de estoque, e não "custos fora do CPV".
+  const outrosCustosMatriz=arred(cpvMatriz-fechamentoEstoqueMatriz);
+  const outrosCustosFilial=arred(cpvFilial-fechamentoEstoqueFilial);
+  if(Math.abs(arred(cpvMatriz+cpvFilial)-custos)>0.01)throw new Error("CPV Matriz + Filial não concilia com os custos do Razão.");
+  if(Math.abs(arred(fechamentoEstoqueMatriz+outrosCustosMatriz)-cpvMatriz)>0.01)throw new Error("Composição do CPV Matriz não concilia.");
+  if(Math.abs(arred(fechamentoEstoqueFilial+outrosCustosFilial)-cpvFilial)>0.01)throw new Error("Composição do CPV Filial não concilia.");
 
   const despesasOperacionaisItens=composicao.filter(ehDespesaOperacionalDreJulho);
   const despesasOperacionais=arred(despesasOperacionaisItens.reduce((s,x)=>s+x.valor,0));
@@ -132,23 +149,34 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   const receitaAplicacoes=receitasFinanceirasPorConta["25098"]??0;
   const jcp=Math.max(0,mov("25107"));
   const variacaoCambialPassiva=Math.max(0,mov("25109"));
+
+  // Alienações fiscais de julho somam R$ 306.900,00, mas não entram no resultado
+  // enquanto não houver baixa do custo original e da depreciação acumulada dos bens.
+  const vendasAtivoImobilizadoFiscais=306900;
   const resultado=arred(receitaLiquida-custos-despesas+receitasFinanceiras);
 
   const somaReceitasAbertas=arred(Object.values(receitasFinanceirasPorConta).reduce((s,v)=>s+v,0));
   if(Math.abs(somaReceitasAbertas-receitasFinanceiras)>0.01)throw new Error(`Abertura de receitas financeiras não concilia: ${somaReceitasAbertas.toFixed(2)} / ${receitasFinanceiras.toFixed(2)}`);
   if(Math.abs(arred(receitasFinanceirasMatriz+receitasFinanceirasFilial)-receitasFinanceiras)>0.01)throw new Error("Receitas financeiras Matriz + Filial não conciliam.");
 
+  const pendenciasBloqueantes=[
+    "Alienação de imobilizado de R$ 306.900,00 (NF 93495, 93569 e 93639): aguardando identificação do custo original e da depreciação acumulada dos 3 bens. Não reconhecer ganho/perda por aproximação.",
+  ];
+
   return {composicao,dre:{
     receitaProducao,receitaRevenda,receitaBruta,
     devolucoes,devolucoesMatriz,devolucoesFilial,
-    icms,icmsMatriz,icmsFilial,icmsSt,icmsStMatriz,icmsStFilial,
+    icms,icmsMatriz,icmsFilial,icmsFilialTransferenciasInternas,icmsSt,icmsStMatriz,icmsStFilial,
     ipi,ipiMatriz,ipiFilial,pis,pisMatriz,pisFilial,cofins,cofinsMatriz,cofinsFilial,deducoes,receitaLiquida,
-    custosReconhecidos:custos,custosMatriz,custosFilial,cpvMatriz,cpvFilial,outrosCustosMatriz,outrosCustosFilial,
+    custosReconhecidos:custos,custosMatriz,custosFilial,cpvMatriz,cpvFilial,fechamentoEstoqueMatriz,fechamentoEstoqueFilial,outrosCustosMatriz,outrosCustosFilial,
     despesasReconhecidas:despesas,despesasOperacionais,despesasOperacionaisMatriz,despesasOperacionaisFilial,
     despesasFinanceiras,despesasFinanceirasMatriz,despesasFinanceirasFilial,
     receitasFinanceiras,receitasFinanceirasMatriz,receitasFinanceirasFilial,receitasFinanceirasPorConta,
-    jurosAtivos,variacaoCambialAtiva,receitaAplicacoes,jcp,variacaoCambialPassiva,resultado,
+    jurosAtivos,variacaoCambialAtiva,receitaAplicacoes,jcp,variacaoCambialPassiva,
+    vendasAtivoImobilizadoFiscais,resultado,
     status:"fechado_com_pendencias" as const,fechadoEm:"18/08/2026",
+    possuiPendenciaBloqueante:true as const,
+    pendenciasBloqueantes,
     criterioFechamento:"Razão → Balancete → DRE. Toda linha de resultado é segregada por estabelecimento somente quando o próprio lançamento fornece evidência; nenhuma abertura gerencial cria fato contábil.",
     resumoRazao:resumoFechamentoJulhoFinal,financeiro:resumoFinanceiroJulho,
     pendenciasNaoBloqueantes:[`R$ ${resumoFinanceiroJulho.valorEntradasSemCcPendente.toFixed(2)} de entradas ainda sem distribuição completa por centro de custo`,`${resumoFinanceiroJulho.contratosCambioPendentes} contrato(s) de câmbio aguardando amarração do valor contábil de origem`],
@@ -165,9 +193,14 @@ if(servicosAdmClassificadosComoCusto)throw new Error(`Serviço administrativo cl
 const industrializacaoClassificadaComoCusto=composicaoResultadoJulhoFinal.find(x=>x.conta==="25937"&&ehCustoDreJulho(x));
 if(industrializacaoClassificadaComoCusto)throw new Error(`Industrialização permaneceu indevidamente em Custos/CPV/CMV: ${industrializacaoClassificadaComoCusto.id}`);
 const cpvFilialEmMatriz=composicaoResultadoJulhoFinal.find(x=>x.conta==="25945"&&x.estabelecimento!=="Filial SP");
-if(cpvFilialEmMatriz)throw new Error(`CPV Filial sem identificação de estabelecimento: ${cpvFilialEmMatriz.id}`);
+if(cpvFilialEmMatriz)throw new Error(`Fechamento de estoque da Filial sem identificação de estabelecimento: ${cpvFilialEmMatriz.id}`);
 
 const vcaRazao=arred(-lancamentosIntegradosJulhoFinal.reduce((s,l)=>s+(l.debitoCodigo==="25096"?l.valor:0)-(l.creditoCodigo==="25096"?l.valor:0),0));
 if(Math.abs(Math.max(0,vcaRazao)-dreJulhoFinal.variacaoCambialAtiva)>0.01)throw new Error("Variação cambial ativa do Razão não conciliou com a DRE.");
 const vcpRazao=arred(lancamentosIntegradosJulhoFinal.reduce((s,l)=>s+(l.debitoCodigo==="25109"?l.valor:0)-(l.creditoCodigo==="25109"?l.valor:0),0));
 if(Math.abs(Math.max(0,vcpRazao)-dreJulhoFinal.variacaoCambialPassiva)>0.01)throw new Error("Variação cambial passiva do Razão não conciliou com a DRE.");
+
+if(Math.abs(dreJulhoFinal.icmsFilial-80710.71)>0.01)throw new Error(`ICMS Filial na DRE deveria ser R$ 80.710,71 após excluir transferências internas e líquido da devolução; encontrado ${dreJulhoFinal.icmsFilial.toFixed(2)}.`);
+if(Math.abs(dreJulhoFinal.icmsFilialTransferenciasInternas-3894.05)>0.01)throw new Error("ICMS de transferências internas da Filial não conciliou em R$ 3.894,05.");
+if(Math.abs(dreJulhoFinal.pisMatriz-43082.61)>0.01||Math.abs(dreJulhoFinal.pisFilial-6737.69)>0.01)throw new Error("Abertura PIS Matriz/Filial não conciliou ao EFD Contribuições.");
+if(Math.abs(dreJulhoFinal.cofinsMatriz-198442.47)>0.01||Math.abs(dreJulhoFinal.cofinsFilial-31034.21)>0.01)throw new Error("Abertura COFINS Matriz/Filial não conciliou ao EFD Contribuições.");
