@@ -187,6 +187,16 @@ export const valorEntradasPendentesMapeamentoJulho = arred(pendenciasEntrada.red
 export const valorEntradaDuplicadaFiscalJulho = arred(duplicadoFiscal.reduce((t, l) => t + l.valor, 0));
 
 const valorMovimentosSemEfeitoResultadoAuditados = arred(movimentosFiscaisSemEfeitoResultadoJulho.reduce((t, l) => t + l.valor, 0));
+
+/**
+ * Retornos de julho excluídos de custo e de fornecedor, sem lançamento de compensação:
+ * R$ 1.100.508,71 (11.01.002 / CC 102) + R$ 9.668,11 (15.02.015 / CC 102) = R$ 1.110.176,82.
+ */
+export const totalRetornosExcluidosJulho = 1110176.82;
+export const composicaoRetornosExcluidosJulho = [
+  { gerencial: "11.01.002", cc: "102", valor: 1100508.71 },
+  { gerencial: "15.02.015", cc: "102", valor: 9668.11 },
+] as const;
 const valorMovimentosCorrigidosNestaVarredura = 1234608.58;
 const valorImobilizadoReclassificado = arred(lancamentosAtivoImobilizadoJulho.reduce((t, l) => t + l.valor, 0));
 const valorDespesasAntesOmitidasIntegradas = 8935.70;
