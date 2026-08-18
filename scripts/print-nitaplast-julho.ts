@@ -3,6 +3,7 @@ import { resumoFechamentoJulhoFinal } from "../src/data/nitaplast-razao-julho-fi
 import { resumoFinanceiroJulho } from "../src/data/nitaplast-financeiro-julho.ts";
 import { resumoProvisoesJulhoReais } from "../src/data/nitaplast-provisoes-julho-reais.ts";
 
+// Verificador de consistência: executa o mesmo motor usado pela DRE do ERP.
 console.log("NITAPLAST_JULHO_RESULTADO=" + JSON.stringify({
   dre: dreJulhoFinal,
   razao: resumoFechamentoJulhoFinal,
