@@ -19,6 +19,7 @@ type MapeamentoEntrada = { debitoCodigo: string; creditoCodigo: string; status: 
  */
 function sanearEntradaCcJulho(linha: EntradaCcAgregadaJulho): EntradaCcAgregadaJulho | null {
   if (linha.gerencial === "11.01.002" && linha.cc === "102") return null;
+  if (linha.gerencial === "15.02.015" && linha.cc === "102") return null;
   if (linha.gerencial === "11.02.001" && linha.cc === "101") return null;
   if (linha.gerencial === "11.02.001" && linha.cc === "503") return { ...linha, valor: 973.00, documentos: 1 };
   if (linha.gerencial === "11.01.003" && linha.cc === "102") return { ...linha, valor: 1225461.78, documentos: 9 };
@@ -143,6 +144,7 @@ export const lancamentosAtivoImobilizadoJulho: LancamentoIntegrado[] = [
 export const movimentosFiscaisSemEfeitoResultadoJulho = [
   { gerencial:"11.01.002", cc:"102", cfop:"1902", documento:"29 documentos", valor:1087030.41, tratamento:"retorno de industrialização - excluído de custo e fornecedor" },
   { gerencial:"11.01.002", cc:"102", cfop:"1949", documento:"NF 78161", valor:12728.30, tratamento:"entrada sem valor comercial - excluída de custo e fornecedor" },
+  { gerencial:"15.02.015", cc:"102", cfop:"retorno", documento:"17 documentos", valor:9668.11, tratamento:"retorno - excluído de custo e fornecedor, sem lançamento de compensação" },
   { gerencial:"11.01.002", cc:"102", cfop:"2557", documento:"1 documento", valor:750.00, tratamento:"transferência - excluída de custo e fornecedor" },
   { gerencial:"11.02.001", cc:"101", cfop:"1903", documento:"24 documentos", valor:123388.52, tratamento:"retorno de mercadoria não aplicada - excluído de custo e fornecedor" },
   { gerencial:"11.02.001", cc:"503", cfop:"1916", documento:"NF 1532", valor:9080.00, tratamento:"retorno de conserto - excluído de custo e fornecedor" },
@@ -185,6 +187,16 @@ export const valorEntradasPendentesMapeamentoJulho = arred(pendenciasEntrada.red
 export const valorEntradaDuplicadaFiscalJulho = arred(duplicadoFiscal.reduce((t, l) => t + l.valor, 0));
 
 const valorMovimentosSemEfeitoResultadoAuditados = arred(movimentosFiscaisSemEfeitoResultadoJulho.reduce((t, l) => t + l.valor, 0));
+
+/**
+ * Retornos de julho excluídos de custo e de fornecedor, sem lançamento de compensação:
+ * R$ 1.100.508,71 (11.01.002 / CC 102) + R$ 9.668,11 (15.02.015 / CC 102) = R$ 1.110.176,82.
+ */
+export const totalRetornosExcluidosJulho = 1110176.82;
+export const composicaoRetornosExcluidosJulho = [
+  { gerencial: "11.01.002", cc: "102", valor: 1100508.71 },
+  { gerencial: "15.02.015", cc: "102", valor: 9668.11 },
+] as const;
 const valorMovimentosCorrigidosNestaVarredura = 1234608.58;
 const valorImobilizadoReclassificado = arred(lancamentosAtivoImobilizadoJulho.reduce((t, l) => t + l.valor, 0));
 const valorDespesasAntesOmitidasIntegradas = 8935.70;

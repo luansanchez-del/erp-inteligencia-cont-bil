@@ -37,6 +37,7 @@ import { Route as ContabilRateiosRouteImport } from './routes/contabil.rateios'
 import { Route as ContabilRazaoRouteImport } from './routes/contabil.razao'
 import { Route as EmpresasIndexRouteImport } from './routes/empresas.index'
 import { Route as EmpresasIdRouteImport } from './routes/empresas.$id'
+import { Route as RelatoriosBalanceteCentroCustoRouteImport } from './routes/relatorios.balancete-centro-custo'
 import { Route as RelatoriosDiarioRouteImport } from './routes/relatorios.diario'
 import { Route as RelatoriosDreRouteImport } from './routes/relatorios.dre'
 import { Route as RelatoriosRazaoRouteImport } from './routes/relatorios.razao'
@@ -183,6 +184,12 @@ const EmpresasIdRoute = EmpresasIdRouteImport.update({
   path: '/empresas/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RelatoriosBalanceteCentroCustoRoute =
+  RelatoriosBalanceteCentroCustoRouteImport.update({
+    id: '/balancete-centro-custo',
+    path: '/balancete-centro-custo',
+    getParentRoute: () => RelatoriosRoute,
+  } as any)
 const RelatoriosDiarioRoute = RelatoriosDiarioRouteImport.update({
   id: '/diario',
   path: '/diario',
@@ -227,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/contabil/rateios': typeof ContabilRateiosRoute
   '/contabil/razao': typeof ContabilRazaoRoute
   '/empresas/$id': typeof EmpresasIdRoute
+  '/relatorios/balancete-centro-custo': typeof RelatoriosBalanceteCentroCustoRoute
   '/relatorios/diario': typeof RelatoriosDiarioRoute
   '/relatorios/dre': typeof RelatoriosDreRoute
   '/relatorios/razao': typeof RelatoriosRazaoRoute
@@ -260,6 +268,7 @@ export interface FileRoutesByTo {
   '/contabil/rateios': typeof ContabilRateiosRoute
   '/contabil/razao': typeof ContabilRazaoRoute
   '/empresas/$id': typeof EmpresasIdRoute
+  '/relatorios/balancete-centro-custo': typeof RelatoriosBalanceteCentroCustoRoute
   '/relatorios/diario': typeof RelatoriosDiarioRoute
   '/relatorios/dre': typeof RelatoriosDreRoute
   '/relatorios/razao': typeof RelatoriosRazaoRoute
@@ -294,6 +303,7 @@ export interface FileRoutesById {
   '/contabil/rateios': typeof ContabilRateiosRoute
   '/contabil/razao': typeof ContabilRazaoRoute
   '/empresas/$id': typeof EmpresasIdRoute
+  '/relatorios/balancete-centro-custo': typeof RelatoriosBalanceteCentroCustoRoute
   '/relatorios/diario': typeof RelatoriosDiarioRoute
   '/relatorios/dre': typeof RelatoriosDreRoute
   '/relatorios/razao': typeof RelatoriosRazaoRoute
@@ -329,6 +339,7 @@ export interface FileRouteTypes {
     | '/contabil/rateios'
     | '/contabil/razao'
     | '/empresas/$id'
+    | '/relatorios/balancete-centro-custo'
     | '/relatorios/diario'
     | '/relatorios/dre'
     | '/relatorios/razao'
@@ -362,6 +373,7 @@ export interface FileRouteTypes {
     | '/contabil/rateios'
     | '/contabil/razao'
     | '/empresas/$id'
+    | '/relatorios/balancete-centro-custo'
     | '/relatorios/diario'
     | '/relatorios/dre'
     | '/relatorios/razao'
@@ -395,6 +407,7 @@ export interface FileRouteTypes {
     | '/contabil/rateios'
     | '/contabil/razao'
     | '/empresas/$id'
+    | '/relatorios/balancete-centro-custo'
     | '/relatorios/diario'
     | '/relatorios/dre'
     | '/relatorios/razao'
@@ -630,6 +643,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EmpresasIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/relatorios/balancete-centro-custo': {
+      id: '/relatorios/balancete-centro-custo'
+      path: '/balancete-centro-custo'
+      fullPath: '/relatorios/balancete-centro-custo'
+      preLoaderRoute: typeof RelatoriosBalanceteCentroCustoRouteImport
+      parentRoute: typeof RelatoriosRoute
+    }
     '/relatorios/diario': {
       id: '/relatorios/diario'
       path: '/diario'
@@ -655,12 +675,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface RelatoriosRouteChildren {
+  RelatoriosBalanceteCentroCustoRoute: typeof RelatoriosBalanceteCentroCustoRoute
   RelatoriosDiarioRoute: typeof RelatoriosDiarioRoute
   RelatoriosDreRoute: typeof RelatoriosDreRoute
   RelatoriosRazaoRoute: typeof RelatoriosRazaoRoute
 }
 
 const RelatoriosRouteChildren: RelatoriosRouteChildren = {
+  RelatoriosBalanceteCentroCustoRoute: RelatoriosBalanceteCentroCustoRoute,
   RelatoriosDiarioRoute: RelatoriosDiarioRoute,
   RelatoriosDreRoute: RelatoriosDreRoute,
   RelatoriosRazaoRoute: RelatoriosRazaoRoute,
