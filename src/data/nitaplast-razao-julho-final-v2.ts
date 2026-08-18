@@ -49,6 +49,12 @@ const lancamentosBaseSaneados = lancamentosBaseJulhoFinal
     return x;
   });
 
+const pendenciasBancariasValorAjustado = arred(
+  lancamentosBaseSaneados
+    .filter((x) => x.origem.startsWith("MOVIMENTAÇÃO BANCÁRIA") && x.status === "revisar")
+    .reduce((total, x) => total + x.valor, 0),
+);
+
 export const lancamentosIntegradosJulhoFinal: LancamentoIntegrado[] = [
   ...lancamentosBaseSaneados,
   ...lancamentosProvisoesJulhoReais,
@@ -69,6 +75,7 @@ export const resumoFechamentoJulhoFinal = {
   debitos: totalDebitosJulhoFinal,
   creditos: totalCreditosJulhoFinal,
   pendencias: pendenciasJulhoFinal.length,
+  pendenciasBancariasValor: pendenciasBancariasValorAjustado,
   itensMantidosForaPorDecisao,
   criterioContabil: "Fato/documento real → Razão → Balancete → DRE. Nenhum valor é criado a partir da DRE para fechar diferença.",
   financeiro: resumoFinanceiroJulho,
