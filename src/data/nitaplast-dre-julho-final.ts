@@ -53,12 +53,27 @@ const jcp=Math.max(0,mov("25107"));
 const variacaoCambialPassiva=Math.max(0,mov("25109"));
 const resultado=arred(receitaLiquida-custos-despesas+receitasFinanceiras);
 
+/**
+ * Resultado fechado com a documentação disponível em 17/08/2026.
+ * Pendências de conciliação não geram estimativa nem lançamento de ajuste.
+ * Se documentação posterior comprovar novo fato contábil de julho, o fato entra no
+ * Razão e o Balancete/DRE são recalculados pela cadeia normal.
+ */
 export const dreJulhoFinal={
   receitaProducao,receitaRevenda,receitaBruta,devolucoes,icms,icmsSt,ipi,pis,cofins,deducoes,receitaLiquida,
   custosReconhecidos:custos,despesasReconhecidas:despesas,
   receitasFinanceiras,jurosAtivos,variacaoCambialAtiva,receitaAplicacoes,jcp,variacaoCambialPassiva,resultado,
-  status:"em_fechamento" as const,
+  status:"fechado_com_pendencias" as const,
+  fechadoEm:"17/08/2026",
+  criterioFechamento:"Documentos reais → Razão → Balancete → DRE. Resultado fechado com os fatos comprovados disponíveis; pendência documental não vira estimativa.",
   resumoRazao:resumoFechamentoJulhoFinal,
   financeiro:resumoFinanceiroJulho,
-  itensSemFonte:[`R$ ${resumoFinanceiroJulho.valorEntradasSemCcPendente.toFixed(2)} de entradas ainda sem centro de custo/documento suficiente`,`Contratos de câmbio ainda pendentes de valor contábil de origem: ${resumoFinanceiroJulho.contratosCambioPendentes}`]
+  pendenciasNaoBloqueantes:[
+    `R$ ${resumoFinanceiroJulho.valorEntradasSemCcPendente.toFixed(2)} de entradas ainda sem distribuição completa por centro de custo`,
+    `${resumoFinanceiroJulho.contratosCambioPendentes} contrato(s) de câmbio aguardando amarração do valor contábil de origem`,
+  ],
+  itensSemFonte:[
+    `R$ ${resumoFinanceiroJulho.valorEntradasSemCcPendente.toFixed(2)} de entradas ainda sem centro de custo/documento suficiente`,
+    `Contratos de câmbio ainda pendentes de valor contábil de origem: ${resumoFinanceiroJulho.contratosCambioPendentes}`,
+  ],
 } as const;
