@@ -10,7 +10,7 @@ import {
   resumoBancoJulho,
   type GrupoBancoJulho,
   type StatusGrupoBanco,
-} from "@/data/nitaplast-inteligencia-bancaria-julho";
+} from "@/data/nitaplast-inteligencia-bancaria-julho-ajustada";
 
 export const Route = createFileRoute("/contabil/conciliacao")({
   head: () => ({
@@ -114,7 +114,7 @@ function Conciliacao() {
         <ResumoCard icone={<CheckCircle2 className="size-4" />} label="Conciliados na origem" valor={resumoBancoJulho.conciliadosNaOrigem.toLocaleString("pt-BR")} detalhe="Já marcados na base recebida" />
         <ResumoCard icone={<BrainCircuit className="size-4" />} label="Identificados pelo motor" valor={resumoBancoJulho.identificados.toLocaleString("pt-BR")} detalhe="Contrapartida/tratamento reconhecidos" />
         <ResumoCard icone={<FileCheck2 className="size-4" />} label="Financeiro manual" valor={resumoBancoJulho.resultadoFinanceiroManual.toLocaleString("pt-BR")} detalhe="Juros/rendimentos mantidos fora" />
-        <ResumoCard icone={<ShieldAlert className="size-4" />} label="Revisão real" valor={resumoBancoJulho.revisar.toLocaleString("pt-BR")} detalhe="Sem evidência suficiente" destaque />
+        <ResumoCard icone={<ShieldAlert className="size-4" />} label="Revisão real" valor={resumoBancoJulho.revisar.toLocaleString("pt-BR")} detalhe="Sem evidência suficiente" destaque={resumoBancoJulho.revisar > 0} />
       </div>
 
       <div className="rounded-lg border bg-card p-4">
@@ -155,9 +155,9 @@ function Conciliacao() {
         vazio="Nenhum grupo bancário para este filtro."
       />
 
-      <div className="rounded-lg border border-amber-300 bg-amber-50/60 p-4 text-xs text-amber-950">
-        <p className="font-semibold">Pendência bancária efetiva</p>
-        <p className="mt-1">Existe somente 1 movimento sem identificação segura nesta base: débito de transferência interbancária do Itaú em 06/07/2026, R$ 25.000,00. Ele permanece para revisão e não gera conta de encaixe.</p>
+      <div className="rounded-lg border border-emerald-300 bg-emerald-50/60 p-4 text-xs text-emerald-950">
+        <p className="font-semibold">Movimento de R$ 25.000,00 identificado</p>
+        <p className="mt-1">O débito do Itaú antes mantido como conciliação pendente foi identificado como <strong>Adiantamento de Lucros — MVS</strong>. A movimentação financeira mantém as transferências e estornos como evidência; a classificação é patrimonial e não afeta a DRE.</p>
       </div>
     </PageShell>
   );
