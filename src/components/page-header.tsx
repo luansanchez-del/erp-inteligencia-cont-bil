@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import { useErp } from "@/context/erp-context";
 import {
   BalanceteJulhoAjustavel,
@@ -9,6 +9,8 @@ import { RazaoJulhoLivro } from "@/components/nitaplast/razao-julho-livro";
 import { DreJulhoCompleta } from "@/components/nitaplast/dre-julho-completa";
 import { FechamentoNitaplastJulho } from "@/components/nitaplast/fechamento-julho";
 import { FechamentoBancarioJulho } from "@/components/nitaplast/fechamento-bancario-julho";
+
+const DreJulhoReport = lazy(() => import("@/components/nitaplast/dre-julho-report").then((modulo) => ({ default: modulo.DreJulhoReport })));
 
 const rotasSensiveisCompetencia = [
   "/contabil/balancete",
@@ -60,7 +62,7 @@ export function PageShell({ children }: { children: ReactNode }) {
   const relatorioImprimivel = rotasRelatorioImpressao.some((rota) => pathname === rota || pathname.startsWith(`${rota}/`));
   const dreJulhoImpressao = relatorioImprimivel
     && competencia.id === "2026-07"
-    && (pathname === "/contabil/dre" || pathname === "/relatorios/dre");
+    && pathname === "/contabil/dre";
 
   let conteudo: ReactNode = children;
 
@@ -199,7 +201,8 @@ function telaContabilJulho(pathname: string) {
   if (pathname === "/contabil/balancete") return <BalanceteJulhoAjustavel />;
   if (pathname === "/contabil/razao" || pathname === "/relatorios/razao") return <RazaoJulhoLivro />;
   if (pathname === "/contabil/diario" || pathname === "/relatorios/diario") return <DiarioJulhoAjustavel />;
-  if (pathname === "/contabil/dre" || pathname === "/relatorios/dre") return <DreJulhoCompleta />;
+  if (pathname === "/contabil/dre") return <DreJulhoCompleta />;
+  if (pathname === "/relatorios/dre") return <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Carregando DRE Report 07/2026...</div>}><DreJulhoReport /></Suspense>;
   if (pathname === "/contabil/lancamentos") return <LancamentosJulhoAjustavel />;
   if (pathname === "/contabil/fechamento") return <><FechamentoBancarioJulho /><FechamentoNitaplastJulho /></>;
   return null;
