@@ -102,7 +102,6 @@ export function DreJulhoCompleta() {
   if (Math.abs(resultadoCalculado - dre.resultado) > 0.01) throw new Error(`DRE visual divergiu do Razão: ${resultadoCalculado.toFixed(2)} / ${dre.resultado.toFixed(2)}`);
 
   const ajustesManuais = razaoAjustado.filter((x) => x.origem === "LANÇAMENTO MANUAL" || x.origem.startsWith("ALTERAÇÃO MANUAL") || x.origem.startsWith("EXCLUSÃO MANUAL")).length;
-  const despesasMatrizComAbertura = [...grupos.classificaveis, ...grupos.industrializacao, ...grupos.depreciacao, ...grupos.creditosFederais, ...composicaoNplog];
 
   const linhas: Linha[] = [
     { id: "receita", descricao: "(+) Receita Operacional Bruta", nivel: 0, valor: dre.receitaBruta, criterio: "Razão → Balancete → DRE. Receita aberta por estabelecimento." },
@@ -133,16 +132,17 @@ export function DreJulhoCompleta() {
     { id: "cust-f", descricao: "Outros Custos — Filial SP", nivel: 1, valor: dre.outrosCustosFilial, criterio: "Demais custos identificados como Filial SP.", composicao: grupos.outrosCustosFilial },
     { id: "lb", descricao: "(=) LUCRO BRUTO", nivel: 0, valor: lucroBruto, criterio: "Receita líquida menos custos do Razão." },
 
-    { id: "despesas", descricao: "(-) Despesas Operacionais", nivel: 0, valor: despesasOperacionais, criterio: "Matriz e Filial SP segregadas sem alterar o total consolidado.", composicao: [...despesasMatrizComAbertura, ...grupos.filial] },
-    { id: "industr", descricao: "Despesas com Industrialização — Matriz", nivel: 1, valor: soma(grupos.industrializacao), criterio: "Conta 25937 da Matriz; filial, se existir, fica na linha própria da Filial.", composicao: grupos.industrializacao },
-    { id: "nplog", descricao: "Despesa com Serviço - NPLog — Matriz", nivel: 1, valor: valorNplog, criterio: "11.02.003 / CC 304 Matriz.", composicao: composicaoNplog },
-    { id: "prod", descricao: "Despesas Produção — Matriz", nivel: 1, valor: soma(grupos.prod), criterio: "Centros produtivos da Matriz.", composicao: grupos.prod },
-    { id: "com", descricao: "Despesas Comerciais — Matriz", nivel: 1, valor: soma(grupos.comerciais), criterio: "Somente Matriz; itens da Filial SP são retirados deste subtotal.", composicao: grupos.comerciais },
-    { id: "adm", descricao: "Despesas Administrativas — Matriz", nivel: 1, valor: soma(grupos.adm), criterio: "Centros administrativos da Matriz; CC 501 é Filial SP.", composicao: grupos.adm },
-    { id: "dep", descricao: "Depreciação e Amortização — Matriz", nivel: 1, valor: soma(grupos.depreciacao), criterio: "Depreciação identificada como Matriz.", composicao: grupos.depreciacao },
-    { id: "cred-fed", descricao: "(-) Créditos PIS/COFINS sobre Custos e Despesas — Matriz", nivel: 1, valor: soma(grupos.creditosFederais), criterio: "Contas 25946/25947 sem rateio de filial por aproximação.", composicao: grupos.creditosFederais },
-    { id: "outras", descricao: "Outras Despesas Operacionais — Matriz", nivel: 1, valor: soma(grupos.outras), criterio: "Outras despesas da Matriz.", composicao: grupos.outras },
-    { id: "filial-desp", descricao: "Despesas Operacionais — Filial SP", nivel: 1, valor: despesasFilial, criterio: "Tudo que o Razão identifica como Filial SP fica separado dos grupos da Matriz.", composicao: grupos.filial },
+    { id: "despesas", descricao: "(-) Despesas Operacionais", nivel: 0, valor: despesasOperacionais, criterio: "Subtotal consolidado. A composição analítica fica segregada nos blocos Matriz e Filial SP." },
+    { id: "desp-matriz-total", descricao: "Despesas Operacionais — Matriz", nivel: 1, valor: despesasMatriz, criterio: "Subtotal exclusivo da Matriz. As linhas abaixo detalham somente fatos identificados como Matriz no Razão." },
+    { id: "industr", descricao: "Despesas com Industrialização — Matriz", nivel: 2, valor: soma(grupos.industrializacao), criterio: "Conta 25937 da Matriz; filial, se existir, fica na linha própria da Filial.", composicao: grupos.industrializacao },
+    { id: "nplog", descricao: "Despesa com Serviço - NPLog — Matriz", nivel: 2, valor: valorNplog, criterio: "11.02.003 / CC 304 Matriz.", composicao: composicaoNplog },
+    { id: "prod", descricao: "Despesas Produção — Matriz", nivel: 2, valor: soma(grupos.prod), criterio: "Centros produtivos da Matriz.", composicao: grupos.prod },
+    { id: "com", descricao: "Despesas Comerciais — Matriz", nivel: 2, valor: soma(grupos.comerciais), criterio: "Somente Matriz; itens da Filial SP são retirados deste subtotal.", composicao: grupos.comerciais },
+    { id: "adm", descricao: "Despesas Administrativas — Matriz", nivel: 2, valor: soma(grupos.adm), criterio: "Centros administrativos da Matriz; CC 501 é Filial SP.", composicao: grupos.adm },
+    { id: "dep", descricao: "Depreciação e Amortização — Matriz", nivel: 2, valor: soma(grupos.depreciacao), criterio: "Depreciação identificada como Matriz.", composicao: grupos.depreciacao },
+    { id: "cred-fed", descricao: "(-) Créditos PIS/COFINS sobre Custos e Despesas — Matriz", nivel: 2, valor: soma(grupos.creditosFederais), criterio: "Contas 25946/25947 sem rateio de filial por aproximação.", composicao: grupos.creditosFederais },
+    { id: "outras", descricao: "Outras Despesas Operacionais — Matriz", nivel: 2, valor: soma(grupos.outras), criterio: "Outras despesas da Matriz.", composicao: grupos.outras },
+    { id: "filial-desp", descricao: "Despesas Operacionais — Filial SP", nivel: 1, valor: despesasFilial, criterio: "Bloco exclusivo da Filial SP. Nenhuma linha deste bloco é repetida no subtotal ou nas categorias da Matriz.", composicao: grupos.filial },
     { id: "ro", descricao: "(=) Resultado Operacional", nivel: 0, valor: resultadoOper, criterio: "Lucro bruto menos despesas operacionais do Razão." },
 
     { id: "fin-d", descricao: "(-) Despesas Financeiras", nivel: 0, valor: despFin, criterio: "Aberta por conta e estabelecimento: juros, tarifas, IOF, descontos, JCP e variação cambial passiva.", composicao: grupos.financeira },
@@ -158,8 +158,8 @@ export function DreJulhoCompleta() {
   function exportarDreExcel() {
     const percentual = (valor: number) => dre.receitaBruta ? valor / dre.receitaBruta : 0;
     const linhasExcel = linhas.flatMap((linha) => [
-      [`${linha.nivel === 1 ? "    " : ""}${linha.descricao}`, linha.valor, percentual(linha.valor)],
-      ...(linha.composicao ?? []).map((item) => [`        ${item.estabelecimento} · ${item.conta} · ${item.descricao} — ${item.cc} ${item.centroCusto}`, item.valor, percentual(item.valor)]),
+      [`${"    ".repeat(Math.max(0, linha.nivel))}${linha.descricao}`, linha.valor, percentual(linha.valor)],
+      ...(linha.composicao ?? []).map((item) => [`            ${item.estabelecimento} · ${item.conta} · ${item.descricao} — ${item.cc} ${item.centroCusto}`, item.valor, percentual(item.valor)]),
     ]);
     exportarExcel({ arquivo: "Nitaplast_DRE_Report_072026.xlsx", aba: "DRE 07-2026", titulo: "NITAPLAST IND E COM DE PLÁSTICOS INDUSTRIAIS LTDA — DEMONSTRAÇÃO DO RESULTADO DO EXERCÍCIO", subtitulo: "Período 01/07/2026 a 31/07/2026 · Razão → Balancete → DRE · Matriz e Filial SP segregadas", colunas: [{ cabecalho: "Descrição", largura: 78 }, { cabecalho: "Valor", largura: 18, tipo: "numero" }, { cabecalho: "% Receita", largura: 14, tipo: "percentual" }], linhas: linhasExcel });
   }
