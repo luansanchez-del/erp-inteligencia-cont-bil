@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { saldosImplantacao } from "@/data/nitaplast-implantacao";
 import type { LancamentoIntegrado } from "@/data/nitaplast-razao-integrado";
+import { gerarLancamentosAjustesPersistidos } from "@/hooks/use-ajustes-lancamentos";
 
 export type LadoReclassificacao = "debito" | "credito";
 
@@ -50,10 +51,11 @@ export function removerReclassificacaoPersistida(id: string) {
 export function gerarLancamentosReclassificacao(
   base: LancamentoIntegrado[],
   reclassificacoes: ReclassificacaoInteligente[],
+  competencia = "2026-06",
 ): LancamentoIntegrado[] {
   const porId = new Map(base.map((linha) => [linha.id, linha]));
 
-  return reclassificacoes.flatMap((item) => {
+  const reclassificados = reclassificacoes.flatMap((item) => {
     const original = porId.get(item.lancamentoId);
     if (!original || original.origem === "RECLASSIFICAÇÃO INTELIGENTE") return [];
 
@@ -82,13 +84,18 @@ export function gerarLancamentosReclassificacao(
       fonte: `Reclassificação inteligente vinculada ao lançamento ${original.id}. Fonte original: ${original.fonte}`,
     } satisfies LancamentoIntegrado];
   });
+
+  const baseComReclassificacoes = [...base, ...reclassificados];
+  const ajustesManuais = gerarLancamentosAjustesPersistidos(baseComReclassificacoes, competencia);
+  return [...reclassificados, ...ajustesManuais];
 }
 
 export function aplicarReclassificacoes(
   base: LancamentoIntegrado[],
   reclassificacoes: ReclassificacaoInteligente[],
+  competencia = "2026-06",
 ) {
-  return [...base, ...gerarLancamentosReclassificacao(base, reclassificacoes)];
+  return [...base, ...gerarLancamentosReclassificacao(base, reclassificacoes, competencia)];
 }
 
 export function useReclassificacoesInteligentes(competencia = "2026-06") {
@@ -128,8 +135,8 @@ export function useReclassificacoesInteligentes(competencia = "2026-06") {
   }, []);
 
   const aplicar = useCallback(
-    (base: LancamentoIntegrado[]) => aplicarReclassificacoes(base, reclassificacoes),
-    [reclassificacoes],
+    (base: LancamentoIntegrado[]) => aplicarReclassificacoes(base, reclassificacoes, competencia),
+    [competencia, reclassificacoes],
   );
 
   return { reclassificacoes, registrar, remover, aplicar };
