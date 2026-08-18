@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -15,6 +16,14 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Topbar } from "@/components/topbar";
+import { PageShell } from "@/components/page-header";
+import {
+  BalanceteJulhoAjustavel,
+  DiarioJulhoAjustavel,
+  LancamentosJulhoAjustavel,
+  RazaoJulhoAjustavel,
+} from "@/components/nitaplast/contabil-julho-ajustavel";
+import { DreJulhoCompleta } from "@/components/nitaplast/dre-julho-completa";
 import { ErpProvider, useErp } from "@/context/erp-context";
 
 function NotFoundComponent() {
@@ -146,6 +155,31 @@ function RootComponent() {
   );
 }
 
+function ConteudoCompetencia() {
+  const { competencia } = useErp();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+
+  if (competencia.id === "2026-07") {
+    if (pathname === "/contabil/razao" || pathname === "/relatorios/razao") {
+      return <PageShell><RazaoJulhoAjustavel /></PageShell>;
+    }
+    if (pathname === "/contabil/balancete") {
+      return <PageShell><BalanceteJulhoAjustavel /></PageShell>;
+    }
+    if (pathname === "/contabil/diario" || pathname === "/relatorios/diario") {
+      return <PageShell><DiarioJulhoAjustavel /></PageShell>;
+    }
+    if (pathname === "/contabil/lancamentos") {
+      return <PageShell><LancamentosJulhoAjustavel /></PageShell>;
+    }
+    if (pathname === "/contabil/dre" || pathname === "/relatorios/dre") {
+      return <PageShell><DreJulhoCompleta /></PageShell>;
+    }
+  }
+
+  return <Outlet />;
+}
+
 function ErpApplication() {
   const { empresa, competencia } = useErp();
   const renderKey = `${empresa.id}:${competencia.id}`;
@@ -161,8 +195,8 @@ function ErpApplication() {
             <Topbar />
           </div>
           <main key={renderKey} className="min-w-0 flex-1 print:w-full print:min-w-0">
-            {/* Ao trocar empresa/competência, remonta a rota para eliminar qualquer estado visual da competência anterior. */}
-            <Outlet />
+            {/* Ao trocar empresa/competência, remonta a visão. Julho usa sua própria camada contábil ajustável; junho permanece congelado nas rotas existentes. */}
+            <ConteudoCompetencia />
           </main>
         </div>
       </div>
