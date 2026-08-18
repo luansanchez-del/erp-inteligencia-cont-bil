@@ -167,8 +167,8 @@
     background: #fff !important;
     color: #000 !important;
     font-size: 9pt !important;
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
+    print-color-adjust: economy;
+    -webkit-print-color-adjust: economy;
   }
 
   main,
@@ -219,6 +219,7 @@
     margin: 0 0 4mm !important;
     padding: 0 0 3mm !important;
     border-bottom: 1.2px solid #111 !important;
+    background: #fff !important;
     color: #000 !important;
     break-after: avoid;
     page-break-after: avoid;
@@ -249,6 +250,39 @@
     margin-top: 1mm !important;
     font-size: 8.5pt !important;
     line-height: 1.2 !important;
+  }
+
+  /*
+   * DOCUMENTO CONTÁBIL IMPRESSO É MONOCROMÁTICO.
+   * Nenhuma cor da interface (azul, verde, âmbar, status, badges ou linhas
+   * sintéticas) pode vazar para o Balancete/Razão/Diário/DRE/Lançamentos.
+   * A hierarquia é preservada por negrito, recuo e bordas, como nos livros
+   * contábeis tradicionais.
+   */
+  .erp-report-page,
+  .erp-report-page * {
+    color: #000 !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    border-color: #b8b8b8 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  .erp-report-page .erp-print-document-header {
+    background: #fff !important;
+    border-color: #111 !important;
+  }
+
+  .erp-report-page table,
+  .erp-report-page thead,
+  .erp-report-page tbody,
+  .erp-report-page tfoot,
+  .erp-report-page tr,
+  .erp-report-page th,
+  .erp-report-page td {
+    background: #fff !important;
+    color: #000 !important;
   }
 
   .erp-report-page [class*="rounded"],
@@ -296,9 +330,13 @@
     font-weight: 700 !important;
   }
 
-  /* Coluna de navegação da tela não pertence ao documento impresso. */
+  /* Colunas operacionais da tela não pertencem ao documento impresso. */
   .erp-report-page[data-report-kind="Balancete"] table th:last-child,
-  .erp-report-page[data-report-kind="Balancete"] table td:last-child {
+  .erp-report-page[data-report-kind="Balancete"] table td:last-child,
+  .erp-report-page[data-report-kind="Razão"] table th:last-child,
+  .erp-report-page[data-report-kind="Razão"] table td:last-child,
+  .erp-report-page[data-report-kind="Lançamentos Contábeis"] table th:last-child,
+  .erp-report-page[data-report-kind="Lançamentos Contábeis"] table td:last-child {
     display: none !important;
   }
 
@@ -310,7 +348,9 @@
   .erp-report-page table[class*="min-w-"],
   [class*="min-w-[1350px]"],
   [class*="min-w-[1450px]"],
+  [class*="min-w-[1500px]"],
   [class*="min-w-[1600px]"],
+  [class*="min-w-[1700px]"],
   [class*="min-w-[1750px]"],
   [class*="min-w-[1900px]"] {
     min-width: 0 !important;
