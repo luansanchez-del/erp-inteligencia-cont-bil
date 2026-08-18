@@ -14,14 +14,22 @@ export type ComposicaoResultadoJulho = {
 };
 
 /*
- * O plano legado possui diversas despesas operacionais dentro do grupo 5.3.
- * Portanto 5.3 não pode ser tratado integralmente como CPV/CMV. Mantemos como
- * custo somente as contas cuja natureza documental é efetivamente de compra,
- * frete de matéria-prima ou industrialização. As demais contas 5.3 seguem o
- * centro de custo na apresentação gerencial da DRE.
+ * A DRE é consequência do Razão. O plano legado possui despesas operacionais no
+ * grupo 5.3, portanto prefixo contábil isolado não define CPV/CMV. Industrialização
+ * (25937) é apresentada como despesa operacional própria no modelo gerencial do
+ * cliente; compras e fretes de matéria-prima permanecem em custo.
  */
-const contasCustoOperacionalJulho=new Set(["3093","3095","25937"]);
-const contasReceitasFinanceiras=new Set(["25095","25096","25098"]);
+const contasCustoOperacionalJulho=new Set(["3093","3095"]);
+export const contasReceitasFinanceirasJulho=new Set([
+  "4927", // Descontos obtidos
+  "25095", // Juros ativos
+  "25096", // Variações cambiais ativas
+  "25097", // Receitas eventuais
+  "25098", // Aplicações financeiras
+  "25099", // Recuperação de despesas
+  "25100", // Amostra grátis recebida
+  "25101", // Atualização pela SELIC
+]);
 
 export function ehCustoDreJulho(x:Pick<ComposicaoResultadoJulho,"conta"|"classificacao">){
   return x.classificacao.startsWith("4.2")||x.classificacao.startsWith("5.1")||contasCustoOperacionalJulho.has(x.conta);
@@ -31,11 +39,15 @@ export function ehDespesaFinanceiraDreJulho(x:Pick<ComposicaoResultadoJulho,"cla
   return x.classificacao.startsWith("5.8");
 }
 
+export function ehReceitaFinanceiraDreJulho(x:Pick<ComposicaoResultadoJulho,"conta">){
+  return contasReceitasFinanceirasJulho.has(x.conta);
+}
+
 export function ehDespesaOperacionalDreJulho(x:Pick<ComposicaoResultadoJulho,"conta"|"classificacao">){
   return x.classificacao.startsWith("5.")
     && !ehCustoDreJulho(x)
     && !ehDespesaFinanceiraDreJulho(x)
-    && !contasReceitasFinanceiras.has(x.conta);
+    && !ehReceitaFinanceiraDreJulho(x);
 }
 
 /**
@@ -82,23 +94,30 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   const despesasOperacionais=arred(composicao.filter(ehDespesaOperacionalDreJulho).reduce((s,x)=>s+x.valor,0));
   const despesasFinanceiras=arred(composicao.filter(ehDespesaFinanceiraDreJulho).reduce((s,x)=>s+x.valor,0));
   const despesas=arred(despesasOperacionais+despesasFinanceiras);
-  const jurosAtivos=Math.max(0,creditoLiquido("25095"));
-  const variacaoCambialAtiva=Math.max(0,creditoLiquido("25096"));
-  const receitaAplicacoes=Math.max(0,creditoLiquido("25098"));
-  const receitasFinanceiras=arred(jurosAtivos+variacaoCambialAtiva+receitaAplicacoes);
+
+  const receitasFinanceirasPorConta=Object.fromEntries(
+    [...contasReceitasFinanceirasJulho].map(codigo=>[codigo,Math.max(0,creditoLiquido(codigo))]),
+  ) as Record<string,number>;
+  const receitasFinanceiras=arred(Object.values(receitasFinanceirasPorConta).reduce((s,v)=>s+v,0));
+  const jurosAtivos=receitasFinanceirasPorConta["25095"]??0;
+  const variacaoCambialAtiva=receitasFinanceirasPorConta["25096"]??0;
+  const receitaAplicacoes=receitasFinanceirasPorConta["25098"]??0;
   const jcp=Math.max(0,mov("25107"));
   const variacaoCambialPassiva=Math.max(0,mov("25109"));
   const resultado=arred(receitaLiquida-custos-despesas+receitasFinanceiras);
+
+  const somaReceitasAbertas=arred(Object.values(receitasFinanceirasPorConta).reduce((s,v)=>s+v,0));
+  if(Math.abs(somaReceitasAbertas-receitasFinanceiras)>0.01) throw new Error(`Abertura de receitas financeiras não concilia: ${somaReceitasAbertas.toFixed(2)} / ${receitasFinanceiras.toFixed(2)}`);
 
   return {
     composicao,
     dre:{
       receitaProducao,receitaRevenda,receitaBruta,devolucoes,icms,icmsSt,ipi,pis,cofins,deducoes,receitaLiquida,
       custosReconhecidos:custos,despesasReconhecidas:despesas,despesasOperacionais,despesasFinanceiras,
-      receitasFinanceiras,jurosAtivos,variacaoCambialAtiva,receitaAplicacoes,jcp,variacaoCambialPassiva,resultado,
+      receitasFinanceiras,receitasFinanceirasPorConta,jurosAtivos,variacaoCambialAtiva,receitaAplicacoes,jcp,variacaoCambialPassiva,resultado,
       status:"fechado_com_pendencias" as const,
       fechadoEm:"18/08/2026",
-      criterioFechamento:"Documentos reais → Razão → Balancete → DRE. Custos são definidos pela natureza contábil/documental; despesas operacionais do grupo 5.3 são apresentadas pelo centro de custo. Pendência documental não vira estimativa.",
+      criterioFechamento:"Documentos reais → Razão → Balancete → DRE. Custos são definidos pela natureza contábil/documental; despesas operacionais são apresentadas pela natureza e pelo centro de custo. Pendência documental não vira estimativa.",
       resumoRazao:resumoFechamentoJulhoFinal,
       financeiro:resumoFinanceiroJulho,
       pendenciasNaoBloqueantes:[
@@ -117,5 +136,13 @@ const calculoEstatico=calcularDreJulhoFinal(lancamentosIntegradosJulhoFinal);
 export const composicaoResultadoJulhoFinal=calculoEstatico.composicao;
 export const dreJulhoFinal=calculoEstatico.dre;
 
-const servicosAdmClassificadosComoCusto=composicaoResultadoJulhoFinal.find(x=>x.conta==="25938"&&["302","303","304","305","306"].includes(x.cc)&&ehCustoDreJulho(x));
+const servicosAdmClassificadosComoCusto=composicaoResultadoJulhoFinal.find(x=>x.conta==="25938"&&["302","303","304","305","306","501"].includes(x.cc)&&ehCustoDreJulho(x));
 if(servicosAdmClassificadosComoCusto) throw new Error(`Serviço administrativo classificado indevidamente como custo: ${servicosAdmClassificadosComoCusto.id}`);
+
+const industrializacaoClassificadaComoCusto=composicaoResultadoJulhoFinal.find(x=>x.conta==="25937"&&ehCustoDreJulho(x));
+if(industrializacaoClassificadaComoCusto) throw new Error(`Industrialização permaneceu indevidamente em Custos/CPV/CMV: ${industrializacaoClassificadaComoCusto.id}`);
+
+const vcaRazao=arred(-lancamentosIntegradosJulhoFinal.reduce((s,l)=>s+(l.debitoCodigo==="25096"?l.valor:0)-(l.creditoCodigo==="25096"?l.valor:0),0));
+if(Math.abs(Math.max(0,vcaRazao)-dreJulhoFinal.variacaoCambialAtiva)>0.01) throw new Error("Variação cambial ativa do Razão não conciliou com a DRE.");
+const vcpRazao=arred(lancamentosIntegradosJulhoFinal.reduce((s,l)=>s+(l.debitoCodigo==="25109"?l.valor:0)-(l.creditoCodigo==="25109"?l.valor:0),0));
+if(Math.abs(Math.max(0,vcpRazao)-dreJulhoFinal.variacaoCambialPassiva)>0.01) throw new Error("Variação cambial passiva do Razão não conciliou com a DRE.");
