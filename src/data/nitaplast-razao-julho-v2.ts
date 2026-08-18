@@ -19,6 +19,7 @@ type MapeamentoEntrada = { debitoCodigo: string; creditoCodigo: string; status: 
  */
 function sanearEntradaCcJulho(linha: EntradaCcAgregadaJulho): EntradaCcAgregadaJulho | null {
   if (linha.gerencial === "11.01.002" && linha.cc === "102") return null;
+  if (linha.gerencial === "15.02.015" && linha.cc === "102") return null;
   if (linha.gerencial === "11.02.001" && linha.cc === "101") return null;
   if (linha.gerencial === "11.02.001" && linha.cc === "503") return { ...linha, valor: 973.00, documentos: 1 };
   if (linha.gerencial === "11.01.003" && linha.cc === "102") return { ...linha, valor: 1225461.78, documentos: 9 };
