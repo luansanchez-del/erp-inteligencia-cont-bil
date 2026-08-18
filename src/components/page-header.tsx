@@ -4,8 +4,8 @@ import {
   BalanceteJulhoAjustavel,
   DiarioJulhoAjustavel,
   LancamentosJulhoAjustavel,
-  RazaoJulhoAjustavel,
 } from "@/components/nitaplast/contabil-julho-ajustavel";
+import { RazaoJulhoLivro } from "@/components/nitaplast/razao-julho-livro";
 import { DreJulhoCompleta } from "@/components/nitaplast/dre-julho-completa";
 import { FechamentoNitaplastJulho } from "@/components/nitaplast/fechamento-julho";
 import { FechamentoBancarioJulho } from "@/components/nitaplast/fechamento-bancario-julho";
@@ -147,7 +147,7 @@ function periodoCompetencia(id: string, fallback: string) {
 
 function telaContabilJulho(pathname: string) {
   if (pathname === "/contabil/balancete") return <BalanceteJulhoAjustavel />;
-  if (pathname === "/contabil/razao" || pathname === "/relatorios/razao") return <RazaoJulhoAjustavel />;
+  if (pathname === "/contabil/razao" || pathname === "/relatorios/razao") return <RazaoJulhoLivro />;
   if (pathname === "/contabil/diario" || pathname === "/relatorios/diario") return <DiarioJulhoAjustavel />;
   if (pathname === "/contabil/dre" || pathname === "/relatorios/dre") return <DreJulhoCompleta />;
   if (pathname === "/contabil/lancamentos") return <LancamentosJulhoAjustavel />;
