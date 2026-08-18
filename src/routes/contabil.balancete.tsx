@@ -4,6 +4,7 @@ import { PageShell } from "@/components/page-header";
 import { BalanceteJulhoAjustavel } from "@/components/nitaplast/contabil-julho-ajustavel";
 import { Route as BalanceteJunhoPreservadoRoute } from "@/components/nitaplast/balancete-junho-preservado";
 import { useErp } from "@/context/erp-context";
+import { garantirEstruturaBalanceteJulho } from "@/data/nitaplast-balancete-julho-patch";
 
 export const Route = createFileRoute("/contabil/balancete")({ component: BalancetePage });
 
@@ -13,6 +14,7 @@ function BalancetePage() {
   const { competencia } = useErp();
 
   if (competencia.id === "2026-07") {
+    garantirEstruturaBalanceteJulho();
     return (
       <PageShell>
         <BalanceteJulhoAjustavel />
