@@ -49,14 +49,86 @@ const lancamentosBaseSaneados = lancamentosBaseJulhoFinal
     return x;
   });
 
+/*
+ * Saneamento estrutural de julho.
+ * Esta camada corrige a classificação ANTES do Balancete/DRE. Nenhum valor nasce
+ * na apresentação gerencial: primeiro corrigimos o Razão e só depois os relatórios
+ * consomem o mesmo conjunto de partidas.
+ */
+const centrosNormalizados: Record<string, { cc: string; centroCusto: string }> = {
+  "10058": { cc: "10057", centroCusto: "COMPRESSOR 03 PUMA 30HP" },
+  "10061": { cc: "10060", centroCusto: "EMPILHADEIRA A COMBUSTÃO DE 2,5 TON" },
+};
+const contasCreditoFederalCustosDespesas = new Set(["3093", "25937", "3095", "3494"]);
+
+function sanearRazaoJulho(x: LancamentoIntegrado): LancamentoIntegrado {
+  let linha: LancamentoIntegrado = { ...x };
+
+  const centro = centrosNormalizados[linha.cc];
+  if (centro) linha = { ...linha, cc: centro.cc, centroCusto: centro.centroCusto };
+
+  // Despachantes aduaneiros: a natureza documental prevalece sobre uma conta genérica.
+  if (linha.documento?.startsWith("11.04.014") && linha.cc === "206") {
+    linha = {
+      ...linha,
+      debitoCodigo: "25072",
+      debito: nomeConta("25072"),
+      historico: `${linha.historico} - EXPORTAÇÃO`,
+      observacao: `${linha.observacao ?? ""} Classificado em Despesas com Exportação pelo gerencial 11.04.014 / CC 206.`.trim(),
+    };
+  } else if (linha.documento?.startsWith("11.04.014") && linha.cc === "209") {
+    linha = {
+      ...linha,
+      debitoCodigo: "25070",
+      debito: nomeConta("25070"),
+      observacao: `${linha.observacao ?? ""} Classificado em Despesas com Importação pelo gerencial 11.04.014 / CC 209.`.trim(),
+    };
+  }
+
+  // PIS/COFINS sobre custos e despesas: o crédito fiscal continua exatamente o
+  // mesmo, mas deixa de gerar saldos credores artificiais em MP/industrialização/
+  // fretes/energia e passa às contas redutoras próprias do plano.
+  const ehPis = linha.origem === "APURAÇÃO PIS 07/2026";
+  const ehCofins = linha.origem === "APURAÇÃO COFINS 07/2026";
+  if ((ehPis || ehCofins) && contasCreditoFederalCustosDespesas.has(linha.creditoCodigo)) {
+    const contaRedutora = ehPis ? "25946" : "25947";
+    const tributo = ehPis ? "PIS" : "COFINS";
+    linha = {
+      ...linha,
+      creditoCodigo: contaRedutora,
+      credito: nomeConta(contaRedutora),
+      historico: `Crédito ${tributo} sobre custos e despesas - ${linha.documento}`,
+      cc: "0",
+      centroCusto: "SEM CENTRO DE CUSTO",
+      observacao: `Reclassificação do mesmo crédito fiscal para ${contaRedutora} - ${nomeConta(contaRedutora)}. Sem criação de crédito e sem distribuição de CC por aproximação. Origem anterior: ${x.creditoCodigo}.`,
+      rastreio: "derivado",
+    };
+  }
+
+  // 11.90.001 possui casos em que a conciliação é apenas inferida. Não tratar
+  // como frete de matéria-prima validado quando a evidência documental é insuficiente.
+  if (linha.documento?.startsWith("11.90.001")) {
+    linha = {
+      ...linha,
+      status: "revisar",
+      rastreio: "sugerido",
+      observacao: `${linha.observacao ?? ""} Frete compras mantido em revisão: não forçar natureza de matéria-prima sem vínculo documental suficiente.`.trim(),
+    };
+  }
+
+  return linha;
+}
+
+const lancamentosBaseCorrigidos = lancamentosBaseSaneados.map(sanearRazaoJulho);
+
 const pendenciasBancariasValorAjustado = arred(
-  lancamentosBaseSaneados
+  lancamentosBaseCorrigidos
     .filter((x) => x.origem.startsWith("MOVIMENTAÇÃO BANCÁRIA") && x.status === "revisar")
     .reduce((total, x) => total + x.valor, 0),
 );
 
 export const lancamentosIntegradosJulhoFinal: LancamentoIntegrado[] = [
-  ...lancamentosBaseSaneados,
+  ...lancamentosBaseCorrigidos,
   ...lancamentosProvisoesJulhoReais,
   ...lancamentosFinanceirosJulho,
 ];
@@ -111,3 +183,14 @@ const cambioSemRastreio = lancamentosIntegradosJulhoFinal.find(
   (x) => x.origem.startsWith("CONTRATO DE CÂMBIO") && (!x.documento || !x.fonte),
 );
 if (cambioSemRastreio) throw new Error(`Lançamento cambial sem documento/fonte: ${cambioSemRastreio.id}`);
+
+const exportacaoEmImportacao = lancamentosIntegradosJulhoFinal.find(
+  (x) => x.documento?.startsWith("11.04.014") && x.cc === "206" && x.debitoCodigo === "25070",
+);
+if (exportacaoEmImportacao) throw new Error(`Despachante de exportação permaneceu em importação: ${exportacaoEmImportacao.id}`);
+
+const creditoFederalEmContaOrigem = lancamentosIntegradosJulhoFinal.find(
+  (x) => (x.origem === "APURAÇÃO PIS 07/2026" || x.origem === "APURAÇÃO COFINS 07/2026")
+    && contasCreditoFederalCustosDespesas.has(x.creditoCodigo),
+);
+if (creditoFederalEmContaOrigem) throw new Error(`Crédito federal de custo/despesa permaneceu em conta de origem: ${creditoFederalEmContaOrigem.id}`);
