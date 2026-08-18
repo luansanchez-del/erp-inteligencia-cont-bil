@@ -23,7 +23,7 @@ export const entradasCcAgregadasJulho:EntradaCcAgregadaJulho[]=[
 ["11.02.002","SERVIÇOS DE TERCEIROS OPERACIONAL","210","MARKETING",750.00,1],
 ["11.02.002","SERVIÇOS DE TERCEIROS OPERACIONAL","302","FINANCEIRO",10000.00,1],
 ["11.02.002","SERVIÇOS DE TERCEIROS OPERACIONAL","303","CONTROLADORIA",11700.00,1],
-["11.02.002","SERVIÇOS DE TERCEIROS OPERACIONAL","304","ADM GERAL",52415.13,8],
+["11.02.002","SERVIÇOS DE TERCEIROS OPERACIONAL","304","ADM GERAL",84545.26,13],
 ["11.02.002","SERVIÇOS DE TERCEIROS OPERACIONAL","305","TI - TECNOLOGIA DA I",6406.71,3],
 ["11.02.002","SERVIÇOS DE TERCEIROS OPERACIONAL","306","RH - RECURSOS HUMANO",7900.00,1],
 ["11.02.002","SERVIÇOS DE TERCEIROS OPERACIONAL","313","APARTAMENTO SETTE CA",49.90,1],
@@ -104,4 +104,8 @@ export const entradasCcAgregadasJulho:EntradaCcAgregadaJulho[]=[
 ["15.03.002","MANUTENCAO DE VEÍCULOS","446","B & D ZFM SONG PRO G",680.00,2],
 ["15.03.006","ESTACIONAMENTO","201","VENDAS",63.00,3]
 ].map(([gerencial,descricaoGerencial,cc,centroCusto,valor,documentos])=>({gerencial:String(gerencial),descricaoGerencial:String(descricaoGerencial),cc:String(cc),centroCusto:String(centroCusto),valor:Number(valor),documentos:Number(documentos)}));
-export const resumoEntradasCcAgregadasJulho={documentosFonte:597,linhas:103,valorDistribuido:4202763.84,valorPendenteCc:7047.92,documentosComDiferenca:9} as const;
+
+// Varredura 18/08/2026: o agregado 11.02.002 / CC 304 omitia cinco documentos
+// já presentes na conciliação analítica. O Razão deve refletir os 13 documentos
+// efetivamente conciliados, totalizando R$ 84.545,26.
+export const resumoEntradasCcAgregadasJulho={documentosFonte:597,linhas:103,valorDistribuido:4234893.97,valorPendenteCc:7047.92,documentosComDiferenca:9} as const;
