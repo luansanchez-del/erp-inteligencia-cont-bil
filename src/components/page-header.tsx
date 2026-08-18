@@ -26,12 +26,6 @@ const rotasSensiveisCompetencia = [
   "/relatorios/dre",
 ];
 
-/**
- * Regra estrutural de impressão do ERP.
- * Estas rotas representam documentos/livros contábeis e nunca devem imprimir a
- * interface da tela (cards, filtros, alertas ou botões). O CSS global usa a
- * classe erp-report-page para imprimir somente a demonstração/tabela.
- */
 const rotasRelatorioImpressao = [
   "/contabil/balancete",
   "/contabil/razao",
@@ -99,6 +93,15 @@ export function PageShell({ children }: { children: ReactNode }) {
       className={`erp-page-shell mx-auto flex w-full max-w-[1500px] flex-col gap-5 p-4 md:p-6 ${relatorioImprimivel ? "erp-report-page" : ""}`}
       data-report-kind={relatorioImprimivel ? nomeModulo(pathname) : undefined}
       data-report-period={relatorioImprimivel ? competencia.id : undefined}
+      onClickCapture={(event) => {
+        if (competencia.id !== "2026-07" || pathname !== "/relatorios/dre") return;
+        const alvo = event.target as HTMLElement;
+        const botao = alvo.closest("button");
+        if (!botao?.textContent?.includes("Exportar Excel")) return;
+        event.preventDefault();
+        event.stopPropagation();
+        exportarDreVisivelComoExcel();
+      }}
     >
       {dreJulhoImpressao ? (
         <style>{`
@@ -159,6 +162,49 @@ export function PageShell({ children }: { children: ReactNode }) {
       <div className="erp-route-content contents">{conteudo}</div>
     </div>
   );
+}
+
+function exportarDreVisivelComoExcel() {
+  if (typeof document === "undefined") return;
+  const tabela = document.querySelector(".erp-route-content section table") as HTMLTableElement | null;
+  if (!tabela || tabela.querySelectorAll("tbody tr").length === 0) {
+    window.alert("A DRE ainda não terminou de carregar. Aguarde os dados aparecerem e tente exportar novamente.");
+    return;
+  }
+
+  const tabelaClone = tabela.cloneNode(true) as HTMLTableElement;
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+body{font-family:Arial,sans-serif;font-size:10pt;color:#000}
+h1{font-size:14pt;text-align:center;margin:0 0 4px}
+p{text-align:center;margin:2px 0}
+table{border-collapse:collapse;width:100%;margin-top:16px}
+th{font-weight:bold;border-top:1px solid #000;border-bottom:1px solid #000;padding:6px}
+td{border-bottom:1px solid #ddd;padding:6px}
+th:nth-child(2),th:nth-child(3),td:nth-child(2),td:nth-child(3){text-align:right}
+</style>
+</head>
+<body>
+<h1>NITAPLAST IND E COM DE PLÁSTICOS INDUSTRIAIS LTDA</h1>
+<p>CNPJ 82.295.817/0001-07</p>
+<p><strong>DEMONSTRAÇÃO DO RESULTADO DO EXERCÍCIO</strong></p>
+<p>Período: 01/07/2026 a 31/07/2026</p>
+${tabelaClone.outerHTML}
+</body>
+</html>`;
+
+  const blob = new Blob(["\uFEFF", html], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "Nitaplast_DRE_Report_072026.xls";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
 function PrintDocumentHeader({
