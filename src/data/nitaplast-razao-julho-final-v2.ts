@@ -13,12 +13,8 @@ import { descricaoContaJulho } from "./nitaplast-saldos-julho";
 const arred = (v: number) => Math.round(v * 100) / 100;
 const nomeConta = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(codigo) ?? "Conta a revisar"}`;
 
-// A primeira versão da folha de julho calculava férias/13º por salário ÷ 12.
-// Com os relatórios contínuos reais recebidos, essas estimativas não podem permanecer no Razão.
 const ehProvisaoEstimadaJulho = (id: string) => id.startsWith("JUL-PROV-M-") || id.startsWith("JUL-PROV-F-");
 
-// Auditoria de 18/08/2026: linhas consolidadas/substituídas por evidência documental mais granular.
-// Não são plugs: os totais de PIS/COFINS e ICMS permanecem conciliados às apurações oficiais.
 const idsSubstituidosAuditoria = new Set([
   "JUL-TAX-PIS",
   "JUL-TAX-COF",
@@ -29,12 +25,9 @@ const idsSubstituidosAuditoria = new Set([
   "JUL-COF-CRED-10",
 ]);
 
-// Correções documentais da movimentação financeira, sem alterar a fonte bruta.
 const lancamentosBaseSaneados = lancamentosBaseJulhoFinal
   .filter((x) => !ehProvisaoEstimadaJulho(x.id) && !idsSubstituidosAuditoria.has(x.id))
   .map((x): LancamentoIntegrado => {
-    // A soma fiscal externa correta da produção da Matriz é R$ 3.443.785,35.
-    // O valor anterior duplicava CFOP 5401 + 6401 (R$ 5.352,06).
     if (x.id === "JUL-REC-M-PROD") {
       return {
         ...x,
@@ -68,12 +61,6 @@ const lancamentosBaseSaneados = lancamentosBaseJulhoFinal
     return x;
   });
 
-/*
- * Saneamento estrutural de julho.
- * Esta camada corrige a classificação ANTES do Balancete/DRE. Nenhum valor nasce
- * na apresentação gerencial: primeiro corrigimos o Razão e só depois os relatórios
- * consomem o mesmo conjunto de partidas.
- */
 const centrosNormalizados: Record<string, { cc: string; centroCusto: string }> = {
   "10058": { cc: "10057", centroCusto: "COMPRESSOR 03 PUMA 30HP" },
   "10061": { cc: "10060", centroCusto: "EMPILHADEIRA A COMBUSTÃO DE 2,5 TON" },
@@ -86,7 +73,6 @@ function sanearRazaoJulho(x: LancamentoIntegrado): LancamentoIntegrado {
   const centro = centrosNormalizados[linha.cc];
   if (centro) linha = { ...linha, cc: centro.cc, centroCusto: centro.centroCusto };
 
-  // Despachantes aduaneiros: a natureza documental prevalece sobre uma conta genérica.
   if (linha.documento?.startsWith("11.04.014") && linha.cc === "206") {
     linha = {
       ...linha,
@@ -107,14 +93,10 @@ function sanearRazaoJulho(x: LancamentoIntegrado): LancamentoIntegrado {
   const ehPis = linha.origem === "APURAÇÃO PIS 07/2026";
   const ehCofins = linha.origem === "APURAÇÃO COFINS 07/2026";
 
-  // O EFD Contribuições identifica 1102 e 1202 na Filial SP. Preservar isso no Razão.
   if ((ehPis || ehCofins) && (linha.documento === "CFOP 1102" || linha.documento === "CFOP 1202")) {
     linha = { ...linha, cc: "502", centroCusto: "COMERCIAL SP" };
   }
 
-  // PIS/COFINS sobre custos e despesas: o crédito fiscal continua exatamente o
-  // mesmo, mas deixa de gerar saldos credores artificiais em MP/industrialização/
-  // fretes/energia e passa às contas redutoras próprias do plano.
   if ((ehPis || ehCofins) && contasCreditoFederalCustosDespesas.has(linha.creditoCodigo)) {
     const contaRedutora = ehPis ? "25946" : "25947";
     const tributo = ehPis ? "PIS" : "COFINS";
@@ -131,8 +113,6 @@ function sanearRazaoJulho(x: LancamentoIntegrado): LancamentoIntegrado {
     };
   }
 
-  // 11.90.001 possui casos em que a conciliação é apenas inferida. Não tratar
-  // como frete de matéria-prima validado quando a evidência documental é insuficiente.
   if (linha.documento?.startsWith("11.90.001")) {
     linha = {
       ...linha,
@@ -147,9 +127,7 @@ function sanearRazaoJulho(x: LancamentoIntegrado): LancamentoIntegrado {
 
 const lancamentosBaseCorrigidos = lancamentosBaseSaneados.map(sanearRazaoJulho);
 
-// Linhas comprovadas na auditoria do EFD Contribuições/EFD Fiscal.
 const lancamentosAuditoriaJulho: LancamentoIntegrado[] = [
-  // Débitos de PIS/COFINS segregados por estabelecimento; totais consolidados preservados.
   {
     id: "JUL-TAX-PIS-M", data: "31/07/2026", origem: "EFD CONTRIBUIÇÕES 07/2026",
     debitoCodigo: "2829", debito: nomeConta("2829"), creditoCodigo: "1556", credito: nomeConta("1556"),
@@ -178,8 +156,6 @@ const lancamentosAuditoriaJulho: LancamentoIntegrado[] = [
     cc: "502", centroCusto: "COMERCIAL SP", valor: 31034.21, status: "validado",
     observacao: "Parcela exata da Filial SP apurada por estabelecimento no EFD Contribuições; compõe o total consolidado de R$ 229.476,68.", rastreio: "documento", fonte: "ARQUIVO EFD CONTRIBUIÇÕES.TXT 07/2026",
   },
-
-  // ICMS Filial: a apuração total mistura venda externa e transferência interna.
   {
     id: "JUL-ICMS-F-DEB-EXT", data: "31/07/2026", origem: "APURAÇÃO ICMS FILIAL 07/2026",
     debitoCodigo: "25054", debito: nomeConta("25054"), creditoCodigo: "25235", credito: nomeConta("25235"),
@@ -194,13 +170,11 @@ const lancamentosAuditoriaJulho: LancamentoIntegrado[] = [
     cc: "502", centroCusto: "COMERCIAL SP", valor: 3894.05, status: "revisar",
     observacao: "Parcela interna identificada documentalmente. Mantida separada e marcada para revisão da conta patrimonial específica; não deve compor dedução de vendas na DRE.", rastreio: "sugerido", fonte: "REGISTRO APURAÇÃO ICMS FILIAL 07/2026",
   },
-
-  // Crédito de transporte: o EFD permite segregar o estabelecimento, embora a origem CFOP 1352/2352 esteja agregada.
   {
     id: "JUL-PIS-CRED-TRANSP-M", data: "31/07/2026", origem: "APURAÇÃO PIS 07/2026",
     debitoCodigo: "1556", debito: nomeConta("1556"), creditoCodigo: "25946", credito: nomeConta("25946"),
     historico: "Crédito PIS sobre transportes - Matriz", documento: "EFD CONTRIBUIÇÕES D010 - MATRIZ",
-    cc: "0", centroCusto: "SEM CENTRO DE CUSTO", valor: 1701.85, status: "validado",
+    cc: "0", centroCusto: "SEM CENTRO DE CUSTO", valor: 1700.14, status: "validado",
     observacao: "Total exato de créditos de transporte da Matriz no EFD; substitui a soma agregada de CFOP 1352/2352 sem alterar o crédito total.", rastreio: "documento", fonte: "ARQUIVO EFD CONTRIBUIÇÕES.TXT 07/2026",
   },
   {
@@ -245,9 +219,25 @@ export const totalDebitosJulhoFinal = arred(lancamentosIntegradosJulhoFinal.redu
 export const totalCreditosJulhoFinal = totalDebitosJulhoFinal;
 export const pendenciasJulhoFinal = lancamentosIntegradosJulhoFinal.filter((x) => x.status === "revisar");
 
+const alienacoesEsperadas = new Set([
+  "JUL-ALIEN-MINI-REC",
+  "JUL-ALIEN-MINI-CUSTO",
+  "JUL-ALIEN-COROLLA-REC",
+  "JUL-ALIEN-COROLLA-DEP",
+  "JUL-ALIEN-COROLLA-CUSTO",
+]);
+const alienacoesEncontradas = lancamentosIntegradosJulhoFinal.filter((x) => alienacoesEsperadas.has(x.id));
+if (alienacoesEncontradas.length !== alienacoesEsperadas.size) {
+  throw new Error(`Alienações Mini/Corolla incompletas no Razão de julho: ${alienacoesEncontradas.length}/${alienacoesEsperadas.size}.`);
+}
+const receitaAlienacoesRazao = arred(alienacoesEncontradas.filter((x) => x.creditoCodigo === "4736").reduce((s, x) => s + x.valor, 0));
+const custoResidualAlienacoesRazao = arred(alienacoesEncontradas.filter((x) => x.debitoCodigo === "4760").reduce((s, x) => s + x.valor, 0));
+if (Math.abs(receitaAlienacoesRazao - 246900) > 0.01) throw new Error("Receita de alienação Mini + Corolla não conciliou no Razão em R$ 246.900,00.");
+if (Math.abs(custoResidualAlienacoesRazao - 145639.29) > 0.01) throw new Error("Custo residual Mini + Corolla não conciliou no Razão em R$ 145.639,29.");
+
 const itensMantidosForaPorDecisao = [
-  ...resumoBaseJulhoFinal.itensMantidosForaPorDecisao.filter((item) => item !== "JCP" && item !== "Variação cambial"),
-  "Alienação de imobilizado: R$ 306.900,00 em NFs válidas de julho aguardando identificação do custo original e da depreciação acumulada dos 3 bens; não reconhecer ganho por aproximação.",
+  ...resumoBaseJulhoFinal.itensMantidosForaPorDecisao.filter((item) => item !== "JCP" && item !== "Variação cambial" && !item.startsWith("Alienação de imobilizado")),
+  "Alienação de imobilizado: Mini Cooper (NF 93495) e Corolla (NF 93569) reconhecidos no Razão; somente o transformador da NF 93639, venda fiscal de R$ 60.000,00, permanece pendente de valor contábil residual.",
 ];
 
 export const resumoFechamentoJulhoFinal = {
@@ -271,6 +261,10 @@ export const resumoFechamentoJulhoFinal = {
     icmsFilialDevolucao: 336.32,
     icmsFilialDreLiquidoEsperado: 80710.71,
     vendasAtivoImobilizadoFiscais: 306900,
+    vendasAtivoImobilizadoReconhecidas: 246900,
+    custoResidualAtivosReconhecido: 145639.29,
+    ganhoAlienacaoReconhecido: 101260.71,
+    vendaTransformadorPendente: 60000,
     baixaImobilizadoPendente: true,
     nfCanceladaNuncaContabilizar: "93567",
   },
