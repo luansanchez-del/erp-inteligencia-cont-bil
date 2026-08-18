@@ -3,10 +3,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CheckCircle2, Search, TriangleAlert } from "lucide-react";
 import { PageHeader, PageShell } from "@/components/page-header";
 import { ReclassificacaoInteligente } from "@/components/reclassificacao-inteligente";
+import { RazaoJulhoAjustavel } from "@/components/nitaplast/contabil-julho-ajustavel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useErp } from "@/context/erp-context";
 import { movimentosFinanceiros } from "@/data/nitaplast-movimento-financeiro";
 import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
 import { saldosImplantacao } from "@/data/nitaplast-implantacao";
@@ -20,6 +22,14 @@ const POR_PAGINA = 100;
 type Modo = "contabil" | "implantacao" | "financeiro";
 
 function RazaoPage() {
+  const { competencia } = useErp();
+  if (competencia.id === "2026-07") {
+    return <PageShell><RazaoJulhoAjustavel /></PageShell>;
+  }
+  return <RazaoJunhoPage />;
+}
+
+function RazaoJunhoPage() {
   useNitaplastJunho();
   const { reclassificacoes, registrar, aplicar } = useReclassificacoesInteligentes("2026-06");
   const contaUrl = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("conta");
@@ -116,7 +126,7 @@ function RazaoPage() {
 
       <Card className="border-sky-500/40 bg-sky-500/5">
         <CardContent className="pt-5 text-sm">
-          <strong>Reclassificação inteligente:</strong> use o ícone de setas em qualquer lançamento. O sistema preserva a origem e gera um ajuste contábil vinculado ao lançamento original. O ajuste passa a integrar o Razão e o Balancete imediatamente. Reclassificações de contas de resultado também são refletidas na DRE.
+          <strong>Ações contábeis:</strong> em cada lançamento você pode reclassificar ou efetuar uma nova partida contábil auditável. O sistema preserva a origem e os ajustes passam ao mesmo Razão/Balancete/DRE.
         </CardContent>
       </Card>
 
@@ -182,7 +192,7 @@ function RazaoPage() {
               <table className="w-full min-w-[1900px] text-sm">
                 <thead>
                   <tr className="border-b bg-muted/40 text-left text-xs">
-                    <th className="p-2">Lcto.</th><th className="p-2">Data</th><th className="p-2">Origem</th><th className="p-2">Débito</th><th className="p-2">Crédito</th><th className="p-2">Histórico original</th><th className="p-2">Documento</th><th className="p-2">Rastreabilidade</th><th className="p-2">Centro de custo</th><th className="p-2 text-right">Valor</th><th className="p-2 text-right">Status</th><th className="p-2 text-right">Reclassificar</th>
+                    <th className="p-2">Lcto.</th><th className="p-2">Data</th><th className="p-2">Origem</th><th className="p-2">Débito</th><th className="p-2">Crédito</th><th className="p-2">Histórico original</th><th className="p-2">Documento</th><th className="p-2">Rastreabilidade</th><th className="p-2">Centro de custo</th><th className="p-2 text-right">Valor</th><th className="p-2 text-right">Status</th><th className="p-2 text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
