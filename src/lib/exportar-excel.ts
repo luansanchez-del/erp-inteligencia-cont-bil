@@ -27,8 +27,12 @@ type EstiloLinha =
 
 const encoder = new TextEncoder();
 
+function limparXml(valor: string) {
+  return valor.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "");
+}
+
 function escaparXml(valor: string) {
-  return valor
+  return limparXml(valor)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -51,6 +55,64 @@ function referenciaColuna(indice: number) {
   return referencia;
 }
 
+function classificarLinha(aba: string, valores: ValorExcel[]): EstiloLinha | undefined {
+  const abaNormalizada = nomeAbaSeguro(aba).toLocaleUpperCase("pt-BR");
+
+  if (abaNormalizada === "BALANCETE") {
+    const tipo = String(valores[1] ?? "").trim().toLocaleUpperCase("pt-BR");
+    if (tipo !== "S") return undefined;
+    const classificacao = String(valores[2] ?? "").trim();
+    const nivel = classificacao ? classificacao.split(".").filter(Boolean).length : 1;
+    if (nivel <= 1) return "balancete-n1";
+    if (nivel === 2) return "balancete-n2";
+    if (nivel === 3) return "balancete-n3";
+    return "balancete-n4";
+  }
+
+  if (!abaNormalizada.startsWith("DRE")) return undefined;
+
+  const descricao = String(valores[0] ?? "").trim();
+  if (descricao === "LUCRO / PREJUÍZO LÍQUIDO" || descricao.startsWith("(=) RESULTADO CONTÁBIL")) return "resultado";
+
+  if ([
+    "Receita Operacional Líquida",
+    "LUCRO BRUTO",
+    "Total Despesas Operacionais Líquidas",
+    "RESULTADO OPERACIONAL",
+  ].includes(descricao)) return "subtotal";
+
+  if (descricao === "Outros resultados sem classificação gerencial") return "alerta";
+
+  if (
+    descricao.startsWith("(+) Receita Operacional Bruta")
+    || descricao.startsWith("(-) Deduções da Receita Bruta")
+    || descricao.startsWith("(-) Custos / CPV / CMV")
+    || descricao.startsWith("(-) Despesas Operacionais")
+    || descricao.startsWith("(-) Despesas Financeiras")
+    || descricao.startsWith("(+) Receitas Financeiras")
+    || descricao === "Resultado Não Operacional"
+  ) return "sintetica";
+
+  return undefined;
+}
+
+const estiloBase: Record<EstiloLinha, number> = {
+  sintetica: 6,
+  subtotal: 9,
+  resultado: 12,
+  alerta: 15,
+  "balancete-n1": 18,
+  "balancete-n2": 21,
+  "balancete-n3": 24,
+  "balancete-n4": 27,
+};
+
+function estiloCelula(estiloLinha: EstiloLinha | undefined, tipo: ColunaExcel["tipo"]) {
+  if (!estiloLinha) return undefined;
+  const deslocamento = tipo === "numero" ? 1 : tipo === "percentual" ? 2 : 0;
+  return estiloBase[estiloLinha] + deslocamento;
+}
+
 function celulaXml(valor: ValorExcel, linha: number, coluna: number, tipo: ColunaExcel["tipo"], estiloForcado?: number) {
   const ref = `${referenciaColuna(coluna)}${linha}`;
   if (valor === null || valor === undefined || valor === "") {
@@ -64,73 +126,6 @@ function celulaXml(valor: ValorExcel, linha: number, coluna: number, tipo: Colun
 
   const estilo = estiloForcado !== undefined ? ` s="${estiloForcado}"` : "";
   return `<c r="${ref}" t="inlineStr"${estilo}><is><t xml:space="preserve">${escaparXml(String(valor))}</t></is></c>`;
-}
-
-/**
- * Mantém no Excel a mesma leitura hierárquica dos relatórios visuais.
- * Na DRE, destaca grupos/subtotais/resultado. No Balancete, usa o campo S/A e
- * o nível da classificação para reproduzir as cores das contas sintéticas.
- */
-function classificarLinha(aba: string, valores: ValorExcel[]): EstiloLinha | undefined {
-  const abaNormalizada = nomeAbaSeguro(aba).toLocaleUpperCase("pt-BR");
-
-  if (abaNormalizada === "BALANCETE") {
-    const tipo = String(valores[1] ?? "").trim().toLocaleUpperCase("pt-BR");
-    if (tipo !== "S") return undefined;
-
-    const classificacao = String(valores[2] ?? "").trim();
-    const nivel = classificacao ? classificacao.split(".").filter(Boolean).length : 1;
-    if (nivel <= 1) return "balancete-n1";
-    if (nivel === 2) return "balancete-n2";
-    if (nivel === 3) return "balancete-n3";
-    return "balancete-n4";
-  }
-
-  if (abaNormalizada !== "DRE") return undefined;
-
-  const descricao = String(valores[0] ?? "").trim();
-
-  if (descricao === "LUCRO / PREJUÍZO LÍQUIDO") return "resultado";
-
-  if ([
-    "Receita Operacional Líquida",
-    "LUCRO BRUTO",
-    "Total Despesas Operacionais Líquidas",
-    "RESULTADO OPERACIONAL",
-  ].includes(descricao)) {
-    return "subtotal";
-  }
-
-  if (descricao === "Outros resultados sem classificação gerencial") return "alerta";
-
-  if ([
-    "(+) Receita Operacional Bruta",
-    "(-) Deduções da Receita Bruta",
-    "(-) Custos / CPV / CMV",
-    "(-) Despesas Operacionais antes dos créditos",
-    "Resultado Não Operacional",
-  ].includes(descricao)) {
-    return "sintetica";
-  }
-
-  return undefined;
-}
-
-function estiloCelula(estiloLinha: EstiloLinha | undefined, tipo: ColunaExcel["tipo"]) {
-  if (!estiloLinha) return undefined;
-
-  const deslocamentoTipo = tipo === "numero" ? 1 : tipo === "percentual" ? 2 : 0;
-  const bases: Record<EstiloLinha, number> = {
-    sintetica: 6,
-    subtotal: 9,
-    resultado: 12,
-    alerta: 15,
-    "balancete-n1": 18,
-    "balancete-n2": 21,
-    "balancete-n3": 24,
-    "balancete-n4": 27,
-  };
-  return bases[estiloLinha] + deslocamentoTipo;
 }
 
 function crc32(dados: Uint8Array) {
@@ -188,41 +183,15 @@ function gerarZip(arquivos: Array<{ nome: string; conteudo: string }>) {
     const crc = crc32(conteudo);
 
     const cabecalhoLocal = juntar([
-      u32(0x04034b50),
-      u16(20),
-      u16(0),
-      u16(0),
-      u16(hora),
-      u16(data),
-      u32(crc),
-      u32(conteudo.length),
-      u32(conteudo.length),
-      u16(nome.length),
-      u16(0),
-      nome,
+      u32(0x04034b50), u16(20), u16(0), u16(0), u16(hora), u16(data),
+      u32(crc), u32(conteudo.length), u32(conteudo.length), u16(nome.length), u16(0), nome,
     ]);
-
     locais.push(cabecalhoLocal, conteudo);
 
     const cabecalhoCentral = juntar([
-      u32(0x02014b50),
-      u16(20),
-      u16(20),
-      u16(0),
-      u16(0),
-      u16(hora),
-      u16(data),
-      u32(crc),
-      u32(conteudo.length),
-      u32(conteudo.length),
-      u16(nome.length),
-      u16(0),
-      u16(0),
-      u16(0),
-      u16(0),
-      u32(0),
-      u32(offset),
-      nome,
+      u32(0x02014b50), u16(20), u16(20), u16(0), u16(0), u16(hora), u16(data),
+      u32(crc), u32(conteudo.length), u32(conteudo.length), u16(nome.length), u16(0),
+      u16(0), u16(0), u16(0), u32(0), u32(offset), nome,
     ]);
     centrais.push(cabecalhoCentral);
     offset += cabecalhoLocal.length + conteudo.length;
@@ -230,79 +199,36 @@ function gerarZip(arquivos: Array<{ nome: string; conteudo: string }>) {
 
   const diretorioCentral = juntar(centrais);
   const fim = juntar([
-    u32(0x06054b50),
-    u16(0),
-    u16(0),
-    u16(arquivos.length),
-    u16(arquivos.length),
-    u32(diretorioCentral.length),
-    u32(offset),
-    u16(0),
+    u32(0x06054b50), u16(0), u16(0), u16(arquivos.length), u16(arquivos.length),
+    u32(diretorioCentral.length), u32(offset), u16(0),
   ]);
-
   return juntar([...locais, diretorioCentral, fim]);
 }
 
-export function exportarExcel({ arquivo, aba, colunas, linhas, titulo, subtitulo }: ExportarExcelOpcoes) {
-  const nomeAba = nomeAbaSeguro(aba);
-  const totalColunas = Math.max(1, colunas.length);
-  const linhasXml: string[] = [];
-  const mesclagens: string[] = [];
-  let numeroLinha = 1;
+function xf(tipo: "texto" | "numero" | "percentual", fontId: number, fillId: number, borderId: number) {
+  const numFmtId = tipo === "numero" ? 4 : tipo === "percentual" ? 10 : 0;
+  return `<xf numFmtId="${numFmtId}" fontId="${fontId}" fillId="${fillId}" borderId="${borderId}" xfId="0" applyFont="1" applyFill="1" applyBorder="1"${numFmtId ? ' applyNumberFormat="1"' : ""}/>`;
+}
 
-  if (titulo) {
-    linhasXml.push(`<row r="${numeroLinha}">${celulaXml(titulo, numeroLinha, 0, "texto", 4)}</row>`);
-    if (totalColunas > 1) mesclagens.push(`A${numeroLinha}:${referenciaColuna(totalColunas - 1)}${numeroLinha}`);
-    numeroLinha += 1;
-  }
+function estilosXml() {
+  const estilosLinha: Array<{ fontId: number; fillId: number; borderId: number }> = [
+    { fontId: 1, fillId: 3, borderId: 1 },
+    { fontId: 1, fillId: 4, borderId: 1 },
+    { fontId: 1, fillId: 5, borderId: 2 },
+    { fontId: 1, fillId: 6, borderId: 1 },
+    { fontId: 1, fillId: 7, borderId: 1 },
+    { fontId: 1, fillId: 8, borderId: 1 },
+    { fontId: 1, fillId: 9, borderId: 1 },
+    { fontId: 1, fillId: 10, borderId: 1 },
+  ];
 
-  if (subtitulo) {
-    linhasXml.push(`<row r="${numeroLinha}">${celulaXml(subtitulo, numeroLinha, 0, "texto", 5)}</row>`);
-    if (totalColunas > 1) mesclagens.push(`A${numeroLinha}:${referenciaColuna(totalColunas - 1)}${numeroLinha}`);
-    numeroLinha += 1;
-  }
+  const xfsLinha = estilosLinha.flatMap((estilo) => [
+    xf("texto", estilo.fontId, estilo.fillId, estilo.borderId),
+    xf("numero", estilo.fontId, estilo.fillId, estilo.borderId),
+    xf("percentual", estilo.fontId, estilo.fillId, estilo.borderId),
+  ]).join("");
 
-  const linhaCabecalho = numeroLinha;
-  linhasXml.push(
-    `<row r="${numeroLinha}">${colunas
-      .map((coluna, indice) => celulaXml(coluna.cabecalho, numeroLinha, indice, "texto", 1))
-      .join("")}</row>`,
-  );
-  numeroLinha += 1;
-
-  for (const valores of linhas) {
-    const estiloLinha = classificarLinha(aba, valores);
-    linhasXml.push(
-      `<row r="${numeroLinha}">${colunas
-        .map((coluna, indice) => celulaXml(
-          valores[indice],
-          numeroLinha,
-          indice,
-          coluna.tipo,
-          estiloCelula(estiloLinha, coluna.tipo),
-        ))
-        .join("")}</row>`,
-    );
-    numeroLinha += 1;
-  }
-
-  const colunasXml = colunas
-    .map((coluna, indice) => `<col min="${indice + 1}" max="${indice + 1}" width="${coluna.largura ?? 18}" customWidth="1"/>`)
-    .join("");
-  const mesclagensXml = mesclagens.length
-    ? `<mergeCells count="${mesclagens.length}">${mesclagens.map((ref) => `<mergeCell ref="${ref}"/>`).join("")}</mergeCells>`
-    : "";
-
-  const planilha = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <sheetViews><sheetView workbookViewId="0"><pane ySplit="${linhaCabecalho}" topLeftCell="A${linhaCabecalho + 1}" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
-  <cols>${colunasXml}</cols>
-  <sheetData>${linhasXml.join("")}</sheetData>
-  ${mesclagensXml}
-  <autoFilter ref="A${linhaCabecalho}:${referenciaColuna(totalColunas - 1)}${numeroLinha - 1}"/>
-</worksheet>`;
-
-  const estilos = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
   <fonts count="4">
     <font><sz val="11"/><name val="Calibri"/><family val="2"/></font>
@@ -331,49 +257,72 @@ export function exportarExcel({ arquivo, aba, colunas, linhas, titulo, subtitulo
   <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
   <cellXfs count="30">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
-    <xf numFmtId="0" fontId="3" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+    <xf numFmtId="0" fontId="3" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"><alignment horizontal="center"/></xf>
     <xf numFmtId="4" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
     <xf numFmtId="10" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
     <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
     <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
-
-    <xf numFmtId="0" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
-    <xf numFmtId="4" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
-    <xf numFmtId="10" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
-
-    <xf numFmtId="0" fontId="1" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
-    <xf numFmtId="4" fontId="1" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
-    <xf numFmtId="10" fontId="1" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
-
-    <xf numFmtId="0" fontId="1" fillId="5" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
-    <xf numFmtId="4" fontId="1" fillId="5" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
-    <xf numFmtId="10" fontId="1" fillId="5" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
-
-    <xf numFmtId="0" fontId="1" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
-    <xf numFmtId="4" fontId="1" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
-    <xf numFmtId="10" fontId="1" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
-
-    <xf numFmtId="0" fontId="1" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
-    <xf numFmtId="4" fontId="1" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
-    <xf numFmtId="10" fontId="1" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
-
-    <xf numFmtId="0" fontId="1" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
-    <xf numFmtId="4" fontId="1" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
-    <xf numFmtId="10" fontId="1" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
-
-    <xf numFmtId="0" fontId="1" fillId="9" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
-    <xf numFmtId="4" fontId="1" fillId="9" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
-    <xf numFmtId="10" fontId="1" fillId="9" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
-
-    <xf numFmtId="0" fontId="1" fillId="10" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
-    <xf numFmtId="4" fontId="1" fillId="10" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
-    <xf numFmtId="10" fontId="1" fillId="10" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"/>
+    ${xfsLinha}
   </cellXfs>
   <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>`;
+}
+
+export function exportarExcel({ arquivo, aba, colunas, linhas, titulo, subtitulo }: ExportarExcelOpcoes) {
+  if (!colunas.length) throw new Error("Exportação Excel sem colunas definidas.");
+  if (!linhas.length) throw new Error("Exportação Excel sem linhas de dados.");
+
+  const nomeAba = nomeAbaSeguro(aba);
+  const totalColunas = colunas.length;
+  const linhasXml: string[] = [];
+  const mesclagens: string[] = [];
+  let numeroLinha = 1;
+
+  if (titulo) {
+    linhasXml.push(`<row r="${numeroLinha}">${celulaXml(titulo, numeroLinha, 0, "texto", 4)}</row>`);
+    if (totalColunas > 1) mesclagens.push(`A${numeroLinha}:${referenciaColuna(totalColunas - 1)}${numeroLinha}`);
+    numeroLinha += 1;
+  }
+
+  if (subtitulo) {
+    linhasXml.push(`<row r="${numeroLinha}">${celulaXml(subtitulo, numeroLinha, 0, "texto", 5)}</row>`);
+    if (totalColunas > 1) mesclagens.push(`A${numeroLinha}:${referenciaColuna(totalColunas - 1)}${numeroLinha}`);
+    numeroLinha += 1;
+  }
+
+  const linhaCabecalho = numeroLinha;
+  linhasXml.push(`<row r="${numeroLinha}">${colunas.map((coluna, indice) => celulaXml(coluna.cabecalho, numeroLinha, indice, "texto", 1)).join("")}</row>`);
+  numeroLinha += 1;
+
+  for (const valores of linhas) {
+    const estiloLinha = classificarLinha(aba, valores);
+    linhasXml.push(`<row r="${numeroLinha}">${colunas.map((coluna, indice) => celulaXml(
+      valores[indice], numeroLinha, indice, coluna.tipo, estiloCelula(estiloLinha, coluna.tipo),
+    )).join("")}</row>`);
+    numeroLinha += 1;
+  }
+
+  const ultimaLinha = numeroLinha - 1;
+  const ultimaColuna = referenciaColuna(totalColunas - 1);
+  const colunasXml = colunas.map((coluna, indice) => `<col min="${indice + 1}" max="${indice + 1}" width="${coluna.largura ?? 18}" customWidth="1"/>`).join("");
+  const mesclagensXml = mesclagens.length
+    ? `<mergeCells count="${mesclagens.length}">${mesclagens.map((ref) => `<mergeCell ref="${ref}"/>`).join("")}</mergeCells>`
+    : "";
+
+  const planilha = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <dimension ref="A1:${ultimaColuna}${ultimaLinha}"/>
+  <sheetViews><sheetView workbookViewId="0"><pane ySplit="${linhaCabecalho}" topLeftCell="A${linhaCabecalho + 1}" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
+  <sheetFormatPr defaultRowHeight="15"/>
+  <cols>${colunasXml}</cols>
+  <sheetData>${linhasXml.join("")}</sheetData>
+  <autoFilter ref="A${linhaCabecalho}:${ultimaColuna}${ultimaLinha}"/>
+  ${mesclagensXml}
+</worksheet>`;
 
   const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <bookViews><workbookView/></bookViews>
   <sheets><sheet name="${escaparXml(nomeAba)}" sheetId="1" r:id="rId1"/></sheets>
 </workbook>`;
 
@@ -391,7 +340,7 @@ export function exportarExcel({ arquivo, aba, colunas, linhas, titulo, subtitulo
       nome: "xl/_rels/workbook.xml.rels",
       conteudo: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`,
     },
-    { nome: "xl/styles.xml", conteudo: estilos },
+    { nome: "xl/styles.xml", conteudo: estilosXml() },
     { nome: "xl/worksheets/sheet1.xml", conteudo: planilha },
   ];
 
@@ -401,8 +350,9 @@ export function exportarExcel({ arquivo, aba, colunas, linhas, titulo, subtitulo
   const link = document.createElement("a");
   link.href = url;
   link.download = arquivo.toLowerCase().endsWith(".xlsx") ? arquivo : `${arquivo}.xlsx`;
+  link.style.display = "none";
   document.body.appendChild(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
