@@ -147,9 +147,14 @@
   }
 }
 
+/* Cabeçalho documental global: oculto na tela e exibido somente na impressão. */
+.erp-print-document-header {
+  display: none;
+}
+
 @page {
   size: A4 landscape;
-  margin: 8mm;
+  margin: 7mm;
 }
 
 @media print {
@@ -161,11 +166,13 @@
     padding: 0 !important;
     background: #fff !important;
     color: #000 !important;
+    font-size: 9pt !important;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
 
-  main {
+  main,
+  .erp-page-shell {
     width: 100% !important;
     min-width: 0 !important;
     max-width: none !important;
@@ -174,6 +181,17 @@
     overflow: visible !important;
   }
 
+  .erp-page-shell {
+    display: block !important;
+  }
+
+  .erp-route-content {
+    display: block !important;
+  }
+
+  .erp-page-header,
+  .erp-page-actions,
+  .erp-screen-only,
   button,
   input,
   select,
@@ -182,15 +200,82 @@
     display: none !important;
   }
 
+  /*
+   * REGRA GLOBAL DE RELATÓRIO:
+   * Em rotas contábeis imprimíveis, só permanece o caminho de DOM que contém
+   * uma tabela/demonstração. Cards de indicadores, alertas, filtros e textos de
+   * interface são automaticamente retirados da impressão.
+   * O seletor para antes do elemento table para nunca ocultar o documento.
+   */
+  .erp-report-page .erp-route-content > *:not(:has(table)):not(table),
+  .erp-report-page .erp-route-content > :has(table) > *:not(:has(table)):not(table),
+  .erp-report-page .erp-route-content > :has(table) > :has(table) > *:not(:has(table)):not(table),
+  .erp-report-page .erp-route-content > :has(table) > :has(table) > :has(table) > *:not(:has(table)):not(table) {
+    display: none !important;
+  }
+
+  .erp-print-document-header {
+    display: block !important;
+    margin: 0 0 4mm !important;
+    padding: 0 0 3mm !important;
+    border-bottom: 1.2px solid #111 !important;
+    color: #000 !important;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .erp-print-company {
+    font-size: 12pt !important;
+    line-height: 1.2 !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+  }
+
+  .erp-print-company-meta {
+    margin-top: 1mm !important;
+    font-size: 8pt !important;
+    line-height: 1.2 !important;
+  }
+
+  .erp-print-report-title {
+    margin-top: 3mm !important;
+    font-size: 11pt !important;
+    line-height: 1.2 !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+  }
+
+  .erp-print-period {
+    margin-top: 1mm !important;
+    font-size: 8.5pt !important;
+    line-height: 1.2 !important;
+  }
+
+  .erp-report-page [class*="rounded"],
+  .erp-report-page [class*="shadow"] {
+    box-shadow: none !important;
+  }
+
+  .erp-report-page [class*="relative"]:has(input) {
+    display: none !important;
+  }
+
+  .erp-report-page table,
   table {
     width: 100% !important;
     max-width: 100% !important;
+    min-width: 0 !important;
     table-layout: auto !important;
     border-collapse: collapse !important;
+    font-size: 7.6pt !important;
   }
 
   thead {
     display: table-header-group !important;
+  }
+
+  tfoot {
+    display: table-footer-group !important;
   }
 
   tr {
@@ -200,16 +285,39 @@
 
   th,
   td {
-    padding: 2px 4px !important;
-    line-height: 1.15 !important;
+    padding: 1.2mm 1mm !important;
+    line-height: 1.12 !important;
     white-space: normal !important;
+    vertical-align: top !important;
   }
 
-  [class*="overflow-x-auto"] {
+  th {
+    font-size: 7.1pt !important;
+    font-weight: 700 !important;
+  }
+
+  /* Coluna de navegação da tela não pertence ao documento impresso. */
+  .erp-report-page[data-report-kind="Balancete"] table th:last-child,
+  .erp-report-page[data-report-kind="Balancete"] table td:last-child {
+    display: none !important;
+  }
+
+  [class*="overflow-x-auto"],
+  [class*="overflow-x-scroll"] {
     overflow: visible !important;
   }
 
-  [class*="min-w-[1450px]"] {
+  .erp-report-page table[class*="min-w-"],
+  [class*="min-w-[1350px]"],
+  [class*="min-w-[1450px]"],
+  [class*="min-w-[1600px]"],
+  [class*="min-w-[1750px]"],
+  [class*="min-w-[1900px]"] {
     min-width: 0 !important;
+  }
+
+  a {
+    color: #000 !important;
+    text-decoration: none !important;
   }
 }
