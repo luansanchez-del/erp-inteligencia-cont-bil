@@ -10,7 +10,7 @@ export const competenciaNitaplastJulho = {
   empresaId: "nitaplast-matriz",
   cnpjMatriz: "82.295.817/0001-07",
   cnpjFilial: "82.295.817/0003-60",
-  status: "em_fechamento" as const,
+  status: "fechado_com_pendencias" as const,
 };
 
 /**
@@ -30,15 +30,15 @@ export const fontesFechamentoJulho = [
     id: "fiscal-matriz",
     nome: "Fiscal — Matriz",
     detalhe: "Entradas, saídas, ICMS, ICMS-ST, IPI, devoluções, CT-e, canceladas e retenções de 07/2026.",
-    status: "em revisão" as StatusFonteJulho,
-    observacao: "Relatórios de validação fiscal foram desconsiderados. A revisão aqui é somente para formar os lançamentos contábeis pelos documentos fiscais recebidos.",
+    status: "validado" as StatusFonteJulho,
+    observacao: "Documentos fiscais usados na formação dos lançamentos contábeis. Relatórios de validação fiscal permanecem fora da análise contábil.",
   },
   {
     id: "fiscal-filial",
     nome: "Fiscal — Filial SP",
     detalhe: "Entradas, saídas, ICMS, IPI, devoluções, CT-e, canceladas e retenções de 07/2026.",
-    status: "em revisão" as StatusFonteJulho,
-    observacao: "Relatórios de validação fiscal foram desconsiderados. A revisão aqui é somente para formar os lançamentos contábeis pelos documentos fiscais recebidos.",
+    status: "validado" as StatusFonteJulho,
+    observacao: "Documentos fiscais da filial usados na formação do Razão. Relatórios de validação fiscal permanecem fora da análise contábil.",
   },
   {
     id: "contribuicoes",
@@ -58,35 +58,35 @@ export const fontesFechamentoJulho = [
     nome: "Entradas por centro de custo",
     detalhe: "Softdib 07/2026 normalizado por conta gerencial e centro de custo.",
     status: "em revisão" as StatusFonteJulho,
-    observacao: "Há R$ 7.047,92 sem distribuição completa por centro de custo em 9 documentos; não será rateado automaticamente.",
+    observacao: "Há R$ 7.047,92 sem distribuição completa por centro de custo em 9 documentos. A pendência fica evidenciada e não será rateada automaticamente.",
   },
   {
     id: "bancos",
     nome: "Bancos e aplicações",
     detalhe: "Bradesco, Itaú, Banco do Brasil, Greencred/Uniprime, Invest Fácil, Trust DI e Maxi DI recebidos para julho.",
     status: "validado" as StatusFonteJulho,
-    observacao: "Extratos recebidos e lidos. Aplicações, resgates e transferências entre contas com contrapartida segura já integram o Razão; recebimentos e pagamentos seguem conciliação analítica com clientes/fornecedores, sem conta de encaixe.",
+    observacao: "Extratos recebidos e lidos. Aplicações, resgates, transferências, recebimentos e pagamentos com contrapartida segura integram o Razão sem conta de encaixe.",
   },
   {
     id: "cambio",
     nome: "Contratos de câmbio",
-    detalhe: "Contratos de importação e exportação de julho recebidos e vinculáveis aos pagamentos/recebimentos.",
+    detalhe: "Contratos de importação e exportação de julho conciliados individualmente com títulos e liquidações quando há vínculo documental.",
     status: "em revisão" as StatusFonteJulho,
-    observacao: "Variação cambial fica fora desta etapa por orientação do usuário.",
+    observacao: "Duas variações cambiais ativas já foram comprovadas e lançadas: JHS NF 93556 e FERMAQ DP 92249/003. Os demais contratos permanecem pendentes sem estimativa nem lançamento até amarração do valor contábil de origem.",
   },
   {
     id: "clientes",
     nome: "Clientes / faturados",
     detalhe: "Posição de clientes faturados até 31/07/2026 recebida para composição do contas a receber.",
     status: "validado" as StatusFonteJulho,
-    observacao: "Fonte recebida e lida. O casamento por duplicata com os créditos bancários permanece como etapa de conciliação, sem estimativas.",
+    observacao: "Fonte recebida e usada na conciliação. Créditos bancários permanecem vinculados a clientes/duplicatas sem reconhecer receita novamente.",
   },
   {
     id: "folha",
-    nome: "Folha 07/2026",
-    detalhe: "Não localizada entre os arquivos de julho recebidos nesta etapa.",
-    status: "pendente" as StatusFonteJulho,
-    observacao: "Não repetir a folha de junho e não estimar julho. Só entra no Razão quando houver documento da competência.",
+    nome: "Folha e provisões 07/2026",
+    detalhe: "Folha mensal da matriz e filial, encargos e relatórios reais de provisão de férias e 13º de 07/2026.",
+    status: "validado" as StatusFonteJulho,
+    observacao: "Folha e encargos foram lançados pela competência. As provisões estimadas foram substituídas pelos relatórios reais de férias e 13º da matriz e filial.",
   },
 ] as const;
 
@@ -238,9 +238,8 @@ export const calculoJcpJulho = {
 
 /** Itens com tratamento manual/operacional no fechamento de julho. */
 export const itensManuaisJulho = [
-  { id: "jcp", nome: "JCP", regra: "contabilizado uma única vez pela rotina financeira", entraAgora: true },
-  { id: "depreciacao", nome: "Depreciação", regra: "mesma lógica de junho; valor lançado depois", entraAgora: false },
-  { id: "juros-ativo", nome: "Juros ativos", regra: "resultado financeiro manual", entraAgora: false },
-  { id: "juros-passivo", nome: "Juros passivos", regra: "resultado financeiro manual", entraAgora: false },
-  { id: "variacao-cambial", nome: "Variação cambial", regra: "resultado financeiro manual", entraAgora: false },
+  { id: "jcp", nome: "JCP", regra: "lançamento manual contabilizado uma única vez pela rotina financeira", entraAgora: true },
+  { id: "depreciacao", nome: "Depreciação", regra: "cálculo de julho contabilizado pelo módulo de imobilizado conforme recorrência real validada", entraAgora: true },
+  { id: "provisoes", nome: "Provisões de férias e 13º", regra: "apropriações reais de julho conforme relatórios da matriz e filial", entraAgora: true },
+  { id: "variacao-cambial", nome: "Variação cambial", regra: "somente contratos com título e liquidação comprovados; demais permanecem pendentes", entraAgora: true },
 ] as const;
