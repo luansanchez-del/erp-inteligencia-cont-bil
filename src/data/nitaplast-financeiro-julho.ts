@@ -25,8 +25,6 @@ const nomeConta = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(cod
  *   contábeis da Nitaplast ("VALOR REF. BAIXA PGTO...", "RECEBIMENTO EXPORTAÇÃO" etc.).
  */
 const contasBaseJcp = ["2348", "25240", "2515", "5747", "25241"] as const;
-// Os saldos patrimoniais de natureza credora são armazenados negativos no mapa de abertura.
-// A base fiscal/econômica do JCP deve ser positiva, por isso invertemos o saldo líquido do PL elegível.
 export const baseJcpJulho = arred(-contasBaseJcp.reduce((total, conta) => total + (saldoAberturaJulhoPorConta.get(conta) ?? 0), 0));
 export const taxaTjlpJulho = 0.007617;
 export const jcpBrutoJulho = arred(baseJcpJulho * taxaTjlpJulho);
@@ -66,9 +64,10 @@ export const cambioJhs93556 = {
   taxaContrato: 5.104,
 } as const;
 
-// FERMAQ / DP 92249-003: posição do contas a receber em 31/07 = R$ 62.189,73.
+// FERMAQ / DP 92249-003: posição documental do título = R$ 62.189,73.
 // Contrato 617257802 recebeu USD 12.430,39 por R$ 63.084,23 em 27/07.
-// Diferença realizada favorável: R$ 894,50.
+// O recebimento bancário já integra o Razão pelo lote agregado do Bradesco;
+// aqui entra apenas a reclassificação do excesso baixado de Duplicatas para VCA.
 export const cambioFermaq92249 = {
   documento: "DP 92249/003 / contrato 617257802",
   valorContabilDireito: 62189.73,
@@ -92,9 +91,9 @@ export const lancamentosCambioJulho: LancamentoIntegrado[] = [
     centroCusto: "PRODUÇÃO",
     valor: cambioJhs93556.valorLiquidado,
     status: "validado",
-    observacao: "O movimento bancário da importação já está reconhecido em Importações em Andamento. Esta partida leva o valor efetivamente liquidado para a baixa da obrigação, sem duplicar o banco.",
+    observacao: "A saída bancária da importação já está registrada em Importações em Andamento. Esta partida leva somente o principal liquidado para a baixa da obrigação, sem duplicar o banco.",
     rastreio: "documento",
-    fonte: "Conciliação entradas 07/2026 + contrato de câmbio 617226937",
+    fonte: "Conciliação entradas 07/2026 + contrato de câmbio 617226937 + movimentação bancária Bradesco 07/2026",
   },
   {
     id: "JUL-CAMBIO-JHS-93556-VCA",
@@ -115,29 +114,11 @@ export const lancamentosCambioJulho: LancamentoIntegrado[] = [
     fonte: "Conciliação entradas 07/2026 + contrato de câmbio 617226937",
   },
   {
-    id: "JUL-CAMBIO-FERMAQ-92249-BAIXA",
-    data: "27/07/2026",
-    origem: "CONTRATO DE CÂMBIO 617257802",
-    debitoCodigo: "9",
-    debito: nomeConta("9"),
-    creditoCodigo: "25111",
-    credito: nomeConta("25111"),
-    historico: "VALOR REF. RECEBIMENTO EXPORTAÇÃO - DP 92249/003 - FERMAQ - CONTRATO 617257802",
-    documento: "DP 92249/003 / contrato 617257802",
-    cc: "0",
-    centroCusto: "SEM CENTRO DE CUSTO",
-    valor: cambioFermaq92249.valorContabilDireito,
-    status: "validado",
-    observacao: "Baixa do valor contábil do título da FERMAQ contra o Bradesco. A diferença até o valor efetivamente recebido é reconhecida separadamente como variação cambial ativa.",
-    rastreio: "documento",
-    fonte: "Faturados até 31-07-2026.pdf + contrato de câmbio 617257802",
-  },
-  {
     id: "JUL-CAMBIO-FERMAQ-92249-VCA",
     data: "27/07/2026",
     origem: "CONTRATO DE CÂMBIO 617257802",
-    debitoCodigo: "9",
-    debito: nomeConta("9"),
+    debitoCodigo: "25111",
+    debito: nomeConta("25111"),
     creditoCodigo: "25096",
     credito: nomeConta("25096"),
     historico: "VARIAÇÃO CAMBIAL REF. RECEBIMENTO EXPORTAÇÃO - DP 92249/003 - FERMAQ - TX CÂMBIO 5,0750",
@@ -146,9 +127,9 @@ export const lancamentosCambioJulho: LancamentoIntegrado[] = [
     centroCusto: "RECEITAS FINANCEIRAS",
     valor: cambioFermaq92249.variacaoAtiva,
     status: "validado",
-    observacao: `Valor recebido R$ ${cambioFermaq92249.valorRecebido.toFixed(2)} menos direito contábil R$ ${cambioFermaq92249.valorContabilDireito.toFixed(2)} = variação cambial ativa R$ ${cambioFermaq92249.variacaoAtiva.toFixed(2)}.`,
+    observacao: `O recebimento de R$ ${cambioFermaq92249.valorRecebido.toFixed(2)} já está no lote bancário D Banco / C Duplicatas. Esta partida devolve R$ ${cambioFermaq92249.variacaoAtiva.toFixed(2)} para Duplicatas e reconhece a VCA, deixando a baixa líquida do título em R$ ${cambioFermaq92249.valorContabilDireito.toFixed(2)}.`,
     rastreio: "documento",
-    fonte: "Faturados até 31-07-2026.pdf + contrato de câmbio 617257802",
+    fonte: "Faturados até 31-07-2026.pdf + contrato de câmbio 617257802 + movimentação bancária Bradesco 07/2026",
   },
 ];
 
@@ -161,9 +142,7 @@ export const contratosCambioJulhoPendentes = [
   { contrato: "617262643", data: "27/07/2026", beneficiario: "PLASTICENTRO", usd: 47588.30, brl: 241510.62, referencia: "EXPORTAÇÃO", motivo: "Há vários títulos da PLASTICENTRO em aberto; falta identificar quais duplicatas compõem exatamente o recebimento do contrato para medir a variação sem escolher títulos por aproximação." },
 ] as const;
 
-export const variacaoCambialAtivaValidada = arred(
-  cambioJhs93556.variacaoAtiva + cambioFermaq92249.variacaoAtiva,
-);
+export const variacaoCambialAtivaValidada = arred(cambioJhs93556.variacaoAtiva + cambioFermaq92249.variacaoAtiva);
 
 export const resumoFinanceiroJulho = {
   baseJcpJulho,
