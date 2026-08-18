@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { ArrowRightLeft, RotateCcw, X } from "lucide-react";
+import { ArrowRightLeft, Plus, RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { saldosImplantacao } from "@/data/nitaplast-implantacao";
 import type { LancamentoIntegrado } from "@/data/nitaplast-razao-integrado";
+import { useAjustesLancamentos, type DadosLancamentoManual } from "@/hooks/use-ajustes-lancamentos";
 import { removerReclassificacaoPersistida, type LadoReclassificacao } from "@/hooks/use-reclassificacoes-inteligentes";
 
 const centros = [
@@ -16,8 +17,15 @@ const centros = [
   ["302", "FINANCEIRO"],
   ["304", "ADM GERAL"],
   ["502", "COMERCIAL SP"],
+  ["901", "RECEITAS FINANCEIRAS"],
   ["902", "DESPESAS FINANCEIRAS"],
 ] as const;
+
+function parseValor(valor: string) {
+  const texto = valor.trim();
+  if (!texto) return Number.NaN;
+  return Number(texto.includes(",") ? texto.replace(/\./g, "").replace(",", ".") : texto);
+}
 
 export function ReclassificacaoInteligente({
   lancamento,
@@ -36,11 +44,27 @@ export function ReclassificacaoInteligente({
   }) => void;
   onRemover?: (id: string) => void;
 }) {
+  const competencia = lancamento.data.endsWith("/07/2026") ? "2026-07" : "2026-06";
+  const { registrarNovo } = useAjustesLancamentos(competencia);
+
   const [aberto, setAberto] = useState(false);
+  const [novoAberto, setNovoAberto] = useState(false);
   const [lado, setLado] = useState<LadoReclassificacao>("debito");
   const [contaDestino, setContaDestino] = useState("");
   const [ccDestino, setCcDestino] = useState(lancamento.cc || "0");
   const [motivo, setMotivo] = useState("");
+  const [erroNovo, setErroNovo] = useState<string | null>(null);
+  const [novo, setNovo] = useState({
+    data: lancamento.data,
+    debitoCodigo: "",
+    creditoCodigo: "",
+    historico: "",
+    documento: "",
+    cc: lancamento.cc || "0",
+    centroCusto: lancamento.centroCusto || "SEM CENTRO DE CUSTO",
+    valor: "",
+    motivo: "",
+  });
 
   const contas = useMemo(
     () => [...saldosImplantacao].sort((a, b) => a.classificacao.localeCompare(b.classificacao, "pt-BR", { numeric: true })),
@@ -68,6 +92,42 @@ export function ReclassificacaoInteligente({
     setMotivo("");
   }
 
+  function abrirNovoLancamento() {
+    setErroNovo(null);
+    setNovo({
+      data: lancamento.data,
+      debitoCodigo: "",
+      creditoCodigo: "",
+      historico: "",
+      documento: lancamento.documento || "",
+      cc: lancamento.cc || "0",
+      centroCusto: lancamento.centroCusto || "SEM CENTRO DE CUSTO",
+      valor: "",
+      motivo: "",
+    });
+    setNovoAberto(true);
+  }
+
+  function salvarNovoLancamento() {
+    try {
+      const dados: DadosLancamentoManual = {
+        data: novo.data.trim(),
+        debitoCodigo: novo.debitoCodigo.trim(),
+        creditoCodigo: novo.creditoCodigo.trim(),
+        historico: novo.historico.trim(),
+        documento: novo.documento.trim(),
+        cc: novo.cc.trim() || "0",
+        centroCusto: novo.centroCusto.trim() || "SEM CENTRO DE CUSTO",
+        valor: parseValor(novo.valor),
+      };
+      registrarNovo(dados, novo.motivo.trim() || "Lançamento contábil efetuado pelo usuário");
+      setNovoAberto(false);
+      setErroNovo(null);
+    } catch (erro) {
+      setErroNovo(erro instanceof Error ? erro.message : "Não foi possível efetuar o lançamento contábil.");
+    }
+  }
+
   if (lancamento.origem === "RECLASSIFICAÇÃO INTELIGENTE") {
     const id = lancamento.id.replace(/^RCL-/, "");
     const desfazer = onRemover ?? removerReclassificacaoPersistida;
@@ -81,17 +141,30 @@ export function ReclassificacaoInteligente({
 
   return (
     <>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="h-8 gap-1.5 px-2"
-        title="Reclassificação inteligente"
-        onClick={() => setAberto(true)}
-      >
-        <ArrowRightLeft className="size-4" />
-        <span className="hidden xl:inline">Reclassificar</span>
-      </Button>
+      <div className="flex flex-wrap justify-end gap-1">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1.5 px-2"
+          title="Reclassificação inteligente"
+          onClick={() => setAberto(true)}
+        >
+          <ArrowRightLeft className="size-4" />
+          <span className="hidden xl:inline">Reclassificar</span>
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1.5 px-2"
+          title="Efetuar lançamento contábil"
+          onClick={abrirNovoLancamento}
+        >
+          <Plus className="size-4" />
+          <span className="hidden xl:inline">Lançamento contábil</span>
+        </Button>
+      </div>
 
       {aberto ? (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
@@ -155,6 +228,77 @@ export function ReclassificacaoInteligente({
             <div className="flex justify-end gap-2 border-t p-4">
               <Button variant="outline" onClick={() => setAberto(false)}>Cancelar</Button>
               <Button disabled={!podeSalvar} onClick={salvar}><ArrowRightLeft className="mr-2 size-4" />Contabilizar reclassificação</Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {novoAberto ? (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+          <div className="w-full max-w-3xl rounded-xl border bg-background shadow-xl">
+            <div className="flex items-start justify-between border-b p-4">
+              <div>
+                <p className="font-semibold">Efetuar lançamento contábil</p>
+                <p className="mt-1 text-xs text-muted-foreground">Cria uma nova partida real e auditável. Não é reclassificação e não altera o lançamento original.</p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setNovoAberto(false)}><X className="size-4" /></Button>
+            </div>
+
+            <div className="grid gap-4 p-4">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <label className="grid gap-1 text-xs font-medium">Data
+                  <input value={novo.data} onChange={(e) => setNovo((x) => ({ ...x, data: e.target.value }))} className="h-9 rounded-md border bg-background px-3 text-sm" placeholder="DD/MM/AAAA" />
+                </label>
+                <label className="grid gap-1 text-xs font-medium">Valor
+                  <input value={novo.valor} onChange={(e) => setNovo((x) => ({ ...x, valor: e.target.value }))} className="h-9 rounded-md border bg-background px-3 text-sm" placeholder="0,00" />
+                </label>
+                <label className="grid gap-1 text-xs font-medium">Centro de custo
+                  <select value={novo.cc} onChange={(e) => {
+                    const codigo = e.target.value;
+                    const nome = centros.find(([c]) => c === codigo)?.[1] ?? novo.centroCusto;
+                    setNovo((x) => ({ ...x, cc: codigo, centroCusto: nome }));
+                  }} className="h-9 rounded-md border bg-background px-3 text-sm">
+                    {centros.map(([codigo, nome]) => <option key={codigo} value={codigo}>{codigo} · {nome}</option>)}
+                  </select>
+                </label>
+                <label className="grid gap-1 text-xs font-medium">Documento
+                  <input value={novo.documento} onChange={(e) => setNovo((x) => ({ ...x, documento: e.target.value }))} className="h-9 rounded-md border bg-background px-3 text-sm" placeholder="Documento/evidência" />
+                </label>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-1 text-xs font-medium">Conta débito
+                  <select value={novo.debitoCodigo} onChange={(e) => setNovo((x) => ({ ...x, debitoCodigo: e.target.value }))} className="h-10 rounded-md border bg-background px-3 text-sm">
+                    <option value="">Selecione…</option>
+                    {contas.map((conta) => <option key={`d-${conta.conta}-${conta.classificacao}`} value={conta.conta}>{conta.conta} · {conta.classificacao} · {conta.descricao}</option>)}
+                  </select>
+                </label>
+                <label className="grid gap-1 text-xs font-medium">Conta crédito
+                  <select value={novo.creditoCodigo} onChange={(e) => setNovo((x) => ({ ...x, creditoCodigo: e.target.value }))} className="h-10 rounded-md border bg-background px-3 text-sm">
+                    <option value="">Selecione…</option>
+                    {contas.map((conta) => <option key={`c-${conta.conta}-${conta.classificacao}`} value={conta.conta}>{conta.conta} · {conta.classificacao} · {conta.descricao}</option>)}
+                  </select>
+                </label>
+              </div>
+
+              <label className="grid gap-1 text-xs font-medium">Histórico contábil
+                <textarea value={novo.historico} onChange={(e) => setNovo((x) => ({ ...x, historico: e.target.value }))} rows={3} placeholder="Descrição humana do fato contábil" className="rounded-md border bg-background p-3 text-sm" />
+              </label>
+
+              <label className="grid gap-1 text-xs font-medium">Motivo / evidência da ação
+                <textarea value={novo.motivo} onChange={(e) => setNovo((x) => ({ ...x, motivo: e.target.value }))} rows={2} placeholder="Por que este lançamento está sendo efetuado?" className="rounded-md border bg-background p-3 text-sm" />
+              </label>
+
+              {erroNovo ? <div className="rounded-md border border-red-300 bg-red-50 p-3 text-xs text-red-800">{erroNovo}</div> : null}
+
+              <div className="rounded-md border border-emerald-300 bg-emerald-50 p-3 text-xs text-emerald-900">
+                O lançamento criado entra como fato contábil manual auditável. Ele deve repercutir no mesmo Razão usado pelo Balancete e pela DRE da competência.
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 border-t p-4">
+              <Button variant="outline" onClick={() => setNovoAberto(false)}>Cancelar</Button>
+              <Button onClick={salvarNovoLancamento}><Plus className="mr-2 size-4" />Efetuar lançamento contábil</Button>
             </div>
           </div>
         </div>
