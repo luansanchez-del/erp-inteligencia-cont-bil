@@ -21,6 +21,7 @@ export const resumoJcpJulho = {
   bruto: jcpBrutoJulho,
   contabilizado: jcpBrutoJulho,
   irrfCalculadoInformativo: irrfJcpJulho,
+  irrfPotencial: irrfJcpJulho,
   irrfContabilizado: 0,
   contabilizadoNoRazao: true,
   pago: false,
