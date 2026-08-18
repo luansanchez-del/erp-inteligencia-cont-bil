@@ -1,39 +1,33 @@
-import { saldosImplantacao } from "./nitaplast-implantacao";
 import type { LancamentoIntegrado } from "./nitaplast-razao-base";
 import { lancamentosIntegradosJulhoFinal, resumoFechamentoJulhoFinal } from "./nitaplast-razao-julho-final-v2";
 import { resumoFinanceiroJulho } from "./nitaplast-financeiro-julho";
-import { estabelecimentoResultadoNitaplast } from "./nitaplast-estabelecimento";
+import { calcularBalanceteJulho } from "./nitaplast-balancete-julho-engine";
 
 const arred=(v:number)=>Math.round(v*100)/100;
-const classificacaoPorConta=new Map(saldosImplantacao.map(c=>[c.conta,c.classificacao]));
-const descricaoPorConta=new Map(saldosImplantacao.map(c=>[c.conta,c.descricao]));
-// A conta 4760 consta no plano de contas vigente, mas não veio na implantação porque estava sem saldo.
-classificacaoPorConta.set("4760","5.9.01.003.002");
-descricaoPorConta.set("4760","Custo Vendas do Ativo Imobilizado");
 
 type EstabelecimentoResultado="Matriz"|"Filial SP";
-type Acc={codigo:string;classificacao:string;descricao:string;cc:string;centroCusto:string;estabelecimento:EstabelecimentoResultado;debitos:number;creditos:number;valor:number;status:"validado"|"revisar";fonte:string};
 export type ComposicaoResultadoJulho = {
   id:string;conta:string;classificacao:string;descricao:string;cc:string;centroCusto:string;estabelecimento:EstabelecimentoResultado;
   valor:number;status:"validado"|"revisar";fonte:string;debitos:number;creditos:number;
 };
 
 /*
- * Regra estrutural: o Razão forma o Balancete e o Balancete forma a DRE.
- * A DRE não cria valor. O estabelecimento também é herdado da evidência do
- * lançamento (conta dedicada, CC, origem/documento/fonte) antes da apresentação.
+ * Regra estrutural obrigatória:
+ * documento/fato real -> Razão -> Balancete -> DRE.
+ * A DRE consome o MOVIMENTO mensal das contas analíticas do Balancete.
+ * Saldo acumulado não alimenta DRE e nenhuma linha gerencial cria débito/crédito.
  */
 const contasCustoOperacionalJulho=new Set(["3093","3095"]);
 const contasAlienacaoImobilizadoJulho=new Set(["4736","4760"]);
 export const contasReceitasFinanceirasJulho=new Set([
-  "4927", // Descontos obtidos
-  "25095", // Juros ativos
-  "25096", // Variações cambiais ativas
-  "25097", // Receitas eventuais
-  "25098", // Aplicações financeiras
-  "25099", // Recuperação de despesas
-  "25100", // Amostra grátis recebida
-  "25101", // Atualização pela SELIC
+  "4927",
+  "25095",
+  "25096",
+  "25097",
+  "25098",
+  "25099",
+  "25100",
+  "25101",
 ]);
 
 export function ehCustoDreJulho(x:Pick<ComposicaoResultadoJulho,"conta"|"classificacao">){
@@ -48,16 +42,16 @@ export function ehDespesaOperacionalDreJulho(x:Pick<ComposicaoResultadoJulho,"co
 }
 
 export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
-  function mov(codigo:string){return arred(base.reduce((s,l)=>s+(l.debitoCodigo===codigo?l.valor:0)-(l.creditoCodigo===codigo?l.valor:0),0));}
+  const balancete=calcularBalanceteJulho(base);
+
+  // A origem dos totais é o Balancete analítico, nunca um segundo cálculo paralelo.
+  function mov(codigo:string){return balancete.movimentoPorConta.get(codigo)?.movimento??0;}
   function movExcluindo(codigo:string,idsExcluidos:Set<string>){
-    return arred(base.reduce((s,l)=>idsExcluidos.has(l.id)?s:s+(l.debitoCodigo===codigo?l.valor:0)-(l.creditoCodigo===codigo?l.valor:0),0));
+    const excluido=arred(base.filter(l=>idsExcluidos.has(l.id)).reduce((s,l)=>s+(l.debitoCodigo===codigo?l.valor:0)-(l.creditoCodigo===codigo?l.valor:0),0));
+    return arred(mov(codigo)-excluido);
   }
   function movEstabelecimento(codigo:string,estabelecimento:EstabelecimentoResultado){
-    return arred(base.reduce((s,l)=>{
-      const est=estabelecimentoResultadoNitaplast(l,codigo);
-      if(est!==estabelecimento)return s;
-      return s+(l.debitoCodigo===codigo?l.valor:0)-(l.creditoCodigo===codigo?l.valor:0);
-    },0));
+    return arred(balancete.movimentosDetalhados.filter(x=>x.conta===codigo&&x.estabelecimento===estabelecimento).reduce((s,x)=>s+x.movimento,0));
   }
   function creditoLiquido(codigo:string){return arred(-mov(codigo));}
   function creditoLiquidoEstab(codigo:string,estabelecimento:EstabelecimentoResultado){return arred(-movEstabelecimento(codigo,estabelecimento));}
@@ -68,8 +62,7 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   const devolucoes=Math.max(0,mov("25943"));
   const icmsMatriz=Math.max(0,mov("2827"));
 
-  // A apuração da Filial contém R$ 3.894,05 de ICMS de transferências internas.
-  // O fato permanece no Razão, mas não é dedução de receita de venda na DRE.
+  // ICMS de transferência permanece contabilizado no Balancete, mas não é dedução de venda na DRE.
   const idsIcmsTransferenciaInterna=new Set(["JUL-ICMS-F-DEB-TRANSF"]);
   const icmsFilial=Math.max(0,movExcluindo("25054",idsIcmsTransferenciaInterna));
   const icmsFilialTransferenciasInternas=Math.max(0,arred(base.filter(l=>idsIcmsTransferenciaInterna.has(l.id)).reduce((s,l)=>s+(l.debitoCodigo==="25054"?l.valor:0)-(l.creditoCodigo==="25054"?l.valor:0),0)));
@@ -84,8 +77,6 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   const deducoes=arred(devolucoes+icms+icmsSt+ipi+pis+cofins);
   const receitaLiquida=arred(receitaBruta-deducoes);
 
-  // Abertura Matriz/Filial de contas compartilhadas: somente a parcela identificada
-  // documentalmente como Filial é destacada; o restante permanece Matriz.
   const devolucoesFilial=Math.max(0,movEstabelecimento("25943","Filial SP"));
   const devolucoesMatriz=arred(devolucoes-devolucoesFilial);
   const pisFilial=Math.max(0,movEstabelecimento("2829","Filial SP"));
@@ -95,40 +86,46 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   const icmsStFilial=Math.max(0,movEstabelecimento("2832","Filial SP"));
   const icmsStMatriz=arred(icmsSt-icmsStFilial);
 
-  const mapa=new Map<string,Acc>();
-  for(const l of base){
-    for(const lado of ["D","C"] as const){
-      const codigo=lado==="D"?l.debitoCodigo:l.creditoCodigo;
-      const classificacao=classificacaoPorConta.get(codigo)??"";
-      if(!(classificacao.startsWith("4.2")||classificacao.startsWith("5.")))continue;
-      const estabelecimento=estabelecimentoResultadoNitaplast(l,codigo);
-      const chave=`${codigo}|${l.cc}|${estabelecimento}`;
-      const atual=mapa.get(chave)??{codigo,classificacao,descricao:descricaoPorConta.get(codigo)??"Conta a revisar",cc:l.cc,centroCusto:l.centroCusto,estabelecimento,debitos:0,creditos:0,valor:0,status:"validado",fonte:l.fonte};
-      if(lado==="D")atual.debitos+=l.valor;else atual.creditos+=l.valor;
-      atual.valor=arred(atual.debitos-atual.creditos);
-      if(l.status==="revisar")atual.status="revisar";
-      mapa.set(chave,atual);
-    }
-  }
+  // Composição por CC/estabelecimento é a abertura analítica do mesmo Balancete.
+  const composicao:ComposicaoResultadoJulho[]=balancete.movimentosDetalhados
+    .filter(x=>x.classificacao.startsWith("4.2")||x.classificacao.startsWith("5."))
+    .map((x,i)=>({
+      id:`DRE-JUL-${i+1}`,
+      conta:x.conta,
+      classificacao:x.classificacao,
+      descricao:x.descricao,
+      cc:x.cc,
+      centroCusto:x.centroCusto,
+      estabelecimento:x.estabelecimento,
+      valor:x.movimento,
+      status:x.status,
+      fonte:x.fonte,
+      debitos:x.debitos,
+      creditos:x.creditos,
+    }));
 
-  const composicao:ComposicaoResultadoJulho[]=[...mapa.values()]
-    .filter(x=>Math.abs(x.valor)>=0.005)
-    .map((x,i)=>({id:`DRE-JUL-${i+1}`,conta:x.codigo,classificacao:x.classificacao,descricao:x.descricao,cc:x.cc,centroCusto:x.centroCusto,estabelecimento:x.estabelecimento,valor:x.valor,status:x.status,fonte:x.fonte,debitos:arred(x.debitos),creditos:arred(x.creditos)}));
+  // Trava: a abertura detalhada de cada conta de resultado deve fechar com o movimento do Balancete.
+  const contasResultado=[...new Set(composicao.map(x=>x.conta))];
+  for(const conta of contasResultado){
+    const detalhe=arred(composicao.filter(x=>x.conta===conta).reduce((s,x)=>s+x.valor,0));
+    if(Math.abs(detalhe-mov(conta))>0.01)throw new Error(`DRE não conciliou com o Balancete na conta ${conta}: ${detalhe.toFixed(2)} / ${mov(conta).toFixed(2)}`);
+  }
+  if(Math.abs(balancete.conferencia.diferencaDebitosCreditos)>0.01)throw new Error("Razão de julho não fecha: Débitos diferentes de Créditos.");
+  if(Math.abs(balancete.conferencia.somaMovimentosAnaliticos)>0.01)throw new Error(`Balancete de julho não fecha no movimento analítico: ${balancete.conferencia.somaMovimentosAnaliticos.toFixed(2)}.`);
 
   const custosItens=composicao.filter(ehCustoDreJulho);
   const custos=arred(custosItens.reduce((s,x)=>s+x.valor,0));
   const custosMatriz=arred(custosItens.filter(x=>x.estabelecimento==="Matriz").reduce((s,x)=>s+x.valor,0));
   const custosFilial=arred(custosItens.filter(x=>x.estabelecimento==="Filial SP").reduce((s,x)=>s+x.valor,0));
 
-  // CPV é o custo completo formado no Razão. 25944/25945 são somente a parcela
-  // de fechamento/variação de estoque, não o CPV inteiro.
+  // 25944/25945 são componentes de fechamento de estoque. CPV total é todo o custo do Balancete.
   const fechamentoEstoqueMatriz=arred(custosItens.filter(x=>x.conta==="25944").reduce((s,x)=>s+x.valor,0));
   const fechamentoEstoqueFilial=arred(custosItens.filter(x=>x.conta==="25945").reduce((s,x)=>s+x.valor,0));
   const cpvMatriz=custosMatriz;
   const cpvFilial=custosFilial;
   const outrosCustosMatriz=arred(cpvMatriz-fechamentoEstoqueMatriz);
   const outrosCustosFilial=arred(cpvFilial-fechamentoEstoqueFilial);
-  if(Math.abs(arred(cpvMatriz+cpvFilial)-custos)>0.01)throw new Error("CPV Matriz + Filial não concilia com os custos do Razão.");
+  if(Math.abs(arred(cpvMatriz+cpvFilial)-custos)>0.01)throw new Error("CPV Matriz + Filial não concilia com o Balancete.");
   if(Math.abs(arred(fechamentoEstoqueMatriz+outrosCustosMatriz)-cpvMatriz)>0.01)throw new Error("Composição do CPV Matriz não concilia.");
   if(Math.abs(arred(fechamentoEstoqueFilial+outrosCustosFilial)-cpvFilial)>0.01)throw new Error("Composição do CPV Filial não concilia.");
 
@@ -136,7 +133,7 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   const despesasOperacionais=arred(despesasOperacionaisItens.reduce((s,x)=>s+x.valor,0));
   const despesasOperacionaisMatriz=arred(despesasOperacionaisItens.filter(x=>x.estabelecimento==="Matriz").reduce((s,x)=>s+x.valor,0));
   const despesasOperacionaisFilial=arred(despesasOperacionaisItens.filter(x=>x.estabelecimento==="Filial SP").reduce((s,x)=>s+x.valor,0));
-  if(Math.abs(arred(despesasOperacionaisMatriz+despesasOperacionaisFilial)-despesasOperacionais)>0.01)throw new Error("Despesas operacionais Matriz + Filial não conciliam.");
+  if(Math.abs(arred(despesasOperacionaisMatriz+despesasOperacionaisFilial)-despesasOperacionais)>0.01)throw new Error("Despesas operacionais Matriz + Filial não conciliam com o Balancete.");
 
   const despesasFinanceirasItens=composicao.filter(ehDespesaFinanceiraDreJulho);
   const despesasFinanceiras=arred(despesasFinanceirasItens.reduce((s,x)=>s+x.valor,0));
@@ -154,8 +151,6 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   const jcp=Math.max(0,mov("25107"));
   const variacaoCambialPassiva=Math.max(0,mov("25109"));
 
-  // Alienação: Mini + Corolla já estão documentados no Razão. O transformador
-  // fiscal de R$ 60 mil permanece fora até recebermos seu valor contábil residual.
   const receitaAlienacaoImobilizado=Math.max(0,creditoLiquido("4736"));
   const custoAlienacaoImobilizado=Math.max(0,mov("4760"));
   const resultadoAlienacaoImobilizado=arred(receitaAlienacaoImobilizado-custoAlienacaoImobilizado);
@@ -163,7 +158,6 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   const vendasAtivoImobilizadoReconhecidas=receitaAlienacaoImobilizado;
   const vendaAtivoImobilizadoPendente=arred(vendasAtivoImobilizadoFiscais-vendasAtivoImobilizadoReconhecidas);
 
-  // Energia: DRE usa movimento da competência, nunca saldo acumulado da conta.
   const energiaEletricaItens=composicao.filter(x=>x.conta==="3494"&&x.estabelecimento==="Matriz");
   const energiaEletricaMatriz=arred(energiaEletricaItens.reduce((s,x)=>s+x.valor,0));
   const energiaDebitosMatriz=arred(energiaEletricaItens.reduce((s,x)=>s+x.debitos,0));
@@ -198,11 +192,12 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
     receitaAlienacaoImobilizado,custoAlienacaoImobilizado,resultadoAlienacaoImobilizado,
     vendasAtivoImobilizadoFiscais,vendasAtivoImobilizadoReconhecidas,vendaAtivoImobilizadoPendente,
     energiaEletricaMatriz,energiaDebitosMatriz,energiaCreditosMatriz,
+    conferenciaBalancete:balancete.conferencia,
     resultado,
     status:"fechado_com_pendencias" as const,fechadoEm:"18/08/2026",
     possuiPendenciaBloqueante:true as const,
     pendenciasBloqueantes,
-    criterioFechamento:"Razão → Balancete → DRE. Toda linha de resultado é segregada por estabelecimento somente quando o próprio lançamento fornece evidência; nenhuma abertura gerencial cria fato contábil. A DRE usa movimento da competência, não saldo acumulado.",
+    criterioFechamento:"Documento/fato real → Razão → Balancete → DRE. A DRE lê o movimento mensal das contas analíticas do Balancete; saldo acumulado e conta sintética não são somados para formar resultado.",
     resumoRazao:resumoFechamentoJulhoFinal,financeiro:resumoFinanceiroJulho,
     pendenciasNaoBloqueantes:[`R$ ${resumoFinanceiroJulho.valorEntradasSemCcPendente.toFixed(2)} de entradas ainda sem distribuição completa por centro de custo`,`${resumoFinanceiroJulho.contratosCambioPendentes} contrato(s) de câmbio aguardando amarração do valor contábil de origem`],
     itensSemFonte:[`R$ ${resumoFinanceiroJulho.valorEntradasSemCcPendente.toFixed(2)} de entradas ainda sem centro de custo/documento suficiente`,`Contratos de câmbio ainda pendentes de valor contábil de origem: ${resumoFinanceiroJulho.contratosCambioPendentes}`],
