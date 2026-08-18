@@ -1,6 +1,11 @@
 import type { ReactNode } from "react";
 import { useErp } from "@/context/erp-context";
-import { BalanceteJulho, DiarioJulho, LancamentosJulho, RazaoJulho } from "@/components/nitaplast/contabil-julho";
+import {
+  BalanceteJulhoAjustavel,
+  DiarioJulhoAjustavel,
+  LancamentosJulhoAjustavel,
+  RazaoJulhoAjustavel,
+} from "@/components/nitaplast/contabil-julho-ajustavel";
 import { DreJulhoCompleta } from "@/components/nitaplast/dre-julho-completa";
 import { FechamentoNitaplastJulho } from "@/components/nitaplast/fechamento-julho";
 import { FechamentoBancarioJulho } from "@/components/nitaplast/fechamento-bancario-julho";
@@ -141,11 +146,11 @@ function periodoCompetencia(id: string, fallback: string) {
 }
 
 function telaContabilJulho(pathname: string) {
-  if (pathname === "/contabil/balancete") return <BalanceteJulho />;
-  if (pathname === "/contabil/razao" || pathname === "/relatorios/razao") return <RazaoJulho />;
-  if (pathname === "/contabil/diario" || pathname === "/relatorios/diario") return <DiarioJulho />;
+  if (pathname === "/contabil/balancete") return <BalanceteJulhoAjustavel />;
+  if (pathname === "/contabil/razao" || pathname === "/relatorios/razao") return <RazaoJulhoAjustavel />;
+  if (pathname === "/contabil/diario" || pathname === "/relatorios/diario") return <DiarioJulhoAjustavel />;
   if (pathname === "/contabil/dre" || pathname === "/relatorios/dre") return <DreJulhoCompleta />;
-  if (pathname === "/contabil/lancamentos") return <LancamentosJulho />;
+  if (pathname === "/contabil/lancamentos") return <LancamentosJulhoAjustavel />;
   if (pathname === "/contabil/fechamento") return <><FechamentoBancarioJulho /><FechamentoNitaplastJulho /></>;
   return null;
 }
