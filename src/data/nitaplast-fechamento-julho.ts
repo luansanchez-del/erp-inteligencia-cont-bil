@@ -174,43 +174,41 @@ export const entradasCentroCustoJulho = {
 
 const arred = (valor: number) => Math.round(valor * 100) / 100;
 const saldoCredorAbertura = (conta: string) => Math.max(0, -(saldoAberturaJulhoPorConta.get(conta) ?? 0));
+const saldoDevedorAbertura = (conta: string) => Math.max(0, saldoAberturaJulhoPorConta.get(conta) ?? 0);
 
 /**
- * Cálculo gerencial/fiscal do JCP de 07/2026.
+ * Cálculo do JCP de 07/2026 alinhado ao único lançamento que entra no Razão.
+ * A base considera as contas redutoras do mesmo grupo patrimonial e exclui a
+ * reserva de capital genérica 25239 até validação documental da natureza.
  *
- * IMPORTANTE:
- * - cálculo NÃO é lançamento;
- * - não entra no Razão enquanto não houver deliberação/crédito individualizado ao sócio;
- * - enquanto permanecer apenas calculado, IRRF reconhecido = zero;
- * - se houver deliberação/crédito, a rotina de lançamento deverá reconhecer o JCP bruto,
- *   o passivo líquido ao beneficiário e o IRRF de 17,5% separadamente.
- *
- * A reserva de capital 25239 permanece fora da base até a natureza societária ser
- * documentalmente validada, pois nem toda rubrica contábil chamada "reserva de capital"
- * integra automaticamente a base fiscal do JCP.
+ * Nesta competência, por orientação operacional, o IRRF é apenas informação
+ * tributária e não gera partida no Razão.
  */
 const capitalSocialIntegralizado = saldoCredorAbertura("2348");
 const reservaCapitalContabil = saldoCredorAbertura("25239");
 const reservasLucros = saldoCredorAbertura("25240");
 const lucrosAcumuladosAnteriores = saldoCredorAbertura("2515");
+const ajusteExercicioAnterior = saldoDevedorAbertura("5747");
+const distribuicaoLucros = saldoDevedorAbertura("25241");
 const reservaCapitalConsiderada = 0;
+const redutorasPatrimonio = arred(ajusteExercicioAnterior + distribuicaoLucros);
+const lucrosEReservasLiquidos = arred(reservasLucros + lucrosAcumuladosAnteriores - redutorasPatrimonio);
 const baseJcpJulho = arred(
   capitalSocialIntegralizado
   + reservaCapitalConsiderada
-  + reservasLucros
-  + lucrosAcumuladosAnteriores,
+  + lucrosEReservasLiquidos,
 );
 const tjlpMensalJulho = 0.007617;
 const jcpPelaTjlpJulho = arred(baseJcpJulho * tjlpMensalJulho);
-const limiteLucrosReservasJulho = arred((reservasLucros + lucrosAcumuladosAnteriores) * 0.5);
+const limiteLucrosReservasJulho = arred(lucrosEReservasLiquidos * 0.5);
 const jcpCalculadoJulho = Math.min(jcpPelaTjlpJulho, limiteLucrosReservasJulho);
 const irrfPotencialJcpJulho = arred(jcpCalculadoJulho * 0.175);
 
 export const calculoJcpJulho = {
   competencia: "07/2026",
   dataBase: "31/07/2026",
-  status: "calculado-nao-deliberado",
-  entraNoRazao: false,
+  status: "contabilizado",
+  entraNoRazao: true,
   geraIrrfAgora: false,
   base: {
     capitalSocialIntegralizado,
@@ -218,6 +216,10 @@ export const calculoJcpJulho = {
     reservaCapitalConsiderada,
     reservasLucros,
     lucrosAcumuladosAnteriores,
+    ajusteExercicioAnterior,
+    distribuicaoLucros,
+    redutorasPatrimonio,
+    lucrosEReservasLiquidos,
     total: baseJcpJulho,
   },
   tjlp: {
@@ -231,12 +233,12 @@ export const calculoJcpJulho = {
   jcpCalculado: jcpCalculadoJulho,
   irrfReconhecidoAgora: 0,
   irrfPotencialSeCreditado: irrfPotencialJcpJulho,
-  observacao: "Cálculo de julho mantido fora do Razão até deliberação/crédito individualizado. Não alterar junho.",
+  observacao: "JCP de julho contabilizado uma única vez no Razão. IRRF não contabilizado nesta etapa. Não alterar junho.",
 } as const;
 
-/** Estes itens não entram automaticamente no fechamento de julho. */
+/** Itens com tratamento manual/operacional no fechamento de julho. */
 export const itensManuaisJulho = [
-  { id: "jcp", nome: "JCP", regra: "calculado; aguarda deliberação/crédito para virar lançamento", entraAgora: false },
+  { id: "jcp", nome: "JCP", regra: "contabilizado uma única vez pela rotina financeira", entraAgora: true },
   { id: "depreciacao", nome: "Depreciação", regra: "mesma lógica de junho; valor lançado depois", entraAgora: false },
   { id: "juros-ativo", nome: "Juros ativos", regra: "resultado financeiro manual", entraAgora: false },
   { id: "juros-passivo", nome: "Juros passivos", regra: "resultado financeiro manual", entraAgora: false },
