@@ -58,6 +58,9 @@ export function PageShell({ children }: { children: ReactNode }) {
   const pathname = typeof window !== "undefined" ? window.location.pathname : "";
   const sensivel = rotasSensiveisCompetencia.some((rota) => pathname === rota || pathname.startsWith(`${rota}/`));
   const relatorioImprimivel = rotasRelatorioImpressao.some((rota) => pathname === rota || pathname.startsWith(`${rota}/`));
+  const dreJulhoImpressao = relatorioImprimivel
+    && competencia.id === "2026-07"
+    && (pathname === "/contabil/dre" || pathname === "/relatorios/dre");
 
   let conteudo: ReactNode = children;
 
@@ -93,7 +96,54 @@ export function PageShell({ children }: { children: ReactNode }) {
     <div
       className={`erp-page-shell mx-auto flex w-full max-w-[1500px] flex-col gap-5 p-4 md:p-6 ${relatorioImprimivel ? "erp-report-page" : ""}`}
       data-report-kind={relatorioImprimivel ? nomeModulo(pathname) : undefined}
+      data-report-period={relatorioImprimivel ? competencia.id : undefined}
     >
+      {dreJulhoImpressao ? (
+        <style>{`
+          @media print {
+            @page { size: A4 portrait; margin: 10mm; }
+
+            .erp-report-page[data-report-period="2026-07"][data-report-kind="Demonstração do Resultado do Exercício"] table button {
+              display: inline-flex !important;
+              padding: 0 !important;
+              border: 0 !important;
+              background: transparent !important;
+              color: #000 !important;
+              font: inherit !important;
+            }
+
+            .erp-report-page[data-report-period="2026-07"][data-report-kind="Demonstração do Resultado do Exercício"] table button svg {
+              display: none !important;
+            }
+
+            .erp-report-page[data-report-period="2026-07"][data-report-kind="Demonstração do Resultado do Exercício"] table > tbody > tr:has(> td[colspan="3"]) {
+              display: none !important;
+            }
+
+            .erp-report-page[data-report-period="2026-07"][data-report-kind="Demonstração do Resultado do Exercício"] table > thead > tr > th:last-child,
+            .erp-report-page[data-report-period="2026-07"][data-report-kind="Demonstração do Resultado do Exercício"] table > tbody > tr > td:last-child {
+              display: none !important;
+            }
+
+            .erp-report-page[data-report-period="2026-07"][data-report-kind="Demonstração do Resultado do Exercício"] table {
+              font-size: 9pt !important;
+            }
+          }
+        `}</style>
+      ) : null}
+
+      {dreJulhoImpressao ? (
+        <div className="erp-screen-only flex justify-end">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="inline-flex h-8 items-center justify-center rounded-md border bg-background px-3 text-sm font-medium shadow-xs hover:bg-accent hover:text-accent-foreground"
+          >
+            Imprimir / PDF
+          </button>
+        </div>
+      ) : null}
+
       {relatorioImprimivel ? (
         <PrintDocumentHeader
           empresa={empresa.razaoSocial}
