@@ -13,6 +13,31 @@ export type ComposicaoResultadoJulho = {
   valor:number;status:"validado"|"revisar";fonte:string;debitos:number;creditos:number;
 };
 
+/*
+ * O plano legado possui diversas despesas operacionais dentro do grupo 5.3.
+ * Portanto 5.3 não pode ser tratado integralmente como CPV/CMV. Mantemos como
+ * custo somente as contas cuja natureza documental é efetivamente de compra,
+ * frete de matéria-prima ou industrialização. As demais contas 5.3 seguem o
+ * centro de custo na apresentação gerencial da DRE.
+ */
+const contasCustoOperacionalJulho=new Set(["3093","3095","25937"]);
+const contasReceitasFinanceiras=new Set(["25095","25096","25098"]);
+
+export function ehCustoDreJulho(x:Pick<ComposicaoResultadoJulho,"conta"|"classificacao">){
+  return x.classificacao.startsWith("4.2")||x.classificacao.startsWith("5.1")||contasCustoOperacionalJulho.has(x.conta);
+}
+
+export function ehDespesaFinanceiraDreJulho(x:Pick<ComposicaoResultadoJulho,"classificacao">){
+  return x.classificacao.startsWith("5.8");
+}
+
+export function ehDespesaOperacionalDreJulho(x:Pick<ComposicaoResultadoJulho,"conta"|"classificacao">){
+  return x.classificacao.startsWith("5.")
+    && !ehCustoDreJulho(x)
+    && !ehDespesaFinanceiraDreJulho(x)
+    && !contasReceitasFinanceiras.has(x.conta);
+}
+
 /**
  * Calcula a DRE de julho exclusivamente a partir do Razão informado.
  * A função existe para que lançamentos/reclassificações manuais da competência
@@ -53,10 +78,10 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
     .filter(x=>Math.abs(x.valor)>=0.005)
     .map((x,i)=>({id:`DRE-JUL-${i+1}`,conta:x.codigo,classificacao:x.classificacao,descricao:x.descricao,cc:x.cc,centroCusto:x.centroCusto,valor:x.valor,status:x.status,fonte:x.fonte,debitos:arred(x.debitos),creditos:arred(x.creditos)}));
 
-  const ehCusto=(x:ComposicaoResultadoJulho)=>x.classificacao.startsWith("4.2")||x.classificacao.startsWith("5.1")||x.classificacao.startsWith("5.3");
-  const contasReceitasFinanceiras=new Set(["25095","25096","25098"]);
-  const custos=arred(composicao.filter(ehCusto).reduce((s,x)=>s+x.valor,0));
-  const despesas=arred(composicao.filter(x=>x.classificacao.startsWith("5.")&&!x.classificacao.startsWith("5.1")&&!x.classificacao.startsWith("5.3")&&!contasReceitasFinanceiras.has(x.conta)).reduce((s,x)=>s+x.valor,0));
+  const custos=arred(composicao.filter(ehCustoDreJulho).reduce((s,x)=>s+x.valor,0));
+  const despesasOperacionais=arred(composicao.filter(ehDespesaOperacionalDreJulho).reduce((s,x)=>s+x.valor,0));
+  const despesasFinanceiras=arred(composicao.filter(ehDespesaFinanceiraDreJulho).reduce((s,x)=>s+x.valor,0));
+  const despesas=arred(despesasOperacionais+despesasFinanceiras);
   const jurosAtivos=Math.max(0,creditoLiquido("25095"));
   const variacaoCambialAtiva=Math.max(0,creditoLiquido("25096"));
   const receitaAplicacoes=Math.max(0,creditoLiquido("25098"));
@@ -69,11 +94,11 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
     composicao,
     dre:{
       receitaProducao,receitaRevenda,receitaBruta,devolucoes,icms,icmsSt,ipi,pis,cofins,deducoes,receitaLiquida,
-      custosReconhecidos:custos,despesasReconhecidas:despesas,
+      custosReconhecidos:custos,despesasReconhecidas:despesas,despesasOperacionais,despesasFinanceiras,
       receitasFinanceiras,jurosAtivos,variacaoCambialAtiva,receitaAplicacoes,jcp,variacaoCambialPassiva,resultado,
       status:"fechado_com_pendencias" as const,
-      fechadoEm:"17/08/2026",
-      criterioFechamento:"Documentos reais → Razão → Balancete → DRE. Resultado fechado com os fatos comprovados disponíveis; pendência documental não vira estimativa.",
+      fechadoEm:"18/08/2026",
+      criterioFechamento:"Documentos reais → Razão → Balancete → DRE. Custos são definidos pela natureza contábil/documental; despesas operacionais do grupo 5.3 são apresentadas pelo centro de custo. Pendência documental não vira estimativa.",
       resumoRazao:resumoFechamentoJulhoFinal,
       financeiro:resumoFinanceiroJulho,
       pendenciasNaoBloqueantes:[
@@ -91,3 +116,6 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
 const calculoEstatico=calcularDreJulhoFinal(lancamentosIntegradosJulhoFinal);
 export const composicaoResultadoJulhoFinal=calculoEstatico.composicao;
 export const dreJulhoFinal=calculoEstatico.dre;
+
+const servicosAdmClassificadosComoCusto=composicaoResultadoJulhoFinal.find(x=>x.conta==="25938"&&["302","303","304","305","306"].includes(x.cc)&&ehCustoDreJulho(x));
+if(servicosAdmClassificadosComoCusto) throw new Error(`Serviço administrativo classificado indevidamente como custo: ${servicosAdmClassificadosComoCusto.id}`);
