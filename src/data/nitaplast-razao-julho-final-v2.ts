@@ -7,11 +7,19 @@ import {
   resumoFechamentoJulhoFinal as resumoBaseJulhoFinal,
 } from "./nitaplast-razao-julho-final-base";
 import { lancamentosFinanceirosJulho, resumoFinanceiroJulho } from "./nitaplast-financeiro-julho";
+import { lancamentosProvisoesJulhoReais, resumoProvisoesJulhoReais } from "./nitaplast-provisoes-julho-reais";
 
 const arred = (v: number) => Math.round(v * 100) / 100;
 
+// A primeira versão da folha de julho calculava férias/13º por salário ÷ 12.
+// Com os relatórios contínuos reais recebidos, essas estimativas não podem permanecer no Razão.
+// Mantemos todos os demais fatos da folha e substituímos somente as apropriações estimadas.
+const ehProvisaoEstimadaJulho = (id: string) => id.startsWith("JUL-PROV-M-") || id.startsWith("JUL-PROV-F-");
+const lancamentosBaseSemProvisoesEstimadas = lancamentosBaseJulhoFinal.filter((x) => !ehProvisaoEstimadaJulho(x.id));
+
 export const lancamentosIntegradosJulhoFinal: LancamentoIntegrado[] = [
-  ...lancamentosBaseJulhoFinal,
+  ...lancamentosBaseSemProvisoesEstimadas,
+  ...lancamentosProvisoesJulhoReais,
   ...lancamentosFinanceirosJulho,
 ];
 
@@ -26,9 +34,27 @@ export const resumoFechamentoJulhoFinal = {
   creditos: totalCreditosJulhoFinal,
   pendencias: pendenciasJulhoFinal.length,
   financeiro: resumoFinanceiroJulho,
+  folhaJulho: {
+    ...resumoBaseJulhoFinal.folhaJulho,
+    provisoes: {
+      ferias: resumoProvisoesJulhoReais.consolidado.feriasPrincipal,
+      encargosFerias: resumoProvisoesJulhoReais.consolidado.feriasEncargos,
+      decimoTerceiro: resumoProvisoesJulhoReais.consolidado.decimoPrincipal,
+      encargosDecimoTerceiro: resumoProvisoesJulhoReais.consolidado.decimoEncargos,
+      totalFerias: resumoProvisoesJulhoReais.consolidado.feriasTotal,
+      totalDecimoTerceiro: resumoProvisoesJulhoReais.consolidado.decimoTotal,
+      metodo: resumoProvisoesJulhoReais.metodo,
+      fonte: resumoProvisoesJulhoReais.fonte,
+      matriz: resumoProvisoesJulhoReais.matriz,
+      filial: resumoProvisoesJulhoReais.filial,
+    },
+  },
   baseAnterior: {
     debitos: totalDebitosBaseJulhoFinal,
     creditos: totalCreditosBaseJulhoFinal,
     pendencias: pendenciasBaseJulhoFinal.length,
   },
 } as const;
+
+const provisaoEstimadaRestante = lancamentosIntegradosJulhoFinal.find((x) => ehProvisaoEstimadaJulho(x.id));
+if (provisaoEstimadaRestante) throw new Error(`Provisão estimada indevida permaneceu no Razão de julho: ${provisaoEstimadaRestante.id}`);
