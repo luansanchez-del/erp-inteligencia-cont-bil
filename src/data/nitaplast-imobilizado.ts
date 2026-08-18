@@ -2,6 +2,7 @@ import type { LancamentoIntegrado } from "./nitaplast-razao-base";
 import { descricaoContaJulho, saldoAberturaJulhoPorConta } from "./nitaplast-saldos-julho";
 
 const arred = (v: number) => Math.round(v * 100) / 100;
+const nomeConta = (codigo: string, fallback?: string) => `${codigo} - ${descricaoContaJulho.get(codigo) ?? fallback ?? "Conta a revisar"}`;
 
 export type RegraImobilizado = {
   id: string;
@@ -32,7 +33,15 @@ export const regrasImobilizadoNitaplast: RegraImobilizado[] = [
   { id: "moveis-adm", nome: "Móveis e utensílios ADM", contasAtivo: ["25145"], contaDepreciacaoAcumulada: "25184", contaDespesa: "25081", valorMensalReferencia: 3110.24 },
   { id: "moveis-industrial", nome: "Móveis e utensílios industrial", contasAtivo: ["25146"], contaDepreciacaoAcumulada: "25185", contaDespesa: "25081", valorMensalReferencia: 155.58 },
   { id: "informatica", nome: "Equipamentos de informática", contasAtivo: ["4857"], contaDepreciacaoAcumulada: "25186", contaDespesa: "25082", valorMensalReferencia: 2780.09 },
-  { id: "veiculos", nome: "Veículos", contasAtivo: ["1089"], contaDepreciacaoAcumulada: "25187", contaDespesa: "25083", valorMensalReferencia: 19762.52 },
+  {
+    id: "veiculos",
+    nome: "Veículos",
+    contasAtivo: ["1089"],
+    contaDepreciacaoAcumulada: "25187",
+    contaDespesa: "25083",
+    valorMensalReferencia: 14298.16,
+    observacao: "Referência de julho exclui Mini Cooper BBU1F77 (R$ 3.298,33/mês) e Corolla AOX3J09 (R$ 2.166,03/mês), alienados em 03/07 e 08/07. Os valores residuais informados pelo cliente já são a base da baixa e não recebem uma nova cota mensal integral de julho.",
+  },
   { id: "seguranca", nome: "Equipamentos de segurança", contasAtivo: ["25147"], contaDepreciacaoAcumulada: "25188", observacao: "Sem recorrência mensal em junho; se integralmente depreciado, permanece com cálculo zero." },
   { id: "ferramentas", nome: "Ferramentas e acessórios para fábrica", contasAtivo: ["25148"], contaDepreciacaoAcumulada: "25189", contaDespesa: "25084", valorMensalReferencia: 56.97 },
   { id: "benfeitorias", nome: "Benfeitorias em imóveis de terceiros", contasAtivo: ["25149"], contaDepreciacaoAcumulada: "25190", contaDespesa: "25087", valorMensalReferencia: 263.18 },
@@ -104,9 +113,111 @@ export function calcularPosicoesImobilizado(base: LancamentoIntegrado[]) {
   } as const;
 }
 
+export const alienacoesImobilizadoValidadasJulho: LancamentoIntegrado[] = [
+  {
+    id: "JUL-ALIEN-MINI-REC",
+    data: "03/07/2026",
+    origem: "ALIENAÇÃO IMOBILIZADO 07/2026",
+    debitoCodigo: "25222",
+    debito: nomeConta("25222", "Gongra Comercio de Veiculos LTDA"),
+    creditoCodigo: "4736",
+    credito: nomeConta("4736", "Vendas do Ativo Imobilizado"),
+    historico: "Alienação I/MINI COOPER S BBU1F77 - entrada na aquisição do MINI Countryman JCW",
+    documento: "NF 93495 / CFOP 5551",
+    cc: "422",
+    centroCusto: "MINI COOPER PLACA BBU1F77",
+    valor: 119900,
+    status: "validado",
+    rastreio: "documento",
+    fonte: "DANFE NF 93495 + CRLV BBU1F77 + ORDEM DE COMPRA Gongra + saldo contábil 30/06",
+    observacao: "A NF 93495 de R$ 119.900,00 foi usada como entrada na compra do MINI Countryman de R$ 269.900,00. O saldo de abertura da Gongra na conta 25222 é exatamente R$ 119.900,00; a alienação liquida essa obrigação sem movimentar banco.",
+  },
+  {
+    id: "JUL-ALIEN-MINI-CUSTO",
+    data: "03/07/2026",
+    origem: "ALIENAÇÃO IMOBILIZADO 07/2026",
+    debitoCodigo: "4760",
+    debito: "4760 - Custo Vendas do Ativo Imobilizado",
+    creditoCodigo: "1089",
+    credito: nomeConta("1089", "Veículos"),
+    historico: "Baixa líquida do valor contábil residual - MINI COOPER S BBU1F77",
+    documento: "NF 93495 / residual cliente",
+    cc: "422",
+    centroCusto: "MINI COOPER PLACA BBU1F77",
+    valor: 52500,
+    status: "validado",
+    rastreio: "documento",
+    fonte: "NF 93495 + CRLV BBU1F77 com anotação de saldo residual fornecida pelo cliente",
+    observacao: "O cliente autorizou expressamente considerar a anotação de R$ 52.500,00 como valor contábil residual. Como não há abertura documental segura do custo histórico e da depreciação acumulada do Mini, a baixa patrimonial é registrada pelo residual líquido, sem inventar o desdobramento bruto. Ganho documentado: R$ 67.400,00.",
+  },
+  {
+    id: "JUL-ALIEN-COROLLA-REC",
+    data: "08/07/2026",
+    origem: "ALIENAÇÃO IMOBILIZADO 07/2026",
+    debitoCodigo: "1712",
+    debito: nomeConta("1712", "Adiantamento de Clientes"),
+    creditoCodigo: "4736",
+    credito: nomeConta("4736", "Vendas do Ativo Imobilizado"),
+    historico: "Reconhecimento da venda do COROLLA GLI 2.0L AOX3J09",
+    documento: "NF 93569 / CFOP 5551",
+    cc: "441",
+    centroCusto: "COROLLA GLI 2.0L",
+    valor: 127000,
+    status: "validado",
+    rastreio: "documento",
+    fonte: "DANFE NF 93569 + ATPV/identificação do veículo + extrato bancário 07/2026",
+    observacao: "O recebimento já está no banco de julho em Adiantamento de Clientes; esta partida apenas reclassifica R$ 127.000,00 para a receita de alienação e não duplica caixa.",
+  },
+  {
+    id: "JUL-ALIEN-COROLLA-DEP",
+    data: "08/07/2026",
+    origem: "ALIENAÇÃO IMOBILIZADO 07/2026",
+    debitoCodigo: "25187",
+    debito: nomeConta("25187", "(-) Veículos"),
+    creditoCodigo: "1089",
+    credito: nomeConta("1089", "Veículos"),
+    historico: "Baixa da depreciação acumulada - COROLLA GLI 2.0L AOX3J09",
+    documento: "NF 93569 / saldo residual cliente",
+    cc: "441",
+    centroCusto: "COROLLA GLI 2.0L",
+    valor: 36822.51,
+    status: "validado",
+    rastreio: "documento",
+    fonte: "SALDO RESIDUAL Corolla + NF 93569",
+    observacao: "Custo original R$ 129.961,80 menos residual R$ 93.139,29 = depreciação acumulada de R$ 36.822,51.",
+  },
+  {
+    id: "JUL-ALIEN-COROLLA-CUSTO",
+    data: "08/07/2026",
+    origem: "ALIENAÇÃO IMOBILIZADO 07/2026",
+    debitoCodigo: "4760",
+    debito: "4760 - Custo Vendas do Ativo Imobilizado",
+    creditoCodigo: "1089",
+    credito: nomeConta("1089", "Veículos"),
+    historico: "Baixa do valor contábil residual - COROLLA GLI 2.0L AOX3J09",
+    documento: "NF 93569 / saldo residual cliente",
+    cc: "441",
+    centroCusto: "COROLLA GLI 2.0L",
+    valor: 93139.29,
+    status: "validado",
+    rastreio: "documento",
+    fonte: "SALDO RESIDUAL Corolla + NF 93569",
+    observacao: "Valor residual documentado R$ 93.139,29. Venda R$ 127.000,00; ganho na alienação R$ 33.860,71.",
+  },
+];
+
+export const resumoAlienacoesImobilizadoJulho = {
+  vendasReconhecidas: 246900,
+  custoResidualReconhecido: 145639.29,
+  ganhoReconhecido: 101260.71,
+  mini: { venda: 119900, residual: 52500, ganho: 67400 },
+  corolla: { venda: 127000, custoOriginal: 129961.80, depreciacaoAcumulada: 36822.51, residual: 93139.29, ganho: 33860.71 },
+  pendente: { documento: "NF 93639", bem: "Transformador seco 1000KVA", vendaFiscal: 60000, motivo: "Aguardando valor contábil residual/custo para reconhecer a alienação no resultado." },
+} as const;
+
 export function calcularDepreciacaoImobilizado(base: LancamentoIntegrado[], data = "31/07/2026") {
   const posicoes = calcularPosicoesImobilizado(base);
-  const lancamentos: LancamentoIntegrado[] = posicoes.grupos.flatMap((grupo, index) => {
+  const depreciacoes: LancamentoIntegrado[] = posicoes.grupos.flatMap((grupo, index) => {
     if (grupo.status !== "calculavel" || grupo.depreciacaoCalculada <= 0 || !grupo.contaDespesa || !grupo.contaDepreciacaoAcumulada) return [];
     return [{
       id: `JUL-DEP-${String(index + 1).padStart(2, "0")}`,
@@ -124,11 +235,13 @@ export function calcularDepreciacaoImobilizado(base: LancamentoIntegrado[], data
       status: "validado",
       rastreio: "derivado",
       fonte: "Recorrência de depreciação efetivamente contabilizada em 06/2026 + saldos do imobilizado em 30/06/2026",
-      observacao: "Recorrência mensal baseada no valor efetivamente contabilizado em 06/2026, limitada ao saldo residual; sem estimativa de taxa ou vida útil.",
+      observacao: grupo.id === "veiculos"
+        ? "Recorrência mensal de veículos ajustada para excluir Mini Cooper BBU1F77 e Corolla AOX3J09, alienados no início de julho e baixados pelos valores residuais documentados."
+        : "Recorrência mensal baseada no valor efetivamente contabilizado em 06/2026, limitada ao saldo residual; sem estimativa de taxa ou vida útil.",
     }];
   });
 
-  return { ...posicoes, lancamentos } as const;
+  return { ...posicoes, lancamentos: [...depreciacoes, ...alienacoesImobilizadoValidadasJulho] } as const;
 }
 
 export const totalMensalReferenciaDepreciacaoJunho = 57861.02 as const;
