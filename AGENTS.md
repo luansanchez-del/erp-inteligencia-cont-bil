@@ -19,6 +19,15 @@
 - Alterações manuais precisam repercutir na mesma base usada por Razão, Balancete, Diário e DRE.
 - Ações manuais devem permitir, no mínimo: data, conta débito, conta crédito, histórico, valor e centro de custo.
 
+## Regra permanente do livro Razão
+
+- Ao consultar uma conta específica, o Razão deve sempre apresentar o **saldo anterior transportado** antes dos movimentos da competência.
+- Saldo anterior transportado é linha informativa do livro e referência para cálculo do saldo corrente; **não é lançamento contábil**, não gera débito/crédito, não entra na quantidade de partidas e não pode ser exportado como fato contábil.
+- Se uma conta tiver saldo anterior e nenhum movimento na competência, o Razão deve informar claramente “Nenhuma movimentação na competência” e manter saldo final igual ao saldo anterior.
+- A consulta deve identificar a conta por código, descrição e classificação do plano. Código inexistente deve ser informado como “Conta não encontrada no plano”; é proibido inventar nome ou classificação.
+- Pendências gerais de fechamento, folha, bancos, câmbio ou conciliação pertencem aos módulos de Conciliação/Fechamento e não devem aparecer como card genérico dentro do Razão de uma conta.
+- Esta regra é estrutural e deve ser herdada por qualquer empresa e qualquer competência cadastrada; não pode depender de conta, empresa ou mês hardcoded.
+
 ## Regra permanente de impressão e relatórios
 
 - Impressão é regra estrutural do ERP, nunca ajuste específico por empresa ou competência.
