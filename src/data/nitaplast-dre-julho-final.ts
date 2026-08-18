@@ -7,6 +7,9 @@ import { estabelecimentoResultadoNitaplast } from "./nitaplast-estabelecimento";
 const arred=(v:number)=>Math.round(v*100)/100;
 const classificacaoPorConta=new Map(saldosImplantacao.map(c=>[c.conta,c.classificacao]));
 const descricaoPorConta=new Map(saldosImplantacao.map(c=>[c.conta,c.descricao]));
+// A conta 4760 consta no plano de contas vigente, mas não veio na implantação porque estava sem saldo.
+classificacaoPorConta.set("4760","5.9.01.003.002");
+descricaoPorConta.set("4760","Custo Vendas do Ativo Imobilizado");
 
 type EstabelecimentoResultado="Matriz"|"Filial SP";
 type Acc={codigo:string;classificacao:string;descricao:string;cc:string;centroCusto:string;estabelecimento:EstabelecimentoResultado;debitos:number;creditos:number;valor:number;status:"validado"|"revisar";fonte:string};
@@ -21,6 +24,7 @@ export type ComposicaoResultadoJulho = {
  * lançamento (conta dedicada, CC, origem/documento/fonte) antes da apresentação.
  */
 const contasCustoOperacionalJulho=new Set(["3093","3095"]);
+const contasAlienacaoImobilizadoJulho=new Set(["4736","4760"]);
 export const contasReceitasFinanceirasJulho=new Set([
   "4927", // Descontos obtidos
   "25095", // Juros ativos
@@ -37,8 +41,10 @@ export function ehCustoDreJulho(x:Pick<ComposicaoResultadoJulho,"conta"|"classif
 }
 export function ehDespesaFinanceiraDreJulho(x:Pick<ComposicaoResultadoJulho,"classificacao">){return x.classificacao.startsWith("5.8");}
 export function ehReceitaFinanceiraDreJulho(x:Pick<ComposicaoResultadoJulho,"conta">){return contasReceitasFinanceirasJulho.has(x.conta);}
+export function ehReceitaAlienacaoImobilizadoDreJulho(x:Pick<ComposicaoResultadoJulho,"conta">){return x.conta==="4736";}
+export function ehCustoAlienacaoImobilizadoDreJulho(x:Pick<ComposicaoResultadoJulho,"conta">){return x.conta==="4760";}
 export function ehDespesaOperacionalDreJulho(x:Pick<ComposicaoResultadoJulho,"conta"|"classificacao">){
-  return x.classificacao.startsWith("5.")&&!ehCustoDreJulho(x)&&!ehDespesaFinanceiraDreJulho(x)&&!ehReceitaFinanceiraDreJulho(x);
+  return x.classificacao.startsWith("5.")&&!ehCustoDreJulho(x)&&!ehDespesaFinanceiraDreJulho(x)&&!ehReceitaFinanceiraDreJulho(x)&&!contasAlienacaoImobilizadoJulho.has(x.conta);
 }
 
 export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
@@ -120,8 +126,6 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   const fechamentoEstoqueFilial=arred(custosItens.filter(x=>x.conta==="25945").reduce((s,x)=>s+x.valor,0));
   const cpvMatriz=custosMatriz;
   const cpvFilial=custosFilial;
-  // Compatibilidade com componentes já existentes: agora significam componentes
-  // do CPV além do fechamento de estoque, e não "custos fora do CPV".
   const outrosCustosMatriz=arred(cpvMatriz-fechamentoEstoqueMatriz);
   const outrosCustosFilial=arred(cpvFilial-fechamentoEstoqueFilial);
   if(Math.abs(arred(cpvMatriz+cpvFilial)-custos)>0.01)throw new Error("CPV Matriz + Filial não concilia com os custos do Razão.");
@@ -150,17 +154,35 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   const jcp=Math.max(0,mov("25107"));
   const variacaoCambialPassiva=Math.max(0,mov("25109"));
 
-  // Alienações fiscais de julho somam R$ 306.900,00, mas não entram no resultado
-  // enquanto não houver baixa do custo original e da depreciação acumulada dos bens.
+  // Alienação: Mini + Corolla já estão documentados no Razão. O transformador
+  // fiscal de R$ 60 mil permanece fora até recebermos seu valor contábil residual.
+  const receitaAlienacaoImobilizado=Math.max(0,creditoLiquido("4736"));
+  const custoAlienacaoImobilizado=Math.max(0,mov("4760"));
+  const resultadoAlienacaoImobilizado=arred(receitaAlienacaoImobilizado-custoAlienacaoImobilizado);
   const vendasAtivoImobilizadoFiscais=306900;
-  const resultado=arred(receitaLiquida-custos-despesas+receitasFinanceiras);
+  const vendasAtivoImobilizadoReconhecidas=receitaAlienacaoImobilizado;
+  const vendaAtivoImobilizadoPendente=arred(vendasAtivoImobilizadoFiscais-vendasAtivoImobilizadoReconhecidas);
+
+  // Energia: DRE usa movimento da competência, nunca saldo acumulado da conta.
+  const energiaEletricaItens=composicao.filter(x=>x.conta==="3494"&&x.estabelecimento==="Matriz");
+  const energiaEletricaMatriz=arred(energiaEletricaItens.reduce((s,x)=>s+x.valor,0));
+  const energiaDebitosMatriz=arred(energiaEletricaItens.reduce((s,x)=>s+x.debitos,0));
+  const energiaCreditosMatriz=arred(energiaEletricaItens.reduce((s,x)=>s+x.creditos,0));
+
+  const resultado=arred(receitaLiquida-custos-despesas+receitasFinanceiras+resultadoAlienacaoImobilizado);
 
   const somaReceitasAbertas=arred(Object.values(receitasFinanceirasPorConta).reduce((s,v)=>s+v,0));
   if(Math.abs(somaReceitasAbertas-receitasFinanceiras)>0.01)throw new Error(`Abertura de receitas financeiras não concilia: ${somaReceitasAbertas.toFixed(2)} / ${receitasFinanceiras.toFixed(2)}`);
   if(Math.abs(arred(receitasFinanceirasMatriz+receitasFinanceirasFilial)-receitasFinanceiras)>0.01)throw new Error("Receitas financeiras Matriz + Filial não conciliam.");
+  if(Math.abs(receitaAlienacaoImobilizado-246900)>0.01)throw new Error(`Venda de imobilizado reconhecida deveria ser R$ 246.900,00; encontrado ${receitaAlienacaoImobilizado.toFixed(2)}.`);
+  if(Math.abs(custoAlienacaoImobilizado-145639.29)>0.01)throw new Error(`Custo residual dos ativos vendidos deveria ser R$ 145.639,29; encontrado ${custoAlienacaoImobilizado.toFixed(2)}.`);
+  if(Math.abs(resultadoAlienacaoImobilizado-101260.71)>0.01)throw new Error("Resultado de Mini + Corolla não conciliou em R$ 101.260,71.");
+  if(Math.abs(energiaDebitosMatriz-35286.38)>0.01||Math.abs(energiaCreditosMatriz-17146.20)>0.01||Math.abs(energiaEletricaMatriz-18140.18)>0.01){
+    throw new Error(`Energia elétrica julho não concilia. Débitos ${energiaDebitosMatriz.toFixed(2)}, créditos ${energiaCreditosMatriz.toFixed(2)}, líquido ${energiaEletricaMatriz.toFixed(2)}.`);
+  }
 
   const pendenciasBloqueantes=[
-    "Alienação de imobilizado de R$ 306.900,00 (NF 93495, 93569 e 93639): aguardando identificação do custo original e da depreciação acumulada dos 3 bens. Não reconhecer ganho/perda por aproximação.",
+    "Transformador seco 1000KVA — NF 93639, venda fiscal de R$ 60.000,00: aguardando valor contábil residual/custo para reconhecer ganho ou perda. Mini Cooper e Corolla já estão contabilizados.",
   ];
 
   return {composicao,dre:{
@@ -173,11 +195,14 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
     despesasFinanceiras,despesasFinanceirasMatriz,despesasFinanceirasFilial,
     receitasFinanceiras,receitasFinanceirasMatriz,receitasFinanceirasFilial,receitasFinanceirasPorConta,
     jurosAtivos,variacaoCambialAtiva,receitaAplicacoes,jcp,variacaoCambialPassiva,
-    vendasAtivoImobilizadoFiscais,resultado,
+    receitaAlienacaoImobilizado,custoAlienacaoImobilizado,resultadoAlienacaoImobilizado,
+    vendasAtivoImobilizadoFiscais,vendasAtivoImobilizadoReconhecidas,vendaAtivoImobilizadoPendente,
+    energiaEletricaMatriz,energiaDebitosMatriz,energiaCreditosMatriz,
+    resultado,
     status:"fechado_com_pendencias" as const,fechadoEm:"18/08/2026",
     possuiPendenciaBloqueante:true as const,
     pendenciasBloqueantes,
-    criterioFechamento:"Razão → Balancete → DRE. Toda linha de resultado é segregada por estabelecimento somente quando o próprio lançamento fornece evidência; nenhuma abertura gerencial cria fato contábil.",
+    criterioFechamento:"Razão → Balancete → DRE. Toda linha de resultado é segregada por estabelecimento somente quando o próprio lançamento fornece evidência; nenhuma abertura gerencial cria fato contábil. A DRE usa movimento da competência, não saldo acumulado.",
     resumoRazao:resumoFechamentoJulhoFinal,financeiro:resumoFinanceiroJulho,
     pendenciasNaoBloqueantes:[`R$ ${resumoFinanceiroJulho.valorEntradasSemCcPendente.toFixed(2)} de entradas ainda sem distribuição completa por centro de custo`,`${resumoFinanceiroJulho.contratosCambioPendentes} contrato(s) de câmbio aguardando amarração do valor contábil de origem`],
     itensSemFonte:[`R$ ${resumoFinanceiroJulho.valorEntradasSemCcPendente.toFixed(2)} de entradas ainda sem centro de custo/documento suficiente`,`Contratos de câmbio ainda pendentes de valor contábil de origem: ${resumoFinanceiroJulho.contratosCambioPendentes}`],
@@ -194,6 +219,8 @@ const industrializacaoClassificadaComoCusto=composicaoResultadoJulhoFinal.find(x
 if(industrializacaoClassificadaComoCusto)throw new Error(`Industrialização permaneceu indevidamente em Custos/CPV/CMV: ${industrializacaoClassificadaComoCusto.id}`);
 const cpvFilialEmMatriz=composicaoResultadoJulhoFinal.find(x=>x.conta==="25945"&&x.estabelecimento!=="Filial SP");
 if(cpvFilialEmMatriz)throw new Error(`Fechamento de estoque da Filial sem identificação de estabelecimento: ${cpvFilialEmMatriz.id}`);
+const alienacaoEmDespesa=composicaoResultadoJulhoFinal.find(x=>contasAlienacaoImobilizadoJulho.has(x.conta)&&ehDespesaOperacionalDreJulho(x));
+if(alienacaoEmDespesa)throw new Error(`Alienação de imobilizado misturada em despesa operacional: ${alienacaoEmDespesa.id}`);
 
 const vcaRazao=arred(-lancamentosIntegradosJulhoFinal.reduce((s,l)=>s+(l.debitoCodigo==="25096"?l.valor:0)-(l.creditoCodigo==="25096"?l.valor:0),0));
 if(Math.abs(Math.max(0,vcaRazao)-dreJulhoFinal.variacaoCambialAtiva)>0.01)throw new Error("Variação cambial ativa do Razão não conciliou com a DRE.");
