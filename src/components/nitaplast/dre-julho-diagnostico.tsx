@@ -24,28 +24,55 @@ export function DreJulhoDiagnostico() {
     Math.abs(arred(dre.receitaAlienacaoImobilizado - dre.custoAlienacaoImobilizado) - dre.resultadoAlienacaoImobilizado) < 0.01;
 
   return (
-    <div className="mb-4 rounded-lg border border-emerald-500/40 bg-emerald-50/50 p-4 text-sm">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <p className="font-semibold text-emerald-950">Alienação de Imobilizado — 07/2026</p>
-          <p className="text-xs text-emerald-900/70">Mini Cooper + Corolla já reconhecidos no Razão, Balancete e DRE. A receita de alienação fica fora da Receita Operacional Bruta.</p>
+    <>
+      <div className="mb-4 rounded-lg border border-emerald-500/40 bg-emerald-50/50 p-4 text-sm">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="font-semibold text-emerald-950">Alienação de Imobilizado — 07/2026</p>
+            <p className="text-xs text-emerald-900/70">Mini Cooper + Corolla já reconhecidos no Razão, Balancete e DRE. A receita de alienação fica fora da Receita Operacional Bruta.</p>
+          </div>
+          <span className="inline-flex items-center gap-1 font-medium text-emerald-700">
+            <CheckCircle2 className="size-4" /> {conciliado ? "Alienação conciliada" : "Revisar conciliação"}
+          </span>
         </div>
-        <span className="inline-flex items-center gap-1 font-medium text-emerald-700">
-          <CheckCircle2 className="size-4" /> {conciliado ? "Alienação conciliada" : "Revisar conciliação"}
-        </span>
+
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <div><p className="text-xs text-muted-foreground">Resultado antes da alienação</p><p className="font-semibold tabular-nums">{brl.format(resultadoAntesAlienacao)}</p></div>
+          <div><p className="text-xs font-medium text-emerald-900">(+) Receita de Alienação de Imobilizado</p><p className="font-semibold tabular-nums text-emerald-800">{brl.format(dre.receitaAlienacaoImobilizado)}</p><p className="text-[11px] text-muted-foreground">Conta 4736</p></div>
+          <div><p className="text-xs font-medium">(-) Custo dos Ativos Vendidos</p><p className="font-semibold tabular-nums">{brl.format(dre.custoAlienacaoImobilizado)}</p><p className="text-[11px] text-muted-foreground">Conta 4760</p></div>
+          <div><p className="text-xs font-medium text-emerald-900">(=) Ganho na Alienação</p><p className="font-semibold tabular-nums text-emerald-700">{brl.format(dre.resultadoAlienacaoImobilizado)}</p><p className="text-[11px] text-muted-foreground">Mini + Corolla</p></div>
+          <div><p className="text-xs font-medium text-emerald-900">Resultado final 07/2026</p><p className="font-semibold tabular-nums text-emerald-700">{brl.format(dre.resultado)}</p></div>
+        </div>
+
+        <p className="mt-3 text-xs text-muted-foreground">
+          Razão contém {alienacoesNoRazao} partidas de alienação. Balancete: conta 4736 = {brl.format(mov4736)} de movimento assinado; conta 4760 = {brl.format(mov4760)}. O transformador de R$ 60.000,00 permanece fora do resultado até definição do valor residual.
+        </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <div><p className="text-xs text-muted-foreground">Resultado antes da alienação</p><p className="font-semibold tabular-nums">{brl.format(resultadoAntesAlienacao)}</p></div>
-        <div><p className="text-xs font-medium text-emerald-900">(+) Receita de Alienação de Imobilizado</p><p className="font-semibold tabular-nums text-emerald-800">{brl.format(dre.receitaAlienacaoImobilizado)}</p><p className="text-[11px] text-muted-foreground">Conta 4736</p></div>
-        <div><p className="text-xs font-medium">(-) Custo dos Ativos Vendidos</p><p className="font-semibold tabular-nums">{brl.format(dre.custoAlienacaoImobilizado)}</p><p className="text-[11px] text-muted-foreground">Conta 4760</p></div>
-        <div><p className="text-xs font-medium text-emerald-900">(=) Ganho na Alienação</p><p className="font-semibold tabular-nums text-emerald-700">{brl.format(dre.resultadoAlienacaoImobilizado)}</p><p className="text-[11px] text-muted-foreground">Mini + Corolla</p></div>
-        <div><p className="text-xs font-medium text-emerald-900">Resultado final 07/2026</p><p className="font-semibold tabular-nums text-emerald-700">{brl.format(dre.resultado)}</p></div>
-      </div>
+      <div className="mb-4 rounded-lg border p-4 text-sm">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="font-semibold">Simulação de saneamento do CPV — 07/2026</p>
+            <p className="text-xs text-muted-foreground">Custos industriais 5.3 entram no CPV somente quando ligados à produção. Serviços administrativos e comerciais continuam em despesas operacionais.</p>
+          </div>
+          <span className="inline-flex items-center gap-1 font-medium">
+            <CheckCircle2 className="size-4" /> Resultado preservado
+          </span>
+        </div>
 
-      <p className="mt-3 text-xs text-muted-foreground">
-        Razão contém {alienacoesNoRazao} partidas de alienação. Balancete: conta 4736 = {brl.format(mov4736)} de movimento assinado; conta 4760 = {brl.format(mov4760)}. O transformador de R$ 60.000,00 permanece fora do resultado até definição do valor residual.
-      </p>
-    </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+          <div><p className="text-xs text-muted-foreground">CPV antes</p><p className="font-semibold tabular-nums">{brl.format(dre.simulacaoCpv.cpvAntes)}</p></div>
+          <div><p className="text-xs text-muted-foreground">Reclassificado para CPV</p><p className="font-semibold tabular-nums">{brl.format(dre.simulacaoCpv.reclassificadoParaCpv)}</p></div>
+          <div><p className="text-xs text-muted-foreground">CPV depois</p><p className="font-semibold tabular-nums">{brl.format(dre.simulacaoCpv.cpvDepois)}</p></div>
+          <div><p className="text-xs text-muted-foreground">Desp. operacionais antes</p><p className="font-semibold tabular-nums">{brl.format(dre.simulacaoCpv.despesasOperacionaisAntes)}</p></div>
+          <div><p className="text-xs text-muted-foreground">Desp. operacionais depois</p><p className="font-semibold tabular-nums">{brl.format(dre.simulacaoCpv.despesasOperacionaisDepois)}</p></div>
+          <div><p className="text-xs text-muted-foreground">Impacto no resultado</p><p className="font-semibold tabular-nums">{brl.format(dre.simulacaoCpv.impactoResultado)}</p></div>
+        </div>
+
+        <p className="mt-3 text-xs text-muted-foreground">
+          Resultado simulado antes: {brl.format(dre.simulacaoCpv.resultadoAntes)} · resultado depois: {brl.format(dre.simulacaoCpv.resultadoDepois)}. A alteração é apenas de classificação entre CPV e despesas, sem criar ou excluir lançamento do Razão.
+        </p>
+      </div>
+    </>
   );
 }
