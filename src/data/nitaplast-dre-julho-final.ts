@@ -224,5 +224,11 @@ if(Math.abs(Math.max(0,vcpRazao)-dreJulhoFinal.variacaoCambialPassiva)>0.01)thro
 
 if(Math.abs(dreJulhoFinal.icmsFilial-80710.71)>0.01)throw new Error(`ICMS Filial na DRE deveria ser R$ 80.710,71 após excluir transferências internas e líquido da devolução; encontrado ${dreJulhoFinal.icmsFilial.toFixed(2)}.`);
 if(Math.abs(dreJulhoFinal.icmsFilialTransferenciasInternas-3894.05)>0.01)throw new Error("ICMS de transferências internas da Filial não conciliou em R$ 3.894,05.");
-if(Math.abs(dreJulhoFinal.pisMatriz-43082.61)>0.01||Math.abs(dreJulhoFinal.pisFilial-6737.69)>0.01)throw new Error("Abertura PIS Matriz/Filial não conciliou ao EFD Contribuições.");
-if(Math.abs(dreJulhoFinal.cofinsMatriz-198442.47)>0.01||Math.abs(dreJulhoFinal.cofinsFilial-31034.21)>0.01)throw new Error("Abertura COFINS Matriz/Filial não conciliou ao EFD Contribuições.");
+// Conciliação com o EFD Contribuições: os débitos apurados por estabelecimento.
+// A DRE apresenta o movimento líquido da conta (débitos de apuração menos créditos
+// de transporte já contabilizados), por isso a conciliação é feita sobre o débito bruto.
+const debitoApurado=(id:string)=>arred(lancamentosIntegradosJulhoFinal.filter(l=>l.id===id).reduce((s,l)=>s+l.valor,0));
+if(Math.abs(debitoApurado("JUL-TAX-PIS-M")-43082.61)>0.01||Math.abs(debitoApurado("JUL-TAX-PIS-F")-6737.69)>0.01)throw new Error("Abertura PIS Matriz/Filial não conciliou ao EFD Contribuições.");
+if(Math.abs(debitoApurado("JUL-TAX-COF-M")-198442.47)>0.01||Math.abs(debitoApurado("JUL-TAX-COF-F")-31034.21)>0.01)throw new Error("Abertura COFINS Matriz/Filial não conciliou ao EFD Contribuições.");
+if(Math.abs(arred(dreJulhoFinal.pisMatriz+dreJulhoFinal.pisFilial)-dreJulhoFinal.pis)>0.01)throw new Error("Soma PIS Matriz + Filial não fecha com o PIS consolidado da DRE.");
+if(Math.abs(arred(dreJulhoFinal.cofinsMatriz+dreJulhoFinal.cofinsFilial)-dreJulhoFinal.cofins)>0.01)throw new Error("Soma COFINS Matriz + Filial não fecha com o COFINS consolidado da DRE.");
