@@ -88,7 +88,7 @@ export function AuditoriaDreRazaoJulho() {
         </div>
 
         <div className="rounded-md border bg-background p-3 text-sm">
-          <strong>Conferência crítica:</strong> 25098 fecha em <strong>{brl.format(totalAplicacoes)}</strong> no Razão e 25096 fecha em <strong>{brl.format(totalVca)}</strong>. O transformador de R$ 60.000,00 não entra nesta auditoria porque permanece somente como venda fiscal pendente de residual, fora do resultado contábil.
+          <strong>Conferência crítica:</strong> 25098 fecha em <strong>{brl.format(totalAplicacoes)}</strong> no Razão e 25096 fecha em <strong>{brl.format(totalVca)}</strong>. O Transformador seco 1000KVA (NF 93639), R$ 60.000,00, está contabilizado: 100% depreciado, sem custo residual, ganho integral no resultado contábil.
         </div>
 
         <div className="overflow-x-auto rounded-md border bg-background">

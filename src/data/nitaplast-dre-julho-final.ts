@@ -192,16 +192,14 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   const somaReceitasAbertas=arred(Object.values(receitasFinanceirasPorConta).reduce((s,v)=>s+v,0));
   if(Math.abs(somaReceitasAbertas-receitasFinanceiras)>0.01)throw new Error(`Abertura de receitas financeiras não concilia: ${somaReceitasAbertas.toFixed(2)} / ${receitasFinanceiras.toFixed(2)}`);
   if(Math.abs(arred(receitasFinanceirasMatriz+receitasFinanceirasFilial)-receitasFinanceiras)>0.01)throw new Error("Receitas financeiras Matriz + Filial não conciliam.");
-  if(Math.abs(receitaAlienacaoImobilizado-246900)>0.01)throw new Error(`Venda de imobilizado reconhecida deveria ser R$ 246.900,00; encontrado ${receitaAlienacaoImobilizado.toFixed(2)}.`);
+  if(Math.abs(receitaAlienacaoImobilizado-306900)>0.01)throw new Error(`Venda de imobilizado reconhecida deveria ser R$ 306.900,00; encontrado ${receitaAlienacaoImobilizado.toFixed(2)}.`);
   if(Math.abs(custoAlienacaoImobilizado-145639.29)>0.01)throw new Error(`Custo residual dos ativos vendidos deveria ser R$ 145.639,29; encontrado ${custoAlienacaoImobilizado.toFixed(2)}.`);
-  if(Math.abs(resultadoAlienacaoImobilizado-101260.71)>0.01)throw new Error("Resultado de Mini + Corolla não conciliou em R$ 101.260,71.");
+  if(Math.abs(resultadoAlienacaoImobilizado-161260.71)>0.01)throw new Error("Resultado de Mini + Corolla + Transformador não conciliou em R$ 161.260,71.");
   if(Math.abs(energiaDebitosMatriz-35286.38)>0.01||Math.abs(energiaCreditosMatriz-17146.20)>0.01||Math.abs(energiaEletricaMatriz-18140.18)>0.01){
     throw new Error(`Energia elétrica julho não concilia. Débitos ${energiaDebitosMatriz.toFixed(2)}, créditos ${energiaCreditosMatriz.toFixed(2)}, líquido ${energiaEletricaMatriz.toFixed(2)}.`);
   }
 
-  const pendenciasBloqueantes=[
-    "Transformador seco 1000KVA — NF 93639, venda fiscal de R$ 60.000,00: aguardando valor contábil residual/custo para reconhecer ganho ou perda. Mini Cooper e Corolla já estão contabilizados.",
-  ];
+  const pendenciasBloqueantes:string[]=[];
 
   return {composicao,dre:{
     receitaProducao,receitaRevenda,receitaBruta,
@@ -229,7 +227,7 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
     conferenciaBalancete:balancete.conferencia,
     resultado,
     status:"fechado_com_pendencias" as const,fechadoEm:"18/08/2026",
-    possuiPendenciaBloqueante:true as const,
+    possuiPendenciaBloqueante:false as const,
     pendenciasBloqueantes,
     criterioFechamento:"Documento/fato real → Razão → Balancete → DRE. A DRE lê o movimento mensal das contas analíticas do Balancete; saldo acumulado e conta sintética não são somados para formar resultado. Custos industriais 5.3 entram no CPV somente quando vinculados a centro de custo produtivo; serviços administrativos/comerciais permanecem em despesas operacionais.",
     resumoRazao:resumoFechamentoJulhoFinal,financeiro:resumoFinanceiroJulho,

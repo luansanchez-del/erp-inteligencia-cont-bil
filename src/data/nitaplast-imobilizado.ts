@@ -204,15 +204,33 @@ export const alienacoesImobilizadoValidadasJulho: LancamentoIntegrado[] = [
     fonte: "SALDO RESIDUAL Corolla + NF 93569",
     observacao: "Valor residual documentado R$ 93.139,29. Venda R$ 127.000,00; ganho na alienação R$ 33.860,71.",
   },
+  {
+    id: "JUL-ALIEN-TRANSFORMADOR-REC",
+    data: "31/07/2026",
+    origem: "ALIENAÇÃO IMOBILIZADO 07/2026",
+    debitoCodigo: "25111",
+    debito: "25111 - Duplicatas a Receber",
+    creditoCodigo: "4736",
+    credito: nomeConta("4736", "Vendas do Ativo Imobilizado"),
+    historico: "Reconhecimento da venda do Transformador seco 1000KVA",
+    documento: "NF 93639",
+    cc: "0",
+    centroCusto: "SEM CENTRO DE CUSTO",
+    valor: 60000,
+    status: "validado",
+    rastreio: "documento",
+    fonte: "NF 93639",
+    observacao: "Bem 100% depreciado (valor contábil residual R$ 0,00); toda a venda é ganho de capital, sem baixa de custo contra o resultado. Recebimento em parcelas previstas para agosto e setembro/2026; mantido em Duplicatas a Receber até a confirmação bancária.",
+  },
 ];
 
 export const resumoAlienacoesImobilizadoJulho = {
-  vendasReconhecidas: 246900,
+  vendasReconhecidas: 306900,
   custoResidualReconhecido: 145639.29,
-  ganhoReconhecido: 101260.71,
+  ganhoReconhecido: 161260.71,
   mini: { venda: 119900, residual: 52500, ganho: 67400 },
   corolla: { venda: 127000, custoOriginal: 129961.80, depreciacaoAcumulada: 36822.51, residual: 93139.29, ganho: 33860.71 },
-  pendente: { documento: "NF 93639", bem: "Transformador seco 1000KVA", vendaFiscal: 60000, motivo: "Aguardando valor contábil residual/custo para reconhecer a alienação no resultado." },
+  transformador: { venda: 60000, residual: 0, ganho: 60000, observacao: "Bem 100% depreciado; sem custo residual a baixar. Recebimento em parcelas em 08/2026 e 09/2026." },
 } as const;
 
 export function calcularDepreciacaoImobilizado(base: LancamentoIntegrado[], data = "31/07/2026") {
