@@ -226,7 +226,6 @@ const lancamentosAuditoriaJulho: LancamentoIntegrado[] = [
   },
 ];
 
-const lancamentosBaseCorrigidos = lancamentosBaseSaneados.map(sanearRazaoJulho);
 
 const pendenciasBancariasValorAjustado = arred(
   lancamentosBaseCorrigidos
