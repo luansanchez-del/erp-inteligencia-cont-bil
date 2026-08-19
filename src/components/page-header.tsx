@@ -1,4 +1,5 @@
 import { lazy, Suspense, type ReactNode } from "react";
+import { useRouterState } from "@tanstack/react-router";
 import { useErp } from "@/context/erp-context";
 import {
   BalanceteJulhoAjustavel,
@@ -51,7 +52,7 @@ export function PageHeader({ titulo, descricao, acoes }: { titulo: string; descr
 
 export function PageShell({ children }: { children: ReactNode }) {
   const { empresa, competencia } = useErp();
-  const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const sensivel = rotasSensiveisCompetencia.some((rota) => pathname === rota || pathname.startsWith(`${rota}/`));
   const relatorioImprimivel = rotasRelatorioImpressao.some((rota) => pathname === rota || pathname.startsWith(`${rota}/`));
   const dreJulhoImpressao = relatorioImprimivel
