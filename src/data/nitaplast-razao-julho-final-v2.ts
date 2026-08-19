@@ -191,8 +191,8 @@ const lancamentosAuditoriaJulho: LancamentoIntegrado[] = [
     id: "JUL-ICMS-F-DEB-TRANSF", data: "31/07/2026", origem: "APURAÇÃO ICMS FILIAL 07/2026 - TRANSFERÊNCIA INTERNA",
     debitoCodigo: "25054", debito: nomeConta("25054"), creditoCodigo: "25235", credito: nomeConta("25235"),
     historico: "ICMS sobre transferências internas da Filial SP - CFOP 6151/6557", documento: "ICMS FILIAL TRANSFERÊNCIAS 07/2026",
-    cc: "502", centroCusto: "COMERCIAL SP", valor: 3894.05, status: "revisar",
-    observacao: "Parcela interna identificada documentalmente. Mantida separada e marcada para revisão da conta patrimonial específica; não deve compor dedução de vendas na DRE.", rastreio: "sugerido", fonte: "REGISTRO APURAÇÃO ICMS FILIAL 07/2026",
+    cc: "502", centroCusto: "COMERCIAL SP", valor: 3894.05, status: "validado",
+    observacao: "Parcela interna identificada documentalmente. O plano de contas atual não possui mais a conta analítica \"(-) ICMS TRANSFERÊNCIA - FILIAL\" que existia até maio/2026 (ver nitaplast-filial-junho.ts); confirmado o lançamento contra 25235 - ICMS a recolher - Filial SP, a conta patrimonial disponível para esta obrigação. Não deve compor dedução de vendas na DRE.", rastreio: "derivado", fonte: "REGISTRO APURAÇÃO ICMS FILIAL 07/2026",
   },
 
   // Crédito de transporte: o EFD permite segregar o estabelecimento, embora a origem CFOP 1352/2352 esteja agregada.
