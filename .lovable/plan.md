@@ -24,3 +24,7 @@ O que já existe e está correto no código atual (confirmado na leitura dos arq
 
 - Junho/2026, JCP, regra dos retornos de R$ 1.110.176,82 e demais classificações permanecem intocados.
 - Nenhum plug, rateio ou abertura gerencial será criado. Se após a correção alguma linha da Filial continuar em zero, isso será reportado como pendência de evidência documental, não preenchido por estimativa.
+
+## Observação sobre o typecheck
+
+O `tsc` estrito acusa dezenas de erros pré-existentes (opcionais `string | undefined`, acesso por index signature) em arquivos de dados de junho/julho — `nitaplast-balancete-cc-junho.ts`, `nitaplast-dre-detalhada-v2/v7.ts`, `nitaplast-folha-julho.ts`, `contabil-julho*.tsx`, entre outros. Eles não vêm desta correção e não impedem o `vite build`. Proponho tratá-los em uma passagem separada, para não misturar com o ajuste contábil da DRE. Se preferir, incluo essa limpeza no mesmo passo.
