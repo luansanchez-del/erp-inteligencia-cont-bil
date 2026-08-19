@@ -193,8 +193,8 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   if(Math.abs(somaReceitasAbertas-receitasFinanceiras)>0.01)throw new Error(`Abertura de receitas financeiras não concilia: ${somaReceitasAbertas.toFixed(2)} / ${receitasFinanceiras.toFixed(2)}`);
   if(Math.abs(arred(receitasFinanceirasMatriz+receitasFinanceirasFilial)-receitasFinanceiras)>0.01)throw new Error("Receitas financeiras Matriz + Filial não conciliam.");
   if(Math.abs(receitaAlienacaoImobilizado-306900)>0.01)throw new Error(`Venda de imobilizado reconhecida deveria ser R$ 306.900,00; encontrado ${receitaAlienacaoImobilizado.toFixed(2)}.`);
-  if(Math.abs(custoAlienacaoImobilizado-145639.29)>0.01)throw new Error(`Custo residual dos ativos vendidos deveria ser R$ 145.639,29; encontrado ${custoAlienacaoImobilizado.toFixed(2)}.`);
-  if(Math.abs(resultadoAlienacaoImobilizado-161260.71)>0.01)throw new Error("Resultado de Mini + Corolla + Transformador não conciliou em R$ 161.260,71.");
+  if(Math.abs(custoAlienacaoImobilizado-203278.15)>0.01)throw new Error(`Custo residual dos ativos vendidos deveria ser R$ 203.278,15; encontrado ${custoAlienacaoImobilizado.toFixed(2)}.`);
+  if(Math.abs(resultadoAlienacaoImobilizado-103621.85)>0.01)throw new Error("Resultado de Mini + Corolla + Transformador não conciliou em R$ 103.621,85.");
   if(Math.abs(energiaDebitosMatriz-35286.38)>0.01||Math.abs(energiaCreditosMatriz-17146.20)>0.01||Math.abs(energiaEletricaMatriz-18140.18)>0.01){
     throw new Error(`Energia elétrica julho não concilia. Débitos ${energiaDebitosMatriz.toFixed(2)}, créditos ${energiaCreditosMatriz.toFixed(2)}, líquido ${energiaEletricaMatriz.toFixed(2)}.`);
   }

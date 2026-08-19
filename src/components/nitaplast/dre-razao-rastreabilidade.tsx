@@ -88,7 +88,7 @@ export function AuditoriaDreRazaoJulho() {
         </div>
 
         <div className="rounded-md border bg-background p-3 text-sm">
-          <strong>Conferência crítica:</strong> 25098 fecha em <strong>{brl.format(totalAplicacoes)}</strong> no Razão e 25096 fecha em <strong>{brl.format(totalVca)}</strong>. O Transformador seco 1000KVA (NF 93639), R$ 60.000,00, está contabilizado: 100% depreciado, sem custo residual, ganho integral no resultado contábil.
+          <strong>Conferência crítica:</strong> 25098 fecha em <strong>{brl.format(totalAplicacoes)}</strong> no Razão e 25096 fecha em <strong>{brl.format(totalVca)}</strong>. O Transformador seco 1000KVA (NF 93639), R$ 60.000,00, está contabilizado: valor contábil líquido de R$ 57.638,86 na venda (14/07), ganho de R$ 2.361,14 no resultado contábil.
         </div>
 
         <div className="overflow-x-auto rounded-md border bg-background">

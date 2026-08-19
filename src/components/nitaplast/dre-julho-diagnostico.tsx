@@ -45,7 +45,7 @@ export function DreJulhoDiagnostico() {
         </div>
 
         <p className="mt-3 text-xs text-muted-foreground">
-          Razão contém {alienacoesNoRazao} partidas de alienação. Balancete: conta 4736 = {brl.format(mov4736)} de movimento assinado; conta 4760 = {brl.format(mov4760)}. O transformador de R$ 60.000,00 (NF 93639) já compõe o resultado: 100% depreciado, ganho integral pela venda.
+          Razão contém {alienacoesNoRazao} partidas de alienação. Balancete: conta 4736 = {brl.format(mov4736)} de movimento assinado; conta 4760 = {brl.format(mov4760)}. O transformador de R$ 60.000,00 (NF 93639) já compõe o resultado: valor contábil líquido R$ 57.638,86 na venda (14/07), ganho de R$ 2.361,14.
         </p>
       </div>
 
