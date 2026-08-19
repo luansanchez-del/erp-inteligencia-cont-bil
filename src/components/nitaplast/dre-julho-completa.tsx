@@ -79,11 +79,6 @@ export function DreJulhoCompleta() {
   const grupos = useMemo(() => {
     const custosMatriz = base.custos.filter((x) => x.estabelecimento === "Matriz");
     const custosFilial = base.custos.filter((x) => x.estabelecimento === "Filial SP");
-    const fechamentoEstoqueMatriz = custosMatriz.filter((x) => x.conta === "25944");
-    const fechamentoEstoqueFilial = custosFilial.filter((x) => x.conta === "25945");
-    const componentesCpvMatriz = custosMatriz.filter((x) => x.conta !== "25944");
-    const componentesCpvFilial = custosFilial.filter((x) => x.conta !== "25945");
-
     const filial = despesasSemNplog.filter((x) => x.estabelecimento === "Filial SP");
     const matriz = despesasSemNplog.filter((x) => x.estabelecimento === "Matriz");
     const industrializacao = matriz.filter((x) => x.conta === "25937");
@@ -102,7 +97,7 @@ export function DreJulhoCompleta() {
 
     const financeira = garantirConta(base.financeira, "25109", itemZero("25109", "5.8.01.006", "Variações Cambiais Passivas", "902", "DESPESAS FINANCEIRAS"));
     const receitasFinanceiras = garantirConta(base.receitasFinanceiras, "25096", itemZero("25096", "5.7.12.001.006", "Variações Cambiais Ativas", "901", "RECEITAS FINANCEIRAS"));
-    return { custosMatriz, custosFilial, fechamentoEstoqueMatriz, fechamentoEstoqueFilial, componentesCpvMatriz, componentesCpvFilial, filial, matriz, industrializacao, depreciacao, creditosFederais, importacao, exportacao, veiculos, energia, prod, comerciais, adm, outras, financeira, receitasFinanceiras };
+    return { custosMatriz, custosFilial, filial, matriz, industrializacao, depreciacao, creditosFederais, importacao, exportacao, veiculos, energia, prod, comerciais, adm, outras, financeira, receitasFinanceiras };
   }, [base, despesasSemNplog]);
 
   const custosDre = soma(base.custos);
@@ -145,13 +140,9 @@ export function DreJulhoCompleta() {
     { id: "st-f", descricao: "ICMS ST — Filial SP", nivel: 1, valor: dre.icmsStFilial, criterio: "Parcela Filial SP comprovada." },
 
     { id: "rl", descricao: "(=) Receita Operacional Líquida", nivel: 0, valor: dre.receitaLiquida, criterio: "Receita bruta menos deduções do Razão." },
-    { id: "custos", descricao: "(-) CPV / CMV", nivel: 0, valor: custosDre, criterio: "CPV completo formado no Razão: compras + fretes válidos + fechamento/variação de estoque, segregado por estabelecimento." },
-    { id: "cpv-m", descricao: "CPV — Matriz", nivel: 1, valor: dre.cpvMatriz, criterio: "CPV completo da Matriz; não é somente a conta 25944.", composicao: grupos.custosMatriz },
-    { id: "cpv-m-fech", descricao: "Fechamento / Variação de estoque — Matriz (25944)", nivel: 2, valor: dre.fechamentoEstoqueMatriz, criterio: "Componente do CPV Matriz.", composicao: grupos.fechamentoEstoqueMatriz },
-    { id: "cpv-m-comp", descricao: "Compras, fretes e demais componentes do CPV — Matriz", nivel: 2, valor: dre.outrosCustosMatriz, criterio: "Inclui 3093 e somente os fretes 3095 efetivamente suportados; itens 11.90.001 continuam marcados para revisão.", composicao: grupos.componentesCpvMatriz },
-    { id: "cpv-f", descricao: "CPV — Filial SP", nivel: 1, valor: dre.cpvFilial, criterio: "CPV completo da Filial SP; não é somente a conta 25945.", composicao: grupos.custosFilial },
-    { id: "cpv-f-fech", descricao: "Fechamento / Variação de estoque — Filial SP (25945)", nivel: 2, valor: dre.fechamentoEstoqueFilial, criterio: "Componente do CPV Filial.", composicao: grupos.fechamentoEstoqueFilial },
-    { id: "cpv-f-comp", descricao: "Compras, fretes e demais componentes do CPV — Filial SP", nivel: 2, valor: dre.outrosCustosFilial, criterio: "Demais componentes do custo identificados como Filial SP.", composicao: grupos.componentesCpvFilial },
+    { id: "custos", descricao: "(-) CPV / CMV", nivel: 0, valor: custosDre, criterio: "CPV completo formado no Razão e segregado por estabelecimento." },
+    { id: "cpv-m", descricao: "CPV — Matriz", nivel: 1, valor: dre.cpvMatriz, criterio: "CPV completo da Matriz. Abra para conferir as contas que compõem o valor.", composicao: grupos.custosMatriz },
+    { id: "cpv-f", descricao: "CPV — Filial SP", nivel: 1, valor: dre.cpvFilial, criterio: "CPV completo da Filial SP. Abra para conferir as contas que compõem o valor.", composicao: grupos.custosFilial },
     { id: "lb", descricao: "(=) LUCRO BRUTO", nivel: 0, valor: lucroBruto, criterio: "Receita líquida menos CPV/CMV do Razão." },
 
     { id: "despesas", descricao: "(-) Despesas Operacionais", nivel: 0, valor: despesasOperacionais, criterio: "Subtotal consolidado; Matriz e Filial SP não se misturam nas composições." },
@@ -188,7 +179,6 @@ export function DreJulhoCompleta() {
 
   function exportarDreExcel() {
     const percentual = (valor: number) => dre.receitaBruta ? valor / dre.receitaBruta : 0;
-    // Exportação usa a fonte completa da DRE, nunca o estado aberto/recolhido da interface.
     const linhasExcel = linhas.flatMap((linha) => [
       [`${"    ".repeat(Math.max(0, linha.nivel))}${linha.descricao}`, linha.valor, percentual(linha.valor)],
       ...(linha.composicao ?? []).map((item) => [`            ${item.estabelecimento} · ${item.conta} · ${item.descricao} — ${item.cc} ${item.centroCusto}`, item.valor, percentual(item.valor)]),
