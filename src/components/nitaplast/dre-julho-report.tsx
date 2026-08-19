@@ -75,13 +75,13 @@ export function DreJulhoReport() {
 
     const filial = despesasSemNplog.filter((x) => x.estabelecimento === "Filial SP");
     const matriz = despesasSemNplog.filter((x) => x.estabelecimento === "Matriz");
-    const industrializacao = matriz.filter((x) => x.conta === "25937");
+    const industrializacao = composicao.filter((x) => x.conta === "25937" && x.estabelecimento === "Matriz");
     const depreciacao = matriz.filter((x) => x.classificacao.startsWith("5.7.01.011"));
     const creditosFederais = matriz.filter((x) => creditosFederaisContas.has(x.conta));
     const importacao = matriz.filter((x) => x.conta === "25070");
     const exportacao = matriz.filter((x) => x.conta === "25072");
     const veiculos = matriz.filter((x) => x.classificacao.startsWith("5.7.05") || x.classificacao.startsWith("5.7.01.015"));
-    const energia = matriz.filter((x) => x.conta === "3494");
+    const energia = composicao.filter((x) => x.conta === "3494" && x.estabelecimento === "Matriz");
     const excluidas = new Set([...industrializacao, ...depreciacao, ...creditosFederais, ...importacao, ...exportacao, ...veiculos, ...energia].map((x) => x.id));
     const classificaveis = matriz.filter((x) => !excluidas.has(x.id));
     const comerciais = classificaveis.filter((x) => ccCom.has(x.cc));
@@ -91,7 +91,7 @@ export function DreJulhoReport() {
     const despesasFinanceiras = garantir(base.despesasFinanceiras, "25109", zero("25109", "5.8.01.006", "Variações Cambiais Passivas", "902", "DESPESAS FINANCEIRAS"));
     const receitasFinanceiras = garantir(base.receitasFinanceiras, "25096", zero("25096", "5.7.12.001.006", "Variações Cambiais Ativas", "901", "RECEITAS FINANCEIRAS"));
     return { custosMatriz, custosFilial, fechamentoEstoqueMatriz, fechamentoEstoqueFilial, componentesCpvMatriz, componentesCpvFilial, filial, matriz, industrializacao, depreciacao, creditosFederais, importacao, exportacao, veiculos, energia, comerciais, administrativas, producao, outras, despesasFinanceiras, receitasFinanceiras };
-  }, [base, despesasSemNplog]);
+  }, [base, despesasSemNplog, composicao]);
 
   const custosDre = soma(base.custos);
   const despesasOperacionais = arred(soma(despesasSemNplog) + valorNplog);
