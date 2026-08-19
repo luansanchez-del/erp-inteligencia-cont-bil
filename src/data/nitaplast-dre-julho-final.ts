@@ -18,6 +18,11 @@ export type ComposicaoResultadoJulho = {
  * Saldo acumulado não alimenta DRE e nenhuma linha gerencial cria débito/crédito.
  */
 const contasCustoOperacionalJulho=new Set(["3093","3095"]);
+const contasCustoIndustrialDiretoJulho=new Set(["25937"]);
+const centrosCustoProducaoJulho=new Set([
+  "101","102","103","104","105","106","107","108","109","110","111","503",
+  "10014","10032","10057","10058","10060","10061","19999",
+]);
 const contasAlienacaoImobilizadoJulho=new Set(["4736","4760"]);
 export const contasReceitasFinanceirasJulho=new Set([
   "4927",
@@ -30,14 +35,24 @@ export const contasReceitasFinanceirasJulho=new Set([
   "25101",
 ]);
 
-export function ehCustoDreJulho(x:Pick<ComposicaoResultadoJulho,"conta"|"classificacao">){
+type ChaveClassificacaoResultado=Pick<ComposicaoResultadoJulho,"conta"|"classificacao">;
+type ChaveClassificacaoCusto=Pick<ComposicaoResultadoJulho,"conta"|"classificacao"|"cc">;
+
+function ehCustoDreJulhoCriterioAnterior(x:ChaveClassificacaoResultado){
   return x.classificacao.startsWith("4.2")||x.classificacao.startsWith("5.1")||contasCustoOperacionalJulho.has(x.conta);
+}
+export function ehCustoDreJulho(x:ChaveClassificacaoCusto){
+  const custoIndustrialPorCentro=x.classificacao.startsWith("5.3")&&centrosCustoProducaoJulho.has(x.cc);
+  return ehCustoDreJulhoCriterioAnterior(x)||contasCustoIndustrialDiretoJulho.has(x.conta)||custoIndustrialPorCentro;
 }
 export function ehDespesaFinanceiraDreJulho(x:Pick<ComposicaoResultadoJulho,"classificacao">){return x.classificacao.startsWith("5.8");}
 export function ehReceitaFinanceiraDreJulho(x:Pick<ComposicaoResultadoJulho,"conta">){return contasReceitasFinanceirasJulho.has(x.conta);}
 export function ehReceitaAlienacaoImobilizadoDreJulho(x:Pick<ComposicaoResultadoJulho,"conta">){return x.conta==="4736";}
 export function ehCustoAlienacaoImobilizadoDreJulho(x:Pick<ComposicaoResultadoJulho,"conta">){return x.conta==="4760";}
-export function ehDespesaOperacionalDreJulho(x:Pick<ComposicaoResultadoJulho,"conta"|"classificacao">){
+function ehDespesaOperacionalDreJulhoCriterioAnterior(x:ChaveClassificacaoResultado){
+  return x.classificacao.startsWith("5.")&&!ehCustoDreJulhoCriterioAnterior(x)&&!ehDespesaFinanceiraDreJulho(x)&&!ehReceitaFinanceiraDreJulho(x)&&!contasAlienacaoImobilizadoJulho.has(x.conta);
+}
+export function ehDespesaOperacionalDreJulho(x:ChaveClassificacaoCusto){
   return x.classificacao.startsWith("5.")&&!ehCustoDreJulho(x)&&!ehDespesaFinanceiraDreJulho(x)&&!ehReceitaFinanceiraDreJulho(x)&&!contasAlienacaoImobilizadoJulho.has(x.conta);
 }
 
@@ -113,8 +128,11 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   if(Math.abs(balancete.conferencia.diferencaDebitosCreditos)>0.01)throw new Error("Razão de julho não fecha: Débitos diferentes de Créditos.");
   if(Math.abs(balancete.conferencia.somaMovimentosAnaliticos)>0.01)throw new Error(`Balancete de julho não fecha no movimento analítico: ${balancete.conferencia.somaMovimentosAnaliticos.toFixed(2)}.`);
 
+  const custosItensCriterioAnterior=composicao.filter(ehCustoDreJulhoCriterioAnterior);
+  const custosCriterioAnterior=arred(custosItensCriterioAnterior.reduce((s,x)=>s+x.valor,0));
   const custosItens=composicao.filter(ehCustoDreJulho);
   const custos=arred(custosItens.reduce((s,x)=>s+x.valor,0));
+  const reclassificacaoIndustrialParaCpv=arred(custos-custosCriterioAnterior);
   const custosMatriz=arred(custosItens.filter(x=>x.estabelecimento==="Matriz").reduce((s,x)=>s+x.valor,0));
   const custosFilial=arred(custosItens.filter(x=>x.estabelecimento==="Filial SP").reduce((s,x)=>s+x.valor,0));
 
@@ -129,6 +147,8 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   if(Math.abs(arred(fechamentoEstoqueMatriz+outrosCustosMatriz)-cpvMatriz)>0.01)throw new Error("Composição do CPV Matriz não concilia.");
   if(Math.abs(arred(fechamentoEstoqueFilial+outrosCustosFilial)-cpvFilial)>0.01)throw new Error("Composição do CPV Filial não concilia.");
 
+  const despesasOperacionaisItensCriterioAnterior=composicao.filter(ehDespesaOperacionalDreJulhoCriterioAnterior);
+  const despesasOperacionaisCriterioAnterior=arred(despesasOperacionaisItensCriterioAnterior.reduce((s,x)=>s+x.valor,0));
   const despesasOperacionaisItens=composicao.filter(ehDespesaOperacionalDreJulho);
   const despesasOperacionais=arred(despesasOperacionaisItens.reduce((s,x)=>s+x.valor,0));
   const despesasOperacionaisMatriz=arred(despesasOperacionaisItens.filter(x=>x.estabelecimento==="Matriz").reduce((s,x)=>s+x.valor,0));
@@ -164,6 +184,10 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   const energiaCreditosMatriz=arred(energiaEletricaItens.reduce((s,x)=>s+x.creditos,0));
 
   const resultado=arred(receitaLiquida-custos-despesas+receitasFinanceiras+resultadoAlienacaoImobilizado);
+  const despesasCriterioAnterior=arred(despesasOperacionaisCriterioAnterior+despesasFinanceiras);
+  const resultadoCriterioAnterior=arred(receitaLiquida-custosCriterioAnterior-despesasCriterioAnterior+receitasFinanceiras+resultadoAlienacaoImobilizado);
+  const impactoResultadoReclassificacao=arred(resultado-resultadoCriterioAnterior);
+  if(Math.abs(impactoResultadoReclassificacao)>0.01)throw new Error(`Reclassificação industrial alterou indevidamente o resultado em ${impactoResultadoReclassificacao.toFixed(2)}.`);
 
   const somaReceitasAbertas=arred(Object.values(receitasFinanceirasPorConta).reduce((s,v)=>s+v,0));
   if(Math.abs(somaReceitasAbertas-receitasFinanceiras)>0.01)throw new Error(`Abertura de receitas financeiras não concilia: ${somaReceitasAbertas.toFixed(2)} / ${receitasFinanceiras.toFixed(2)}`);
@@ -192,12 +216,22 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
     receitaAlienacaoImobilizado,custoAlienacaoImobilizado,resultadoAlienacaoImobilizado,
     vendasAtivoImobilizadoFiscais,vendasAtivoImobilizadoReconhecidas,vendaAtivoImobilizadoPendente,
     energiaEletricaMatriz,energiaDebitosMatriz,energiaCreditosMatriz,
+    simulacaoCpv:{
+      cpvAntes:custosCriterioAnterior,
+      cpvDepois:custos,
+      reclassificadoParaCpv:reclassificacaoIndustrialParaCpv,
+      despesasOperacionaisAntes:despesasOperacionaisCriterioAnterior,
+      despesasOperacionaisDepois:despesasOperacionais,
+      resultadoAntes:resultadoCriterioAnterior,
+      resultadoDepois:resultado,
+      impactoResultado:impactoResultadoReclassificacao,
+    },
     conferenciaBalancete:balancete.conferencia,
     resultado,
     status:"fechado_com_pendencias" as const,fechadoEm:"18/08/2026",
     possuiPendenciaBloqueante:true as const,
     pendenciasBloqueantes,
-    criterioFechamento:"Documento/fato real → Razão → Balancete → DRE. A DRE lê o movimento mensal das contas analíticas do Balancete; saldo acumulado e conta sintética não são somados para formar resultado.",
+    criterioFechamento:"Documento/fato real → Razão → Balancete → DRE. A DRE lê o movimento mensal das contas analíticas do Balancete; saldo acumulado e conta sintética não são somados para formar resultado. Custos industriais 5.3 entram no CPV somente quando vinculados a centro de custo produtivo; serviços administrativos/comerciais permanecem em despesas operacionais.",
     resumoRazao:resumoFechamentoJulhoFinal,financeiro:resumoFinanceiroJulho,
     pendenciasNaoBloqueantes:[`R$ ${resumoFinanceiroJulho.valorEntradasSemCcPendente.toFixed(2)} de entradas ainda sem distribuição completa por centro de custo`,`${resumoFinanceiroJulho.contratosCambioPendentes} contrato(s) de câmbio aguardando amarração do valor contábil de origem`],
     itensSemFonte:[`R$ ${resumoFinanceiroJulho.valorEntradasSemCcPendente.toFixed(2)} de entradas ainda sem centro de custo/documento suficiente`,`Contratos de câmbio ainda pendentes de valor contábil de origem: ${resumoFinanceiroJulho.contratosCambioPendentes}`],
@@ -210,8 +244,8 @@ export const dreJulhoFinal=calculoEstatico.dre;
 
 const servicosAdmClassificadosComoCusto=composicaoResultadoJulhoFinal.find(x=>x.conta==="25938"&&["302","303","304","305","306","501"].includes(x.cc)&&ehCustoDreJulho(x));
 if(servicosAdmClassificadosComoCusto)throw new Error(`Serviço administrativo classificado indevidamente como custo: ${servicosAdmClassificadosComoCusto.id}`);
-const industrializacaoClassificadaComoCusto=composicaoResultadoJulhoFinal.find(x=>x.conta==="25937"&&ehCustoDreJulho(x));
-if(industrializacaoClassificadaComoCusto)throw new Error(`Industrialização permaneceu indevidamente em Custos/CPV/CMV: ${industrializacaoClassificadaComoCusto.id}`);
+const industrializacaoForaDoCusto=composicaoResultadoJulhoFinal.find(x=>x.conta==="25937"&&!ehCustoDreJulho(x));
+if(industrializacaoForaDoCusto)throw new Error(`Industrialização produtiva permaneceu fora de Custos/CPV/CMV: ${industrializacaoForaDoCusto.id}`);
 const cpvFilialEmMatriz=composicaoResultadoJulhoFinal.find(x=>x.conta==="25945"&&x.estabelecimento!=="Filial SP");
 if(cpvFilialEmMatriz)throw new Error(`Fechamento de estoque da Filial sem identificação de estabelecimento: ${cpvFilialEmMatriz.id}`);
 const alienacaoEmDespesa=composicaoResultadoJulhoFinal.find(x=>contasAlienacaoImobilizadoJulho.has(x.conta)&&ehDespesaOperacionalDreJulho(x));
