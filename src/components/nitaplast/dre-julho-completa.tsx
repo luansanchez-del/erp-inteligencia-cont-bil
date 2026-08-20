@@ -160,6 +160,7 @@ export function DreJulhoCompleta() {
     { id: "cred-fed", descricao: "(-) Créditos PIS/COFINS sobre Custos e Despesas — Matriz", nivel: 2, valor: soma(grupos.creditosFederais), criterio: "Contas 25946/25947. Parcela da Filial SP não é mais forçada para Matriz.", composicao: grupos.creditosFederais },
     { id: "outras", descricao: "Outras Despesas Operacionais — Matriz", nivel: 2, valor: soma(grupos.outras), criterio: "Somente o residual da Matriz após as classificações específicas.", composicao: grupos.outras },
     { id: "filial-desp", descricao: "Despesas Operacionais — Filial SP", nivel: 1, valor: despesasFilial, criterio: "Bloco exclusivo da Filial SP; não se repete na Matriz.", composicao: grupos.filial },
+    { id: "fin-liquidas", descricao: "Despesas Financeiras Líquidas", nivel: 1, valor: arred(despFin - dre.receitasFinanceiras), criterio: "Despesas financeiras menos receitas financeiras, exibidas na estrutura de conferência sem alterar o CPV." },
     { id: "ro", descricao: "(=) Resultado Operacional", nivel: 0, valor: resultadoOper, criterio: "Lucro bruto menos despesas operacionais do Razão." },
 
     { id: "fin-d", descricao: "(-) Despesas Financeiras", nivel: 0, valor: despFin, criterio: "Juros, tarifas, IOF, JCP e variação cambial passiva, por conta e estabelecimento.", composicao: grupos.financeira },
