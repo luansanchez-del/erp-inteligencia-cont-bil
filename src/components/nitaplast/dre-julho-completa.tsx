@@ -105,8 +105,6 @@ export function DreJulhoCompleta() {
   const despesasMatriz = arred(soma(grupos.matriz) + valorNplog);
   const despesasFilial = soma(grupos.filial);
   const despFin = soma(base.financeira);
-  const pisNaoCumulativo = arred(Math.abs(soma(grupos.creditosFederais.filter((x) => x.conta === "25946"))));
-  const cofinsNaoCumulativo = arred(Math.abs(soma(grupos.creditosFederais.filter((x) => x.conta === "25947"))));
   const lucroBruto = arred(dre.receitaLiquida - custosDre);
   const resultadoOper = arred(lucroBruto - despesasOperacionais);
   const resultadoCalculado = arred(dre.receitaLiquida - dre.custosReconhecidos - dre.despesasReconhecidas + dre.receitasFinanceiras + dre.resultadoAlienacaoImobilizado);
@@ -171,8 +169,6 @@ export function DreJulhoCompleta() {
     { id: "outras", descricao: "Outras Despesas Operacionais — Matriz", nivel: 2, valor: soma(grupos.outras), criterio: "Somente o residual da Matriz após as classificações específicas.", composicao: grupos.outras },
     { id: "filial-desp", descricao: "Despesas Operacionais — Filial SP", nivel: 1, valor: despesasFilial, criterio: "Bloco exclusivo da Filial SP; não se repete na Matriz.", composicao: grupos.filial },
     { id: "fin-liquidas", descricao: "Despesas Financeiras Líquidas", nivel: 1, valor: arred(despFin - dre.receitasFinanceiras), criterio: "Despesas financeiras menos receitas financeiras, exibidas na estrutura de conferência sem alterar o CPV." },
-    { id: "pis-nao-cumulativo", descricao: "PIS não cumulativo", nivel: 1, valor: pisNaoCumulativo, criterio: "Créditos de PIS sobre custos e despesas, conta 25946, exibidos separadamente para conferência." },
-    { id: "cofins-nao-cumulativo", descricao: "COFINS não cumulativo", nivel: 1, valor: cofinsNaoCumulativo, criterio: "Créditos de COFINS sobre custos e despesas, conta 25947, exibidos separadamente para conferência." },
     { id: "ro", descricao: "(=) Resultado Operacional", nivel: 0, valor: resultadoOper, criterio: "Lucro bruto menos despesas operacionais do Razão." },
 
     { id: "fin-d", descricao: "(-) Despesas Financeiras", nivel: 0, valor: despFin, criterio: "Juros, tarifas, IOF, JCP e variação cambial passiva, por conta e estabelecimento.", composicao: grupos.financeira },
