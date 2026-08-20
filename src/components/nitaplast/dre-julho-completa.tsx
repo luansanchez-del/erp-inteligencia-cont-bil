@@ -92,7 +92,7 @@ export function DreJulhoCompleta() {
     const classificaveis = matriz.filter((x) => !excluidas.has(x.id));
     const comerciais = classificaveis.filter((x) => ccCom.has(x.cc));
     const adm = classificaveis.filter((x) => ccAdm.has(x.cc));
-    const prod = classificaveis.filter((x) => ccProd.has(x.cc) && !comerciais.includes(x));
+    const prod = [...classificaveis.filter((x) => ccProd.has(x.cc) && !comerciais.includes(x)), ...energia];
     const outras = classificaveis.filter((x) => !prod.includes(x) && !comerciais.includes(x) && !adm.includes(x));
 
     const financeira = garantirConta(base.financeira, "25109", itemZero("25109", "5.8.01.006", "Variações Cambiais Passivas", "902", "DESPESAS FINANCEIRAS"));
@@ -159,9 +159,8 @@ export function DreJulhoCompleta() {
     { id: "despesas", descricao: "(-) Despesas Operacionais", nivel: 0, valor: despesasOperacionais, criterio: "Subtotal consolidado; Matriz e Filial SP não se misturam nas composições." },
     { id: "desp-matriz-total", descricao: "Despesas Operacionais — Matriz", nivel: 1, valor: despesasMatriz, criterio: "Subtotal exclusivo da Matriz." },
     { id: "industr", descricao: "Despesas com Industrialização — Matriz", nivel: 2, valor: soma(grupos.industrializacao), criterio: "Conta 25937 da Matriz.", composicao: grupos.industrializacao },
-    { id: "energia", descricao: "Energia Elétrica — Matriz (movimento 07/2026)", nivel: 2, valor: dre.energiaEletricaMatriz, criterio: `Somente movimento de julho da conta 3494: débitos ${brl.format(dre.energiaDebitosMatriz)} menos créditos ${brl.format(dre.energiaCreditosMatriz)}. Não usa saldo acumulado do Balancete.`, composicao: grupos.energia },
     { id: "nplog", descricao: "Despesa com Serviço - NPLog — Matriz", nivel: 2, valor: valorNplog, criterio: "11.02.003 / CC 304 Matriz.", composicao: composicaoNplog },
-    { id: "prod", descricao: "Despesas Produção — Matriz", nivel: 2, valor: soma(grupos.prod), criterio: "Centros produtivos da Matriz, excluída Energia Elétrica que possui linha própria.", composicao: grupos.prod },
+    { id: "prod", descricao: "Despesas Produção — Matriz", nivel: 2, valor: soma(grupos.prod), criterio: "Centros produtivos da Matriz, incluindo energia elétrica do movimento de julho.", composicao: grupos.prod },
     { id: "veic", descricao: "Despesas com Veículos — Matriz", nivel: 2, valor: soma(grupos.veiculos), criterio: "Contas/classes específicas de veículos antes da classificação genérica por CC.", composicao: grupos.veiculos },
     { id: "imp", descricao: "Despesas com Importação — Matriz", nivel: 2, valor: soma(grupos.importacao), criterio: "Conta 25070; natureza documental prevalece sobre o CC.", composicao: grupos.importacao },
     { id: "exp", descricao: "Despesas com Exportação — Matriz", nivel: 2, valor: soma(grupos.exportacao), criterio: "Conta 25072; natureza documental prevalece sobre o CC.", composicao: grupos.exportacao },
