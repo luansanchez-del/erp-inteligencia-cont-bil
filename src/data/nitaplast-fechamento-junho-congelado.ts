@@ -64,8 +64,10 @@ const fechamentoCpvCongeladoJunho: LancamentoIntegrado[] = [
 ];
 
 export function aplicarSnapshotFechamentoJunho(lancamentos: LancamentoIntegrado[]): LancamentoIntegrado[] {
-  const baseSemCpvRecalculado = lancamentos.filter((linha) => !tocaCpvJunho(linha));
-  return [...baseSemCpvRecalculado, ...fechamentoCpvCongeladoJunho];
+  // Junho passa a usar o fechamento por variacao de estoque, com baixa integral
+  // e reconhecimento do inventario final por conta. O snapshot fixo nao deve
+  // substituir essas pernas nem apagar a composicao do Razao.
+  return lancamentos;
 }
 
 function movimentoLiquido(base: LancamentoIntegrado[], codigo: string) {
