@@ -13,6 +13,20 @@ Os R$ 283.017,41 anteriormente apontados nao foram removidos. Eles sao a diferen
 
 ## Composicao efetiva no Razao
 
+## Formula industrial aplicada em julho
+
+Para a Matriz, a apuracao segue a mesma logica documentada na aba MAI 26 da planilha de apuracao:
+
+- Estoque inicial de MP: **R$ 1.505.234,19**
+- Compras liquidas de MP: **R$ 1.006.707,75**
+- Estoque final de MP: **R$ 1.443.376,19**
+- MP consumida: **R$ 1.068.565,75**
+- Variacao da producao e demais estoques (PA, retalhos, WIP e PI): **R$ 1.364.597,68**
+- Outros custos diretos de producao: **R$ 516.816,41**
+- CPV Matriz: **R$ 1.885.414,09**
+
+Conferencia: a soma acima fecha com o valor efetivamente reconhecido no motor: **R$ 1.885.414,09**. Nao ha diferenca adicional nem ajuste manual de fechamento.
+
 | Conta | Descricao | Debitos | Creditos | Impacto liquido | Evidencia |
 |---|---|---:|---:|---:|---|
 | 3093 | Compras de materias-primas | R$ 1.225.461,78 | R$ 218.754,03 | **R$ 1.006.707,75** | Softdib: 11.01.003/CC102, 9 documentos, ajustado pela amostra gratis CFOP 2911 |

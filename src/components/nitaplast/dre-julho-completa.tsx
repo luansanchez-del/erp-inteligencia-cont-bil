@@ -143,7 +143,7 @@ export function DreJulhoCompleta() {
 
     { id: "rl", descricao: "(=) Receita Operacional Líquida", nivel: 0, valor: dre.receitaLiquida, criterio: "Receita bruta menos deduções do Razão." },
     { id: "custos", descricao: "(-) CPV / CMV", nivel: 0, valor: custosDre, criterio: "CPV completo formado no Razão e segregado por estabelecimento." },
-    { id: "cpv-m", descricao: "CPV — Matriz", nivel: 1, valor: dre.cpvMatriz, criterio: "CPV completo da Matriz. Abra para conferir as contas que compõem o valor.", composicao: grupos.custosMatriz },
+    { id: "cpv-m", descricao: "CPV — Matriz", nivel: 1, valor: dre.cpvMatriz, criterio: "Estoque inicial + compras líquidas − estoque final, com transferências e custos diretos de produção. O saldo final permanece no estoque patrimonial; somente o consumo/variação afeta o resultado.", composicao: grupos.custosMatriz },
     { id: "cpv-f", descricao: "CPV — Filial SP", nivel: 1, valor: dre.cpvFilial, criterio: "CPV completo da Filial SP. Abra para conferir as contas que compõem o valor.", composicao: grupos.custosFilial },
     { id: "lb", descricao: "(=) LUCRO BRUTO", nivel: 0, valor: lucroBruto, criterio: "Receita líquida menos CPV/CMV do Razão." },
 
