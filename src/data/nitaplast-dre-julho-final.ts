@@ -20,6 +20,7 @@ export type ComposicaoResultadoJulho = {
 const contasCustoOperacionalJulho=new Set(["3093","3095"]);
 const contasCustoIndustrialDiretoJulho=new Set(["25937"]);
 const contasEstoquePatrimonialJulho=new Set(["25133","25134","25135","25136","25137","25138","25139"]);
+const contasCreditoFederalJulho=new Set(["25946","25947"]);
 const centrosCustoProducaoJulho=new Set([
   "101","102","103","104","105","106","107","108","109","110","111","503",
   "10014","10032","10057","10058","10060","10061","19999",
@@ -55,7 +56,7 @@ function ehDespesaOperacionalDreJulhoCriterioAnterior(x:ChaveClassificacaoResult
   return x.classificacao.startsWith("5.")&&!ehCustoDreJulhoCriterioAnterior(x)&&!ehDespesaFinanceiraDreJulho(x)&&!ehReceitaFinanceiraDreJulho(x)&&!contasAlienacaoImobilizadoJulho.has(x.conta);
 }
 export function ehDespesaOperacionalDreJulho(x:ChaveClassificacaoCusto){
-  return x.classificacao.startsWith("5.")&&!ehCustoDreJulho(x)&&!ehDespesaFinanceiraDreJulho(x)&&!ehReceitaFinanceiraDreJulho(x)&&!contasAlienacaoImobilizadoJulho.has(x.conta);
+  return x.classificacao.startsWith("5.")&&!ehCustoDreJulho(x)&&!ehDespesaFinanceiraDreJulho(x)&&!ehReceitaFinanceiraDreJulho(x)&&!contasAlienacaoImobilizadoJulho.has(x.conta)&&!contasCreditoFederalJulho.has(x.conta);
 }
 
 export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
@@ -155,13 +156,14 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   const despesasOperacionais=arred(despesasOperacionaisItens.reduce((s,x)=>s+x.valor,0));
   const despesasOperacionaisMatriz=arred(despesasOperacionaisItens.filter(x=>x.estabelecimento==="Matriz").reduce((s,x)=>s+x.valor,0));
   const despesasOperacionaisFilial=arred(despesasOperacionaisItens.filter(x=>x.estabelecimento==="Filial SP").reduce((s,x)=>s+x.valor,0));
+  const creditosFederais=arred(composicao.filter(x=>contasCreditoFederalJulho.has(x.conta)).reduce((s,x)=>s+x.valor,0));
   if(Math.abs(arred(despesasOperacionaisMatriz+despesasOperacionaisFilial)-despesasOperacionais)>0.01)throw new Error("Despesas operacionais Matriz + Filial não conciliam com o Balancete.");
 
   const despesasFinanceirasItens=composicao.filter(ehDespesaFinanceiraDreJulho);
   const despesasFinanceiras=arred(despesasFinanceirasItens.reduce((s,x)=>s+x.valor,0));
   const despesasFinanceirasMatriz=arred(despesasFinanceirasItens.filter(x=>x.estabelecimento==="Matriz").reduce((s,x)=>s+x.valor,0));
   const despesasFinanceirasFilial=arred(despesasFinanceirasItens.filter(x=>x.estabelecimento==="Filial SP").reduce((s,x)=>s+x.valor,0));
-  const despesas=arred(despesasOperacionais+despesasFinanceiras);
+  const despesas=arred(despesasOperacionais+despesasFinanceiras+creditosFederais);
 
   const receitasFinanceirasPorConta=Object.fromEntries([...contasReceitasFinanceirasJulho].map(codigo=>[codigo,Math.max(0,creditoLiquido(codigo))])) as Record<string,number>;
   const receitasFinanceiras=arred(Object.values(receitasFinanceirasPorConta).reduce((s,v)=>s+v,0));
@@ -209,7 +211,7 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
     icms,icmsMatriz,icmsFilial,icmsFilialTransferenciasInternas,icmsSt,icmsStMatriz,icmsStFilial,
     ipi,ipiMatriz,ipiFilial,pis,pisMatriz,pisFilial,cofins,cofinsMatriz,cofinsFilial,deducoes,receitaLiquida,
     custosReconhecidos:custos,custosMatriz,custosFilial,cpvMatriz,cpvFilial,fechamentoEstoqueMatriz,fechamentoEstoqueFilial,outrosCustosMatriz,outrosCustosFilial,
-    despesasReconhecidas:despesas,despesasOperacionais,despesasOperacionaisMatriz,despesasOperacionaisFilial,
+    despesasReconhecidas:despesas,despesasOperacionais,despesasOperacionaisMatriz,despesasOperacionaisFilial,creditosFederais,
     despesasFinanceiras,despesasFinanceirasMatriz,despesasFinanceirasFilial,
     receitasFinanceiras,receitasFinanceirasMatriz,receitasFinanceirasFilial,receitasFinanceirasPorConta,
     jurosAtivos,variacaoCambialAtiva,receitaAplicacoes,jcp,variacaoCambialPassiva,
