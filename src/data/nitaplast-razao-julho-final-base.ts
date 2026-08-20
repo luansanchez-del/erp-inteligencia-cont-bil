@@ -54,9 +54,45 @@ const antesEstoque = [...baseSaneada,...lancamentosBancariosOperacionaisJulho,..
 function movConta(c:string,base:LancamentoIntegrado[]) { return arred(base.reduce((s,x)=>s+(x.debitoCodigo===c?x.valor:0)-(x.creditoCodigo===c?x.valor:0),0)); }
 
 const estoqueMatriz:Record<string,number>={"25133":4207698.55,"25134":39464.14,"25135":1443376.19,"25136":107919.59,"25137":5285.59};
-// A variacao do estoque da Matriz fica fora do CPV ate a validacao manual do inventario.
-// O inventario permanece documentado em estoqueMatriz, mas nao gera lancamentos no Razao/DRE.
-const fechamentoEstoqueMatriz: LancamentoIntegrado[] = [];
+const fechamentoEstoqueMatriz: LancamentoIntegrado[] = Object.entries(estoqueMatriz).flatMap(([contaEstoque, saldoFinal], indice) => {
+  const saldoAntesFechamento = arred((saldoAberturaJulhoPorConta.get(contaEstoque) ?? 0) + movConta(contaEstoque, antesEstoque));
+  const lancamentos: LancamentoIntegrado[] = [];
+  if (Math.abs(saldoAntesFechamento) >= 0.005) {
+    lancamentos.push(l({
+      id: `JUL-CPV-M-BAIXA-${String(indice + 1).padStart(2, "0")}`,
+      data: "31/07/2026",
+      origem: "FECHAMENTO ESTOQUE MATRIZ 07/2026",
+      debitoCodigo: "25944",
+      creditoCodigo: contaEstoque,
+      historico: `Baixa integral do saldo de estoque ${contaEstoque} antes do inventario de 31/07`,
+      documento: "INVENTARIO 31/07/2026",
+      cc: "102",
+      centroCusto: "PRODUCAO",
+      valor: Math.abs(saldoAntesFechamento),
+      observacao: `Saldo zerado no fechamento: ${saldoAntesFechamento.toFixed(2)} antes do inventario final.`,
+      fonte: "SALDO DE ABERTURA + RAZAO JULHO 2026",
+      rastreio: "derivado",
+    }));
+  }
+  if (Math.abs(saldoFinal) >= 0.005) {
+    lancamentos.push(l({
+      id: `JUL-CPV-M-FINAL-${String(indice + 1).padStart(2, "0")}`,
+      data: "31/07/2026",
+      origem: "FECHAMENTO ESTOQUE MATRIZ 07/2026",
+      debitoCodigo: contaEstoque,
+      creditoCodigo: "25944",
+      historico: `Reconhecimento do inventario final do estoque ${contaEstoque} em 31/07`,
+      documento: "INVENTARIO 31/07/2026",
+      cc: "102",
+      centroCusto: "PRODUCAO",
+      valor: Math.abs(saldoFinal),
+      observacao: `Saldo final mantido no estoque pelo inventario fisico: ${saldoFinal.toFixed(2)}.`,
+      fonte: "REGISTRO INVENTARIO ESTOQUE ATUALIZADO 31/07/2026",
+      rastreio: "derivado",
+    }));
+  }
+  return lancamentos;
+});
 
 // Filial: periodicidade igual a junho — baixa estoque inicial e compras para CPV e reconhece inventário físico final de 31/07.
 const aberturaFilial = saldoAberturaJulhoPorConta.get("25138") ?? 254477.93;

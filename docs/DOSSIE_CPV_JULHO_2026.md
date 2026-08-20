@@ -2,7 +2,7 @@
 
 ## Conclusao executiva
 
-Por decisao do usuario, a variacao de estoque da Matriz foi retirada temporariamente do Razao/DRE para validacao manual. O CPV Matriz atualmente reconhecido pelo motor e de **R$ 1.527.524,16**. O Custo Total da DRE, incluindo a Filial, e de **R$ 1.664.086,13**.
+O fechamento da Matriz usa periodicidade completa: baixa integral do saldo de cada estoque e reconhecimento separado do inventario fisico final. O CPV Matriz atualmente reconhecido pelo motor e de **R$ 1.885.414,09**. O Custo Total da DRE, incluindo a Filial, e de **R$ 2.021.976,06**.
 
 As duas correcoes commitadas foram mantidas:
 
@@ -17,13 +17,13 @@ Os R$ 283.017,41 anteriormente apontados nao foram removidos. Eles sao a diferen
 |---|---|---:|---:|---:|---|
 | 3093 | Compras de materias-primas | R$ 1.225.461,78 | R$ 218.754,03 | **R$ 1.006.707,75** | Softdib: 11.01.003/CC102, 9 documentos, ajustado pela amostra gratis CFOP 2911 |
 | 25937 | Servicos de industrializacao | R$ 395.828,74 | R$ 0,00 | **R$ 395.828,74** | Softdib: 11.02.001/CC102, 30 documentos, mais CC503 validado de R$ 973,00 |
-| 25944 | Consumo do estoque | R$ 0,00 | R$ 0,00 | **R$ 0,00** | Temporariamente fora do Razao/DRE para validacao manual |
+| 25944 | Consumo do estoque | R$ 367.388,53 | R$ 9.498,60 | **R$ 357.889,93** | Baixa integral do saldo anterior e reconhecimento do inventario final |
 | 25938 | Servicos de terceiros PJ de producao | R$ 55.370,00 | R$ 0,00 | **R$ 55.370,00** | Somente CCs classificados como producao |
 | 3244 | Materiais auxiliares e consumo | R$ 48.685,40 | R$ 0,00 | **R$ 48.685,40** | CCs de producao |
 | 3494 | Energia eletrica | R$ 35.286,38 | R$ 17.146,20 | **R$ 18.140,18** | Movimento de julho menos credito de energia |
 | 3203 | Assistencia medica | R$ 1.496,71 | R$ 0,00 | **R$ 1.496,71** | CCs de producao |
 | 3095 | Fretes sobre compras | R$ 1.295,38 | R$ 0,00 | **R$ 1.295,38** | CCs 109 e 201 |
-|  | **Total CPV Matriz atual** |  |  | **R$ 1.527.524,16** | Sem variacao de estoque da Matriz |
+|  | **Total CPV Matriz atual** |  |  | **R$ 1.885.414,09** | Fechamento periódico completo |
 
 ## Inventario que compoe a conta 25944
 
@@ -36,7 +36,7 @@ Os R$ 283.017,41 anteriormente apontados nao foram removidos. Eles sao a diferen
 | Lixo/refugo/retalho 25134 | R$ 29.965,54 | R$ 39.464,14 | **(R$ 9.498,60)** |
 | **Total liquido** |  |  | **R$ 357.889,93** |
 
-Os valores de inventario continuam documentados nesta secao, mas a variacao entre 30/06 e 31/07 nao e contabilizada no CPV enquanto aguarda validacao manual.
+Produto Acabado (25133) e Sucata/Refugo/Retalho (25134) seguem a mesma logica: a conta e zerada durante o fechamento e somente o saldo final do inventario permanece no estoque patrimonial.
 
 ## Notas fiscais de compra para industrializacao - Matriz
 
