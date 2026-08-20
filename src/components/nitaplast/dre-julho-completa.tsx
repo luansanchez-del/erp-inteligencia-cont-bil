@@ -83,7 +83,7 @@ export function DreJulhoCompleta() {
     const matriz = despesasSemNplog.filter((x) => x.estabelecimento === "Matriz");
     const industrializacao = composicao.filter((x) => x.conta === "25937" && x.estabelecimento === "Matriz");
     const depreciacao = matriz.filter((x) => x.classificacao.startsWith("5.7.01.011"));
-    const creditosFederais = matriz.filter((x) => contasCreditoFederal.has(x.conta));
+    const creditosFederais = composicao.filter((x) => contasCreditoFederal.has(x.conta));
     const importacao = matriz.filter((x) => x.conta === "25070");
     const exportacao = matriz.filter((x) => x.conta === "25072");
     const veiculos = matriz.filter((x) => x.classificacao.startsWith("5.7.05") || x.classificacao.startsWith("5.7.01.015"));
