@@ -54,14 +54,9 @@ const antesEstoque = [...baseSaneada,...lancamentosBancariosOperacionaisJulho,..
 function movConta(c:string,base:LancamentoIntegrado[]) { return arred(base.reduce((s,x)=>s+(x.debitoCodigo===c?x.valor:0)-(x.creditoCodigo===c?x.valor:0),0)); }
 
 const estoqueMatriz:Record<string,number>={"25133":4207698.55,"25134":39464.14,"25135":1443376.19,"25136":107919.59,"25137":5285.59};
-const fechamentoEstoqueMatriz: LancamentoIntegrado[] = Object.entries(estoqueMatriz).flatMap(([c,alvo],i)=>{
-  const abertura=saldoAberturaJulhoPorConta.get(c)??0;
-  const antes=arred(abertura+movConta(c,antesEstoque));
-  const ajuste=arred(alvo-antes);
-  if(Math.abs(ajuste)<0.005)return [];
-  const aumenta=ajuste>0;
-  return [l({id:`JUL-CPV-M-${String(i+1).padStart(2,"0")}`,data:"31/07/2026",origem:"FECHAMENTO ESTOQUE MATRIZ 07/2026",debitoCodigo:aumenta?c:"25944",creditoCodigo:aumenta?"25944":c,historico:`Fechamento do estoque ${c} no inventário físico de 31/07`,documento:"INVENTÁRIO 31/07/2026",cc:"102",centroCusto:"PRODUÇÃO",valor:Math.abs(ajuste),observacao:`Saldo contábil antes do fechamento ${antes.toFixed(2)}; inventário físico ${alvo.toFixed(2)}; diferença de fechamento periódico ${ajuste.toFixed(2)}.`,fonte:"REGISTRO INVENTARIO ESTOQUE ATUALIZADO 31/07/2026",rastreio:"derivado"})];
-});
+// A variacao do estoque da Matriz fica fora do CPV ate a validacao manual do inventario.
+// O inventario permanece documentado em estoqueMatriz, mas nao gera lancamentos no Razao/DRE.
+const fechamentoEstoqueMatriz: LancamentoIntegrado[] = [];
 
 // Filial: periodicidade igual a junho — baixa estoque inicial e compras para CPV e reconhece inventário físico final de 31/07.
 const aberturaFilial = saldoAberturaJulhoPorConta.get("25138") ?? 254477.93;
