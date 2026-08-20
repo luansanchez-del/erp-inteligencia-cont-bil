@@ -30,11 +30,10 @@ function sanearEntradaCcJulho(linha: EntradaCcAgregadaJulho): EntradaCcAgregadaJ
 
 function mapearEntrada(gerencial: string, cc: string): MapeamentoEntrada | null | "duplicado-fiscal" {
   if (gerencial === "11.01.008") return "duplicado-fiscal";
-  if (gerencial === "11.01.001" && cc === "201") return { debitoCodigo: "25135", creditoCodigo: "1496", status: "revisar", observacao: "Mesmo gerencial/CC corrigido para estoque no fechamento de junho; fornecedor analítico ainda precisa ser confirmado em julho." };
-  if (gerencial === "11.01.002") {
-    if (cc === "201") return { debitoCodigo: "25135", creditoCodigo: "1496", status: "revisar", observacao: "Mesmo gerencial/CC corrigido para estoque em junho; manter em revisão documental." };
-    return null;
-  }
+  // 11.01.001/CC201 e 11.01.002/CC201: excluídos em 20/08/2026 — mapeamento para estoque MP (25135)
+  // sem fornecedor analítico confirmado; cliente identificou o valor como incorreto na composição do CPV.
+  if (gerencial === "11.01.001" && cc === "201") return null;
+  if (gerencial === "11.01.002") return null;
   if (gerencial === "11.01.003") return { debitoCodigo: "3093", creditoCodigo: "1496", status: "revisar", observacao: "Matéria-prima/insumos comerciais; a amostra grátis CFOP 2911 foi excluída da obrigação com fornecedor." };
   if (gerencial === "11.02.001") return { debitoCodigo: "25937", creditoCodigo: "1496", status: "validado", observacao: "Somente industrialização onerosa; retornos CFOP 1903/1916 foram retirados do custo e do fornecedor." };
   if (gerencial === "11.02.002" || gerencial === "11.02.003") return { debitoCodigo: "25938", creditoCodigo: "1496", status: "validado" };
