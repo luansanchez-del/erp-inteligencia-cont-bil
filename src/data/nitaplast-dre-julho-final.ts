@@ -19,6 +19,7 @@ export type ComposicaoResultadoJulho = {
  */
 const contasCustoOperacionalJulho=new Set(["3093","3095"]);
 const contasCustoIndustrialDiretoJulho=new Set(["25937"]);
+const contasEstoquePatrimonialJulho=new Set(["25133","25134","25135","25136","25137","25138","25139"]);
 const centrosCustoProducaoJulho=new Set([
   "101","102","103","104","105","106","107","108","109","110","111","503",
   "10014","10032","10057","10058","10060","10061","19999",
@@ -42,6 +43,7 @@ function ehCustoDreJulhoCriterioAnterior(x:ChaveClassificacaoResultado){
   return x.classificacao.startsWith("4.2")||x.classificacao.startsWith("5.1")||contasCustoOperacionalJulho.has(x.conta);
 }
 export function ehCustoDreJulho(x:ChaveClassificacaoCusto){
+  if(contasEstoquePatrimonialJulho.has(x.conta)) return false;
   const custoIndustrialPorCentro=x.classificacao.startsWith("5.3")&&centrosCustoProducaoJulho.has(x.cc);
   return ehCustoDreJulhoCriterioAnterior(x)||contasCustoIndustrialDiretoJulho.has(x.conta)||custoIndustrialPorCentro;
 }
