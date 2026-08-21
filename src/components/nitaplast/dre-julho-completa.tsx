@@ -86,10 +86,9 @@ export function DreJulhoCompleta() {
     const depreciacao = matriz.filter((x) => x.classificacao.startsWith("5.7.01.011"));
     const creditosFederaisMatriz = composicao.filter((x) => contasCreditoFederal.has(x.conta) && x.estabelecimento === "Matriz");
     const creditosFederaisFilial = composicao.filter((x) => contasCreditoFederal.has(x.conta) && x.estabelecimento === "Filial SP");
-    const importacao = matriz.filter((x) => x.conta === "25070");
     const exportacao = matriz.filter((x) => x.conta === "25072");
     const veiculos = matriz.filter((x) => x.classificacao.startsWith("5.7.05") || x.classificacao.startsWith("5.7.01.015"));
-    const excluidas = new Set([...industrializacao, ...depreciacao, ...importacao, ...exportacao, ...veiculos].map((x) => x.id));
+    const excluidas = new Set([...industrializacao, ...depreciacao, ...exportacao, ...veiculos].map((x) => x.id));
     const classificaveis = matriz.filter((x) => !excluidas.has(x.id));
     const comerciais = classificaveis.filter((x) => ccCom.has(x.cc));
     const adm = classificaveis.filter((x) => ccAdm.has(x.cc) || x.cc === "313" || x.cc === "0" || x.conta === "4250" || (x.conta === "25937" && x.cc === "503"));
@@ -98,7 +97,7 @@ export function DreJulhoCompleta() {
 
     const financeira = garantirConta(base.financeira, "25109", itemZero("25109", "5.8.01.006", "Variações Cambiais Passivas", "902", "DESPESAS FINANCEIRAS"));
     const receitasFinanceiras = garantirConta(base.receitasFinanceiras, "25096", itemZero("25096", "5.7.12.001.006", "Variações Cambiais Ativas", "901", "RECEITAS FINANCEIRAS"));
-    return { custosMatriz, custosFilial, energia, filial, matriz, industrializacao, depreciacao, creditosFederaisMatriz, creditosFederaisFilial, importacao, exportacao, veiculos, prod, comerciais, adm, outras, financeira, receitasFinanceiras };
+    return { custosMatriz, custosFilial, energia, filial, matriz, industrializacao, depreciacao, creditosFederaisMatriz, creditosFederaisFilial, exportacao, veiculos, prod, comerciais, adm, outras, financeira, receitasFinanceiras };
   }, [base, despesasSemNplog, composicao]);
 
   const custosDre = dre.custosReconhecidos;
@@ -107,8 +106,9 @@ export function DreJulhoCompleta() {
   const despesasFilial = arred(soma(grupos.filial) + soma(grupos.creditosFederaisFilial));
   const despesasOperacionais = arred(despesasMatriz + despesasFilial);
   const despFin = soma(base.financeira);
+  const despesasOperacionaisFinanceirasLiquidas = arred(despesasOperacionais + despFin - dre.receitasFinanceiras);
   const lucroBruto = arred(dre.receitaLiquida - custosDre);
-  const resultadoOper = arred(lucroBruto - despesasOperacionais);
+  const resultadoOper = arred(lucroBruto - despesasOperacionaisFinanceirasLiquidas);
   const resultadoCalculado = arred(dre.receitaLiquida - dre.custosReconhecidos - despesasOperacionais - despFin + dre.receitasFinanceiras + dre.resultadoAlienacaoImobilizado);
    const memoriaCpvIrpjCsll = [
      ["Estoque inicial — Matriz", dre.memoriaCpv.matriz.estoqueInicial],
@@ -160,23 +160,21 @@ export function DreJulhoCompleta() {
     { id: "cpv-f", descricao: "CPV — Filial SP", nivel: 1, valor: dre.cpvFilial, criterio: "CPV completo da Filial SP. Abra para conferir as contas que compõem o valor.", composicao: grupos.custosFilial },
     { id: "lb", descricao: "(=) LUCRO BRUTO", nivel: 0, valor: lucroBruto, criterio: "Receita líquida menos CPV/CMV do Razão." },
 
-    { id: "despesas", descricao: "(-) Despesas Operacionais Líquidas", nivel: 0, valor: despesasOperacionais, criterio: "Despesas do período líquidas dos créditos PIS/COFINS. Custos fabris aparecem somente no CPV." },
+    { id: "despesas", descricao: "(-) Despesas Operacionais e Financeiras Líquidas", nivel: 0, valor: despesasOperacionaisFinanceirasLiquidas, criterio: "Despesas operacionais do período, despesas financeiras e receitas financeiras, sem duplicidade no resultado." },
     { id: "desp-matriz-total", descricao: "Despesas Operacionais — Matriz", nivel: 1, valor: despesasMatriz, criterio: "Subtotal exclusivo da Matriz, líquido dos créditos federais da Matriz." },
     { id: "industrializacao", descricao: "Despesas com Industrialização — Matriz", nivel: 2, valor: soma(grupos.industrializacao), criterio: "Grupo operacional próprio, seguindo maio/2026; centro produtivo não transforma o serviço em CPV.", composicao: grupos.industrializacao },
     { id: "nplog", descricao: "Despesa com Serviço - NPLog — Matriz", nivel: 2, valor: valorNplog, criterio: "11.02.003 / CC 304 Matriz.", composicao: composicaoNplog },
     { id: "prod", descricao: "Despesas com Produção — Matriz", nivel: 2, valor: soma(grupos.prod), criterio: "Despesas ocorridas em centros produtivos. O centro de custo abre a gestão, mas não transforma automaticamente a despesa em CPV.", composicao: grupos.prod },
     { id: "veic", descricao: "Despesas com Veículos — Matriz", nivel: 2, valor: soma(grupos.veiculos), criterio: "Contas/classes específicas de veículos antes da classificação genérica por CC.", composicao: grupos.veiculos },
-    { id: "imp", descricao: "Despesas com Importação — Matriz", nivel: 2, valor: soma(grupos.importacao), criterio: "Conta 25070; natureza documental prevalece sobre o CC.", composicao: grupos.importacao },
     { id: "exp", descricao: "Despesas com Exportação — Matriz", nivel: 2, valor: soma(grupos.exportacao), criterio: "Conta 25072; natureza documental prevalece sobre o CC.", composicao: grupos.exportacao },
     { id: "com", descricao: "Despesas Comerciais — Matriz", nivel: 2, valor: soma(grupos.comerciais), criterio: "Somente Matriz.", composicao: grupos.comerciais },
     { id: "adm", descricao: "Despesas Administrativas — Matriz", nivel: 2, valor: soma(grupos.adm), criterio: "Centros administrativos da Matriz; CC 501 não entra aqui.", composicao: grupos.adm },
     { id: "dep", descricao: "Depreciação e Amortização — Matriz", nivel: 2, valor: soma(grupos.depreciacao), criterio: "Depreciação identificada como Matriz. Mini e Corolla vendidos no início de julho foram excluídos da cota mensal integral de veículos.", composicao: grupos.depreciacao },
     { id: "filial-desp", descricao: "Despesas Operacionais — Filial SP", nivel: 1, valor: despesasFilial, criterio: "Gastos não incorporados à mercadoria, líquidos dos créditos PIS/COFINS da Filial. O CMV/CPV da mercadoria fica exclusivamente na conta 25945.", composicao: [...grupos.filial, ...grupos.creditosFederaisFilial] },
-    { id: "fin-liquidas", descricao: "Despesas Financeiras Líquidas", nivel: 1, valor: arred(despFin - dre.receitasFinanceiras), criterio: "Despesas financeiras menos receitas financeiras, exibidas na estrutura de conferência sem alterar o CPV." },
-    { id: "ro", descricao: "(=) Resultado Operacional", nivel: 0, valor: resultadoOper, criterio: "Lucro bruto menos despesas operacionais do Razão." },
-
-    { id: "fin-d", descricao: "(-) Despesas Financeiras", nivel: 0, valor: despFin, criterio: "Juros, tarifas, IOF, JCP e variação cambial passiva, por conta e estabelecimento.", composicao: grupos.financeira },
-    { id: "fin-r", descricao: "(+) Receitas Financeiras", nivel: 0, valor: dre.receitasFinanceiras, criterio: "Descontos obtidos, juros ativos, variação cambial ativa, aplicações, receitas eventuais, recuperações e SELIC.", composicao: grupos.receitasFinanceiras },
+    { id: "fin-liquidas", descricao: "Despesas Financeiras Líquidas", nivel: 1, valor: arred(despFin - dre.receitasFinanceiras), criterio: "Despesas financeiras menos receitas financeiras." },
+    { id: "fin-d", descricao: "(-) Despesas Financeiras", nivel: 2, valor: despFin, criterio: "Juros, tarifas, IOF, JCP e variação cambial passiva, por conta e estabelecimento.", composicao: grupos.financeira },
+    { id: "fin-r", descricao: "(+) Receitas Financeiras", nivel: 2, valor: dre.receitasFinanceiras, criterio: "Descontos obtidos, juros ativos, variação cambial ativa, aplicações, receitas eventuais, recuperações e SELIC.", composicao: grupos.receitasFinanceiras },
+    { id: "ro", descricao: "(=) Resultado Operacional", nivel: 0, valor: resultadoOper, criterio: "Lucro bruto menos despesas operacionais e resultado financeiro líquido do Razão." },
 
     { id: "alienacao", descricao: "Resultado na Alienação de Imobilizado — Matriz", nivel: 0, valor: dre.resultadoAlienacaoImobilizado, criterio: "As três vendas fiscais estão contabilizadas: Mini Cooper, Corolla e Transformador seco 1000KVA (NF 93639), vendido em 14/07 pelo valor contábil líquido apurado na data." },
     { id: "alien-vendas-fiscais", descricao: "(+) Vendas de Ativo Imobilizado identificadas fiscalmente", nivel: 1, valor: dre.vendasAtivoImobilizadoFiscais, criterio: "Total fiscal de julho: Mini Cooper R$ 119.900,00 + Corolla R$ 127.000,00 + Transformador seco 1000KVA NF 93639 R$ 60.000,00 = R$ 306.900,00. As três vendas já compõem o ganho reconhecido." },

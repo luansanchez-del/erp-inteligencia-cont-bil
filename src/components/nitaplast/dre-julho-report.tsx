@@ -78,11 +78,10 @@ export function DreJulhoReport() {
     const industrializacao = composicao.filter((x) => x.conta === "25937" && x.estabelecimento === "Matriz");
     const depreciacao = matriz.filter((x) => x.classificacao.startsWith("5.7.01.011"));
     const creditosFederais = matriz.filter((x) => creditosFederaisContas.has(x.conta));
-    const importacao = matriz.filter((x) => x.conta === "25070");
     const exportacao = matriz.filter((x) => x.conta === "25072");
     const veiculos = matriz.filter((x) => x.classificacao.startsWith("5.7.05") || x.classificacao.startsWith("5.7.01.015"));
     const energia = composicao.filter((x) => x.conta === "3494" && x.estabelecimento === "Matriz");
-    const excluidas = new Set([...industrializacao, ...depreciacao, ...creditosFederais, ...importacao, ...exportacao, ...veiculos, ...energia].map((x) => x.id));
+    const excluidas = new Set([...industrializacao, ...depreciacao, ...creditosFederais, ...exportacao, ...veiculos, ...energia].map((x) => x.id));
     const classificaveis = matriz.filter((x) => !excluidas.has(x.id));
     const comerciais = classificaveis.filter((x) => ccCom.has(x.cc));
     const administrativas = classificaveis.filter((x) => ccAdm.has(x.cc));
@@ -90,7 +89,7 @@ export function DreJulhoReport() {
     const outras = classificaveis.filter((x) => !producao.includes(x) && !comerciais.includes(x) && !administrativas.includes(x));
     const despesasFinanceiras = garantir(base.despesasFinanceiras, "25109", zero("25109", "5.8.01.006", "Variações Cambiais Passivas", "902", "DESPESAS FINANCEIRAS"));
     const receitasFinanceiras = garantir(base.receitasFinanceiras, "25096", zero("25096", "5.7.12.001.006", "Variações Cambiais Ativas", "901", "RECEITAS FINANCEIRAS"));
-    return { custosMatriz, custosFilial, fechamentoEstoqueMatriz, fechamentoEstoqueFilial, componentesCpvMatriz, componentesCpvFilial, filial, matriz, industrializacao, depreciacao, creditosFederais, importacao, exportacao, veiculos, energia, comerciais, administrativas, producao, outras, despesasFinanceiras, receitasFinanceiras };
+    return { custosMatriz, custosFilial, fechamentoEstoqueMatriz, fechamentoEstoqueFilial, componentesCpvMatriz, componentesCpvFilial, filial, matriz, industrializacao, depreciacao, creditosFederais, exportacao, veiculos, energia, comerciais, administrativas, producao, outras, despesasFinanceiras, receitasFinanceiras };
   }, [base, despesasSemNplog, composicao]);
 
   const custosDre = soma(base.custos);
@@ -98,11 +97,12 @@ export function DreJulhoReport() {
   const despesasMatriz = arred(soma(grupos.matriz) + valorNplog);
   const despesasFilial = soma(grupos.filial);
   const despesasFinanceiras = soma(base.despesasFinanceiras);
+  const despesasOperacionaisFinanceirasLiquidas = arred(despesasOperacionais + despesasFinanceiras - dre.receitasFinanceiras);
   const receitaLiquida = dre.receitaLiquida;
   const lucroBruto = arred(receitaLiquida - custosDre);
-  const resultadoOperacional = arred(lucroBruto - despesasOperacionais);
+  const resultadoOperacional = arred(lucroBruto - despesasOperacionaisFinanceirasLiquidas);
   const resultadoFinal = dre.resultado;
-  const resultadoConferido = arred(resultadoOperacional - despesasFinanceiras + dre.receitasFinanceiras + dre.resultadoAlienacaoImobilizado);
+  const resultadoConferido = arred(resultadoOperacional + dre.resultadoAlienacaoImobilizado);
 
   if (Math.abs(custosDre - arred(dre.cpvMatriz + dre.cpvFilial)) > 0.01) throw new Error("CPV Matriz/Filial não concilia com Custos no DRE Report.");
   if (Math.abs(despesasOperacionais - arred(despesasMatriz + despesasFilial)) > 0.01) throw new Error("Despesas Matriz/Filial não conciliam no DRE Report.");
@@ -140,14 +140,13 @@ export function DreJulhoReport() {
     { id: "cpv-f-comp", descricao: "Componentes fora da conta 25945 — Filial SP", valor: -dre.outrosCustosFilial, nivel: 2, tipo: "detalhe" },
     { id: "lucro-bruto", descricao: "LUCRO BRUTO", valor: lucroBruto, nivel: 0, tipo: "subtotal" },
 
-    { id: "despesas", descricao: "(-) Despesas Operacionais", valor: -despesasOperacionais, nivel: 0, tipo: "grupo" },
+    { id: "despesas", descricao: "(-) Despesas Operacionais e Financeiras Líquidas", valor: -despesasOperacionaisFinanceirasLiquidas, nivel: 0, tipo: "grupo" },
     { id: "desp-m", descricao: "Despesas Operacionais — Matriz", valor: -despesasMatriz, nivel: 1, tipo: "detalhe" },
     { id: "industrializacao", descricao: "Despesas com Industrialização — Matriz", valor: -soma(grupos.industrializacao), nivel: 2, tipo: "detalhe" },
     { id: "energia", descricao: "Energia Elétrica — Matriz (movimento 07/2026)", valor: -dre.energiaEletricaMatriz, nivel: 2, tipo: "detalhe" },
     { id: "nplog", descricao: "Despesa com Serviço - NPLog — Matriz", valor: -valorNplog, nivel: 2, tipo: "detalhe" },
     { id: "desp-producao", descricao: "Despesas Produção — Matriz", valor: -soma(grupos.producao), nivel: 2, tipo: "detalhe" },
     { id: "veiculos", descricao: "Despesas com Veículos — Matriz", valor: -soma(grupos.veiculos), nivel: 2, tipo: "detalhe" },
-    { id: "importacao", descricao: "Despesas com Importação — Matriz", valor: -soma(grupos.importacao), nivel: 2, tipo: "detalhe" },
     { id: "exportacao", descricao: "Despesas com Exportação — Matriz", valor: -soma(grupos.exportacao), nivel: 2, tipo: "detalhe" },
     { id: "desp-comerciais", descricao: "Despesas Comerciais — Matriz", valor: -soma(grupos.comerciais), nivel: 2, tipo: "detalhe" },
     { id: "desp-adm", descricao: "Despesas Administrativas — Matriz", valor: -soma(grupos.administrativas), nivel: 2, tipo: "detalhe" },
@@ -155,19 +154,18 @@ export function DreJulhoReport() {
     { id: "creditos-federais", descricao: "(-) Créditos PIS/COFINS sobre Custos e Despesas — Matriz", valor: -soma(grupos.creditosFederais), nivel: 2, tipo: "detalhe" },
     { id: "desp-outras", descricao: "Outras Despesas Operacionais — Matriz", valor: -soma(grupos.outras), nivel: 2, tipo: "detalhe" },
     { id: "desp-filial", descricao: "Despesas Operacionais — Filial SP", valor: -despesasFilial, nivel: 1, tipo: "detalhe" },
+    { id: "desp-fin", descricao: "(-) Despesas Financeiras", valor: -despesasFinanceiras, nivel: 1, tipo: "grupo" },
+    ...[...grupos.despesasFinanceiras].sort((a,b)=>a.conta.localeCompare(b.conta)).map<LinhaReport>((item) => ({ id: `fin-d-${item.conta}-${item.cc}-${item.estabelecimento}`, descricao: `${item.conta} · ${item.descricao} — ${item.estabelecimento}`, valor: -item.valor, nivel: 2, tipo: "detalhe" })),
+    { id: "rec-fin", descricao: "(+) Receitas Financeiras", valor: dre.receitasFinanceiras, nivel: 1, tipo: "grupo" },
+    ...[...grupos.receitasFinanceiras].sort((a,b)=>a.conta.localeCompare(b.conta)).map<LinhaReport>((item) => ({ id: `fin-r-${item.conta}-${item.cc}-${item.estabelecimento}`, descricao: `${item.conta} · ${item.descricao} — ${item.estabelecimento}`, valor: -item.valor, nivel: 2, tipo: "detalhe" })),
     { id: "resultado-operacional", descricao: "RESULTADO OPERACIONAL", valor: resultadoOperacional, nivel: 0, tipo: "subtotal" },
-
-    { id: "desp-fin", descricao: "(-) Despesas Financeiras", valor: -despesasFinanceiras, nivel: 0, tipo: "grupo" },
-    ...[...grupos.despesasFinanceiras].sort((a,b)=>a.conta.localeCompare(b.conta)).map<LinhaReport>((item) => ({ id: `fin-d-${item.conta}-${item.cc}-${item.estabelecimento}`, descricao: `${item.conta} · ${item.descricao} — ${item.estabelecimento}`, valor: -item.valor, nivel: 1, tipo: "detalhe" })),
-    { id: "rec-fin", descricao: "(+) Receitas Financeiras", valor: dre.receitasFinanceiras, nivel: 0, tipo: "grupo" },
-    ...[...grupos.receitasFinanceiras].sort((a,b)=>a.conta.localeCompare(b.conta)).map<LinhaReport>((item) => ({ id: `fin-r-${item.conta}-${item.cc}-${item.estabelecimento}`, descricao: `${item.conta} · ${item.descricao} — ${item.estabelecimento}`, valor: -item.valor, nivel: 1, tipo: "detalhe" })),
 
     { id: "alienacao", descricao: "Resultado na Alienação de Imobilizado — Matriz", valor: dre.resultadoAlienacaoImobilizado, nivel: 0, tipo: "grupo" },
     { id: "alien-rec", descricao: "(+) Venda de Ativo Imobilizado — Mini + Corolla + Transformador", valor: dre.receitaAlienacaoImobilizado, nivel: 1, tipo: "detalhe" },
     { id: "alien-custo", descricao: "(-) Custo dos Ativos Imobilizados Vendidos", valor: -dre.custoAlienacaoImobilizado, nivel: 1, tipo: "detalhe" },
     { id: "alien-res", descricao: "(=) Ganho na Alienação — Mini + Corolla + Transformador", valor: dre.resultadoAlienacaoImobilizado, nivel: 1, tipo: "subtotal" },
     { id: "resultado", descricao: "RESULTADO CONTÁBIL", valor: resultadoFinal, nivel: 0, tipo: "resultado" },
-  ], [custosDre, despesasFinanceiras, despesasFilial, despesasMatriz, despesasOperacionais, dre, grupos, lucroBruto, receitaLiquida, receitaProducaoFilial, receitaProducaoMatriz, receitaRevendaFilial, receitaRevendaMatriz, resultadoFinal, resultadoOperacional, valorNplog]);
+  ], [custosDre, despesasFinanceiras, despesasFilial, despesasMatriz, despesasOperacionaisFinanceirasLiquidas, dre, grupos, lucroBruto, receitaLiquida, receitaProducaoFilial, receitaProducaoMatriz, receitaRevendaFilial, receitaRevendaMatriz, resultadoFinal, resultadoOperacional, valorNplog]);
 
   const percentual = (valor: number) => dre.receitaBruta ? (valor / dre.receitaBruta) * 100 : 0;
   function exportarCsv() {
