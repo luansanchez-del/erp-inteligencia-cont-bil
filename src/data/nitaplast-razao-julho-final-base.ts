@@ -94,11 +94,16 @@ const fechamentoEstoqueMatriz: LancamentoIntegrado[] = Object.entries(estoqueMat
   return lancamentos;
 });
 
-// Filial: periodicidade igual a junho — baixa estoque inicial e compras para CPV e reconhece inventário físico final de 31/07.
+// Filial: o inventário oficial de 31/07 contém Produto Acabado (PA),
+// R$ 577.396,32. A conta 25139 também possui saldo patrimonial transportado de
+// junho, mas esse saldo anterior não pode virar custo de julho sem documento de
+// venda/baixa. Por isso somente o movimento líquido das compras de julho é
+// encerrado no CPV; o saldo anterior permanece destacado para conciliação.
 const aberturaFilial = saldoAberturaJulhoPorConta.get("25138") ?? 254477.93;
+const comprasLiquidasFilialJulho = movConta("25139", antesEstoque);
 const fechamentoEstoqueFilial: LancamentoIntegrado[] = [
   l({id:"JUL-CPV-F-ABERT",data:"31/07/2026",origem:"FECHAMENTO ESTOQUE FILIAL 07/2026",debitoCodigo:"25945",creditoCodigo:"25138",historico:"Baixa do estoque inicial da filial para apuração do CPV de julho",documento:"SALDO 30/06 + INVENTÁRIO",cc:"502",centroCusto:"COMERCIAL SP",valor:Math.abs(aberturaFilial),observacao:"Fechamento periódico do estoque; não é lançamento de abertura gerencial.",fonte:"Saldo contábil fechado 30/06/2026",rastreio:"derivado"}),
-  l({id:"JUL-CPV-F-COMP",data:"31/07/2026",origem:"FECHAMENTO ESTOQUE FILIAL 07/2026",debitoCodigo:"25945",creditoCodigo:"25139",historico:"Transferência das compras externas da filial para CPV",documento:"CFOP 1102",cc:"502",centroCusto:"COMERCIAL SP",valor:493098.04,observacao:"Encerramento periódico da conta de compras da filial.",fonte:"RESUMO NOTAS FISCAIS ENTRADA FILIAL 07/2026",rastreio:"derivado"}),
+  l({id:"JUL-CPV-F-COMP",data:"31/07/2026",origem:"FECHAMENTO ESTOQUE FILIAL 07/2026",debitoCodigo:"25945",creditoCodigo:"25139",historico:"Encerramento das compras líquidas de julho da filial no CPV",documento:"CFOP 1102 + CRÉDITOS 07/2026",cc:"502",centroCusto:"COMERCIAL SP",valor:Math.abs(comprasLiquidasFilialJulho),observacao:`Somente as compras líquidas da competência foram encerradas: R$ ${comprasLiquidasFilialJulho.toFixed(2)}. O saldo anterior de R$ ${(saldoAberturaJulhoPorConta.get("25139") ?? 0).toFixed(2)} permanece patrimonial até conciliação, sem contaminar o resultado de julho.`,fonte:"RESUMO NOTAS FISCAIS ENTRADA FILIAL 07/2026 + EFD Contribuições",rastreio:"derivado"}),
   l({id:"JUL-CPV-F-FINAL",data:"31/07/2026",origem:"FECHAMENTO ESTOQUE FILIAL 07/2026",debitoCodigo:"25138",creditoCodigo:"25945",historico:"Reconhecimento do estoque físico final da filial em 31/07",documento:"INVENTÁRIO FILIAL 31/07/2026",cc:"502",centroCusto:"COMERCIAL SP",valor:577396.32,observacao:"Inventário oficial: 6.629 peças / 38.778,209 kg / R$ 577.396,32.",fonte:"REGISTRO INVENTARIO ESTOQUE FILIAL 31/07/2026"}),
 ];
 

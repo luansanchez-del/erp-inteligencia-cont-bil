@@ -78,8 +78,6 @@ const centrosNormalizados: Record<string, { cc: string; centroCusto: string }> =
   "10058": { cc: "10057", centroCusto: "COMPRESSOR 03 PUMA 30HP" },
   "10061": { cc: "10060", centroCusto: "EMPILHADEIRA A COMBUSTÃO DE 2,5 TON" },
 };
-const contasCreditoFederalCustosDespesas = new Set(["3093", "25937", "3095", "3494"]);
-
 function sanearRazaoJulho(x: LancamentoIntegrado): LancamentoIntegrado {
   let linha: LancamentoIntegrado = { ...x };
 
@@ -112,24 +110,19 @@ function sanearRazaoJulho(x: LancamentoIntegrado): LancamentoIntegrado {
     linha = { ...linha, cc: "502", centroCusto: "COMERCIAL SP" };
   }
 
-  // PIS/COFINS sobre custos e despesas: o crédito fiscal continua exatamente o
-  // mesmo, mas deixa de gerar saldos credores artificiais em MP/industrialização/
-  // fretes/energia e passa às contas redutoras próprias do plano.
-  if ((ehPis || ehCofins) && contasCreditoFederalCustosDespesas.has(linha.creditoCodigo)) {
-    const contaRedutora = ehPis ? "25946" : "25947";
-    const tributo = ehPis ? "PIS" : "COFINS";
-    const filial = linha.cc === "502";
-    linha = {
-      ...linha,
-      creditoCodigo: contaRedutora,
-      credito: nomeConta(contaRedutora),
-      historico: `Crédito ${tributo} sobre custos e despesas - ${linha.documento}`,
-      cc: filial ? "502" : "0",
-      centroCusto: filial ? "COMERCIAL SP" : "SEM CENTRO DE CUSTO",
-      observacao: `Reclassificação do mesmo crédito fiscal para ${contaRedutora} - ${nomeConta(contaRedutora)}. Sem criação de crédito e sem distribuição de CC por aproximação. Origem anterior: ${x.creditoCodigo}.`,
-      rastreio: "derivado",
-    };
+  // Quando o crédito reduz uma conta produtiva, ele herda o centro da própria
+  // natureza para reduzir o mesmo grupo na DRE, sem virar linha autônoma.
+  if (ehPis || ehCofins) {
+    if (linha.creditoCodigo === "3494" || linha.creditoCodigo === "25937" || linha.creditoCodigo === "3093") {
+      linha = { ...linha, cc: "102", centroCusto: "PRODUÇÃO" };
+    } else if (linha.creditoCodigo === "3095") {
+      linha = { ...linha, cc: "109", centroCusto: "COMPRAS" };
+    }
   }
+
+  // Os créditos recuperáveis permanecem vinculados à conta de custo/despesa
+  // identificada pelo CFOP (MP, industrialização, frete ou energia). Assim eles
+  // reduzem a própria natureza que os originou e não viram uma linha autônoma na DRE.
 
   // 11.90.001 possui casos em que a conciliação é apenas inferida. Não tratar
   // como frete de matéria-prima validado quando a evidência documental é insuficiente.
@@ -198,28 +191,28 @@ const lancamentosAuditoriaJulho: LancamentoIntegrado[] = [
   // Crédito de transporte: o EFD permite segregar o estabelecimento, embora a origem CFOP 1352/2352 esteja agregada.
   {
     id: "JUL-PIS-CRED-TRANSP-M", data: "31/07/2026", origem: "APURAÇÃO PIS 07/2026",
-    debitoCodigo: "1556", debito: nomeConta("1556"), creditoCodigo: "25946", credito: nomeConta("25946"),
+    debitoCodigo: "1556", debito: nomeConta("1556"), creditoCodigo: "4253", credito: nomeConta("4253"),
     historico: "Crédito PIS sobre transportes - Matriz", documento: "EFD CONTRIBUIÇÕES D010 - MATRIZ",
-    cc: "0", centroCusto: "SEM CENTRO DE CUSTO", valor: 1701.85, status: "validado",
-    observacao: "Total exato de créditos de transporte da Matriz no EFD; substitui a soma agregada de CFOP 1352/2352 sem alterar o crédito total.", rastreio: "documento", fonte: "ARQUIVO EFD CONTRIBUIÇÕES.TXT 07/2026",
+    cc: "201", centroCusto: "VENDAS", valor: 1701.85, status: "validado",
+    observacao: "Total exato de créditos de transporte da Matriz no EFD; reduz a despesa de fretes sem criar linha autônoma na DRE.", rastreio: "documento", fonte: "ARQUIVO EFD CONTRIBUIÇÕES.TXT 07/2026",
   },
   {
     id: "JUL-PIS-CRED-TRANSP-F", data: "31/07/2026", origem: "APURAÇÃO PIS 07/2026",
-    debitoCodigo: "1556", debito: nomeConta("1556"), creditoCodigo: "25946", credito: nomeConta("25946"),
+    debitoCodigo: "1556", debito: nomeConta("1556"), creditoCodigo: "4253", credito: nomeConta("4253"),
     historico: "Crédito PIS sobre transportes - Filial SP", documento: "EFD CONTRIBUIÇÕES D010 - FILIAL SP",
     cc: "502", centroCusto: "COMERCIAL SP", valor: 166.34, status: "validado",
     observacao: "Total exato de créditos de transporte da Filial SP no EFD.", rastreio: "documento", fonte: "ARQUIVO EFD CONTRIBUIÇÕES.TXT 07/2026",
   },
   {
     id: "JUL-COF-CRED-TRANSP-M", data: "31/07/2026", origem: "APURAÇÃO COFINS 07/2026",
-    debitoCodigo: "1552", debito: nomeConta("1552"), creditoCodigo: "25947", credito: nomeConta("25947"),
+    debitoCodigo: "1552", debito: nomeConta("1552"), creditoCodigo: "4253", credito: nomeConta("4253"),
     historico: "Crédito COFINS sobre transportes - Matriz", documento: "EFD CONTRIBUIÇÕES D010 - MATRIZ",
-    cc: "0", centroCusto: "SEM CENTRO DE CUSTO", valor: 7838.65, status: "validado",
-    observacao: "Total exato de créditos de transporte da Matriz no EFD; substitui a soma agregada de CFOP 1352/2352 sem alterar o crédito total.", rastreio: "documento", fonte: "ARQUIVO EFD CONTRIBUIÇÕES.TXT 07/2026",
+    cc: "201", centroCusto: "VENDAS", valor: 7838.65, status: "validado",
+    observacao: "Total exato de créditos de transporte da Matriz no EFD; reduz a despesa de fretes sem criar linha autônoma na DRE.", rastreio: "documento", fonte: "ARQUIVO EFD CONTRIBUIÇÕES.TXT 07/2026",
   },
   {
     id: "JUL-COF-CRED-TRANSP-F", data: "31/07/2026", origem: "APURAÇÃO COFINS 07/2026",
-    debitoCodigo: "1552", debito: nomeConta("1552"), creditoCodigo: "25947", credito: nomeConta("25947"),
+    debitoCodigo: "1552", debito: nomeConta("1552"), creditoCodigo: "4253", credito: nomeConta("4253"),
     historico: "Crédito COFINS sobre transportes - Filial SP", documento: "EFD CONTRIBUIÇÕES D010 - FILIAL SP",
     cc: "502", centroCusto: "COMERCIAL SP", valor: 766.17, status: "validado",
     observacao: "Total exato de créditos de transporte da Filial SP no EFD.", rastreio: "documento", fonte: "ARQUIVO EFD CONTRIBUIÇÕES.TXT 07/2026",
@@ -312,11 +305,11 @@ const exportacaoEmImportacao = lancamentosIntegradosJulhoFinal.find(
 );
 if (exportacaoEmImportacao) throw new Error(`Despachante de exportação permaneceu em importação: ${exportacaoEmImportacao.id}`);
 
-const creditoFederalEmContaOrigem = lancamentosIntegradosJulhoFinal.find(
+const creditoFederalEmContaAutonoma = lancamentosIntegradosJulhoFinal.find(
   (x) => (x.origem === "APURAÇÃO PIS 07/2026" || x.origem === "APURAÇÃO COFINS 07/2026")
-    && contasCreditoFederalCustosDespesas.has(x.creditoCodigo),
+    && (x.creditoCodigo === "25946" || x.creditoCodigo === "25947"),
 );
-if (creditoFederalEmContaOrigem) throw new Error(`Crédito federal de custo/despesa permaneceu em conta de origem: ${creditoFederalEmContaOrigem.id}`);
+if (creditoFederalEmContaAutonoma) throw new Error(`Crédito federal permaneceu em linha autônoma da DRE: ${creditoFederalEmContaAutonoma.id}`);
 
 const receitaMatrizAuditada = lancamentosIntegradosJulhoFinal.find((x) => x.id === "JUL-REC-M-PROD");
 if (!receitaMatrizAuditada || Math.abs(receitaMatrizAuditada.valor - 3443785.35) > 0.01) {

@@ -134,10 +134,10 @@ export function DreJulhoReport() {
     { id: "custos", descricao: "(-) CPV / CMV", valor: -custosDre, nivel: 0, tipo: "grupo" },
     { id: "cpv-m", descricao: "CPV — Matriz", valor: -dre.cpvMatriz, nivel: 1, tipo: "detalhe" },
     { id: "cpv-m-fech", descricao: "Fechamento / Variação de estoque — Matriz (25944)", valor: -dre.fechamentoEstoqueMatriz, nivel: 2, tipo: "detalhe" },
-    { id: "cpv-m-comp", descricao: "Compras, fretes e demais componentes — Matriz", valor: -dre.outrosCustosMatriz, nivel: 2, tipo: "detalhe" },
+    { id: "cpv-m-comp", descricao: "Compras líquidas — Matriz", valor: -dre.outrosCustosMatriz, nivel: 2, tipo: "detalhe" },
     { id: "cpv-f", descricao: "CPV — Filial SP", valor: -dre.cpvFilial, nivel: 1, tipo: "detalhe" },
-    { id: "cpv-f-fech", descricao: "Fechamento / Variação de estoque — Filial SP (25945)", valor: -dre.fechamentoEstoqueFilial, nivel: 2, tipo: "detalhe" },
-    { id: "cpv-f-comp", descricao: "Compras, fretes e demais componentes — Filial SP", valor: -dre.outrosCustosFilial, nivel: 2, tipo: "detalhe" },
+    { id: "cpv-f-fech", descricao: "CPV periódico consolidado — Filial SP (25945)", valor: -dre.fechamentoEstoqueFilial, nivel: 2, tipo: "detalhe" },
+    { id: "cpv-f-comp", descricao: "Componentes fora da conta 25945 — Filial SP", valor: -dre.outrosCustosFilial, nivel: 2, tipo: "detalhe" },
     { id: "lucro-bruto", descricao: "LUCRO BRUTO", valor: lucroBruto, nivel: 0, tipo: "subtotal" },
 
     { id: "despesas", descricao: "(-) Despesas Operacionais", valor: -despesasOperacionais, nivel: 0, tipo: "grupo" },

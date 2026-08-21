@@ -1,26 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
-import type { ComponentType } from "react";
 import { PageShell } from "@/components/page-header";
-import { BalanceteJulhoAjustavel } from "@/components/nitaplast/contabil-julho-ajustavel";
-import { Route as BalanceteJunhoPreservadoRoute } from "@/components/nitaplast/balancete-junho-preservado";
+import { BalanceteDominioCompetencia } from "@/components/nitaplast/balancete-dominio-competencia";
 import { useErp } from "@/context/erp-context";
-import { garantirEstruturaBalanceteJulho } from "@/data/nitaplast-balancete-julho-patch";
+import { BalanceteMaioDominio } from "@/components/nitaplast/balancete-maio-dominio";
 
 export const Route = createFileRoute("/contabil/balancete")({ component: BalancetePage });
-
-const BalanceteJunhoPreservado = BalanceteJunhoPreservadoRoute.options.component as ComponentType;
 
 function BalancetePage() {
   const { competencia } = useErp();
 
+  if (competencia.id === "2026-05") {
+    return <PageShell><BalanceteMaioDominio /></PageShell>;
+  }
+
   if (competencia.id === "2026-07") {
-    garantirEstruturaBalanceteJulho();
     return (
       <PageShell>
-        <BalanceteJulhoAjustavel />
+        <BalanceteDominioCompetencia competencia="2026-07" />
       </PageShell>
     );
   }
 
-  return <BalanceteJunhoPreservado />;
+  return <PageShell><BalanceteDominioCompetencia competencia="2026-06" /></PageShell>;
 }

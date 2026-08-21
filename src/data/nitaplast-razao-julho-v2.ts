@@ -154,6 +154,48 @@ export const movimentosFiscaisSemEfeitoResultadoJulho = [
   { gerencial:"11.01.002", cc:"205", cfop:"2557", documento:"1 documento", valor:1140.00, tratamento:"transferência - já não integrava o Razão" },
 ] as const;
 
+/**
+ * Controle compensatório de mercadorias remetidas para industrialização.
+ * Segue exatamente a lógica de maio/junho: contas espelhadas, sem efeito no
+ * estoque patrimonial, fornecedor, CPV ou DRE.
+ */
+export const controlesIndustrializacaoJulho: LancamentoIntegrado[] = [
+  {
+    id: "JUL-CTRL-IND-REM-5901", data: "31/07/2026", origem: "CONTROLE FISCAL INDUSTRIALIZAÇÃO 07/2026",
+    debitoCodigo: "25205", debito: nomeConta("25205"), creditoCodigo: "25242", credito: nomeConta("25242"),
+    historico: "Remessas para industrialização - CFOP 5901", documento: "21 documentos CFOP 5901 07/2026",
+    cc: "102", centroCusto: "PRODUÇÃO", valor: 1675445.72, status: "validado",
+    observacao: "Controle compensatório; não altera estoque patrimonial, fornecedor, CPV ou resultado.",
+    rastreio: "documento", fonte: "RESUMO NOTAS FISCAIS SAÍDA MATRIZ 07/2026",
+  },
+  {
+    id: "JUL-CTRL-IND-RET-1902", data: "31/07/2026", origem: "CONTROLE FISCAL INDUSTRIALIZAÇÃO 07/2026",
+    debitoCodigo: "25242", debito: nomeConta("25242"), creditoCodigo: "25205", credito: nomeConta("25205"),
+    historico: "Retornos de mercadoria industrializada - CFOP 1902", documento: "29 documentos CFOP 1902 07/2026",
+    cc: "102", centroCusto: "PRODUÇÃO", valor: 1087030.41, status: "validado",
+    observacao: "Baixa do controle compensatório; sem efeito no estoque patrimonial, fornecedor, CPV ou resultado.",
+    rastreio: "documento", fonte: "RESUMO NOTAS FISCAIS ENTRADA MATRIZ 07/2026",
+  },
+  {
+    id: "JUL-CTRL-IND-RET-1903", data: "31/07/2026", origem: "CONTROLE FISCAL INDUSTRIALIZAÇÃO 07/2026",
+    debitoCodigo: "25242", debito: nomeConta("25242"), creditoCodigo: "25205", credito: nomeConta("25205"),
+    historico: "Retornos de mercadoria não industrializada - CFOP 1903", documento: "24 documentos CFOP 1903 07/2026",
+    cc: "101", centroCusto: "ALMOXARIFADO", valor: 123388.52, status: "validado",
+    observacao: "Baixa do material retornado sem industrialização somente nas contas compensatórias.",
+    rastreio: "documento", fonte: "RESUMO NOTAS FISCAIS ENTRADA MATRIZ 07/2026",
+  },
+];
+
+export const resumoControleIndustrializacaoJulho = {
+  saldoAnterior: 5136267.69,
+  remessasCfop5901: 1675445.72,
+  retornosCfop1902: 1087030.41,
+  retornosCfop1903: 123388.52,
+  saldoFinal: 5601294.48,
+  contaDevedora: "25205",
+  contaCredora: "25242",
+} as const;
+
 const receitasEDeducoesJulho: LancamentoIntegrado[] = [
   { id:"JUL-REC-M-PROD", data:"31/07/2026", origem:"SAÍDAS FISCAIS MATRIZ 07/2026", debitoCodigo:"25111", debito:nomeConta("25111"), creditoCodigo:"2606", credito:nomeConta("2606"), historico:"Receita de produção da matriz - CFOPs externos de julho", documento:"FISCAL MATRIZ 07/2026", cc:"201", centroCusto:"VENDAS", valor:3449137.41, status:"validado", observacao:"Reconstruída por CFOP/documentos, sem usar DRE como fonte.", rastreio:"documento", fonte:"RESUMO NOTAS FISCAIS SAÍDA MATRIZ 07/2026" },
   { id:"JUL-REC-M-REV", data:"31/07/2026", origem:"SAÍDAS FISCAIS MATRIZ 07/2026", debitoCodigo:"25111", debito:nomeConta("25111"), creditoCodigo:"2655", credito:nomeConta("2655"), historico:"Receita de revenda da matriz - CFOP 6102", documento:"FISCAL MATRIZ 07/2026", cc:"201", centroCusto:"VENDAS", valor:173371.51, status:"validado", observacao:"Reconstruída por CFOP/documentos, sem usar DRE como fonte.", rastreio:"documento", fonte:"RESUMO NOTAS FISCAIS SAÍDA MATRIZ 07/2026" },
@@ -177,6 +219,7 @@ export const lancamentosIntegradosJulho: LancamentoIntegrado[] = [
   ...lancamentosEntradasCcJulho,
   ...lancamentosAtivoImobilizadoJulho,
   ...lancamentosBancariosSegurosJulho,
+  ...controlesIndustrializacaoJulho,
 ];
 
 const pendenciasEntrada = entradasCcSaneadasJulho.filter((linha) => !mapearEntrada(linha.gerencial, linha.cc));
@@ -188,7 +231,8 @@ export const valorEntradaDuplicadaFiscalJulho = arred(duplicadoFiscal.reduce((t,
 const valorMovimentosSemEfeitoResultadoAuditados = arred(movimentosFiscaisSemEfeitoResultadoJulho.reduce((t, l) => t + l.valor, 0));
 
 /**
- * Retornos de julho excluídos de custo e de fornecedor, sem lançamento de compensação:
+ * Retornos de julho excluídos de custo e de fornecedor. Os CFOPs 1902/1903
+ * baixam apenas o controle compensatório acima:
  * R$ 1.100.508,71 (11.01.002 / CC 102) + R$ 9.668,11 (15.02.015 / CC 102) = R$ 1.110.176,82.
  */
 export const totalRetornosExcluidosJulho = 1110176.82;

@@ -17,14 +17,9 @@ export type ComposicaoResultadoJulho = {
  * A DRE consome o MOVIMENTO mensal das contas analíticas do Balancete.
  * Saldo acumulado não alimenta DRE e nenhuma linha gerencial cria débito/crédito.
  */
-const contasCustoOperacionalJulho=new Set(["3093","3095"]);
-const contasCustoIndustrialDiretoJulho=new Set(["25937"]);
+const contasCpvFechadoJulho=new Set(["25944","25945"]);
 const contasEstoquePatrimonialJulho=new Set(["25133","25134","25135","25136","25137","25138","25139"]);
 const contasCreditoFederalJulho=new Set(["25946","25947"]);
-const centrosCustoProducaoJulho=new Set([
-  "101","102","103","104","105","106","107","108","109","110","111","503",
-  "10014","10032","10057","10058","10060","10061","19999",
-]);
 const contasAlienacaoImobilizadoJulho=new Set(["4736","4760"]);
 export const contasReceitasFinanceirasJulho=new Set([
   "4927",
@@ -41,12 +36,22 @@ type ChaveClassificacaoResultado=Pick<ComposicaoResultadoJulho,"conta"|"classifi
 type ChaveClassificacaoCusto=Pick<ComposicaoResultadoJulho,"conta"|"classificacao"|"cc">;
 
 function ehCustoDreJulhoCriterioAnterior(x:ChaveClassificacaoResultado){
-  return x.classificacao.startsWith("4.2")||x.classificacao.startsWith("5.1")||contasCustoOperacionalJulho.has(x.conta);
+  return x.classificacao.startsWith("4.2")||x.classificacao.startsWith("5.1")||x.conta==="3093"||x.conta==="3095";
 }
 export function ehCustoDreJulho(x:ChaveClassificacaoCusto){
   if(contasEstoquePatrimonialJulho.has(x.conta)) return false;
-  const custoIndustrialPorCentro=x.classificacao.startsWith("5.3")&&centrosCustoProducaoJulho.has(x.cc);
-  return ehCustoDreJulhoCriterioAnterior(x)||contasCustoIndustrialDiretoJulho.has(x.conta)||custoIndustrialPorCentro;
+  if(contasCpvFechadoJulho.has(x.conta)||x.classificacao.startsWith("5.1")) return true;
+
+  // O CPV segue a movimentação periódica dos estoques, como no fechamento de
+  // maio. O centro de custo, isoladamente, não transforma despesa em custo de
+  // estoque/produto vendido. Serviços de industrialização permanecem nas
+  // despesas operacionais, em grupo próprio.
+  if(x.conta==="3093") return true;
+
+  // Fretes sem vínculo documental com a matéria-prima, materiais de uso e
+  // consumo, energia, manutenção e serviços gerais permanecem como despesas da
+  // área correspondente. Não entram no CPV somente por estarem em CC produtivo.
+  return false;
 }
 export function ehDespesaFinanceiraDreJulho(x:Pick<ComposicaoResultadoJulho,"classificacao">){return x.classificacao.startsWith("5.8");}
 export function ehReceitaFinanceiraDreJulho(x:Pick<ComposicaoResultadoJulho,"conta">){return contasReceitasFinanceirasJulho.has(x.conta);}
@@ -150,6 +155,22 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   if(Math.abs(arred(fechamentoEstoqueMatriz+outrosCustosMatriz)-cpvMatriz)>0.01)throw new Error("Composição do CPV Matriz não concilia.");
   if(Math.abs(arred(fechamentoEstoqueFilial+outrosCustosFilial)-cpvFilial)>0.01)throw new Error("Composição do CPV Filial não concilia.");
 
+  const saldo=(codigo:string)=>balancete.saldosAnaliticos.find(x=>x.conta===codigo);
+  const contasEstoqueMatriz=["25133","25134","25135","25136","25137"];
+  const estoqueInicialMatriz=arred(contasEstoqueMatriz.reduce((s,c)=>s+(saldo(c)?.saldoAnterior??0),0));
+  const estoqueFinalMatriz=arred(contasEstoqueMatriz.reduce((s,c)=>s+(saldo(c)?.saldoAtual??0),0));
+  const comprasLiquidasMatriz=Math.max(0,mov("3093"));
+  const industrializacaoLiquidaMatriz=arred(composicao.filter(x=>x.conta==="25937"&&x.estabelecimento==="Matriz").reduce((s,x)=>s+x.valor,0));
+  const estoqueInicialFilial=saldo("25138")?.saldoAnterior??0;
+  const comprasParaRevendaAberturaFilial=saldo("25139")?.saldoAnterior??0;
+  const fechamentoComprasFilial=base.find(x=>x.id==="JUL-CPV-F-COMP")?.valor??0;
+  const comprasLiquidasJulhoFilial=arred(fechamentoComprasFilial);
+  const estoqueFinalFilial=saldo("25138")?.saldoAtual??0;
+  const saldoFinalComprasFilial=saldo("25139")?.saldoAtual??0;
+  if(Math.abs(arred(saldoFinalComprasFilial-comprasParaRevendaAberturaFilial))>0.01)throw new Error(`Movimento de julho da conta 25139 não foi encerrado sem consumir o saldo anterior: ${saldoFinalComprasFilial.toFixed(2)}.`);
+  if(Math.abs(arred(estoqueInicialMatriz+comprasLiquidasMatriz-estoqueFinalMatriz)-cpvMatriz)>0.01)throw new Error("Memória do CPV Matriz não concilia com o Razão.");
+  if(Math.abs(arred(estoqueInicialFilial+comprasLiquidasJulhoFilial-estoqueFinalFilial)-cpvFilial)>0.01)throw new Error("Memória do CPV Filial não concilia com o Razão.");
+
   const despesasOperacionaisItensCriterioAnterior=composicao.filter(ehDespesaOperacionalDreJulhoCriterioAnterior);
   const despesasOperacionaisCriterioAnterior=arred(despesasOperacionaisItensCriterioAnterior.reduce((s,x)=>s+x.valor,0));
   const despesasOperacionaisItens=composicao.filter(ehDespesaOperacionalDreJulho);
@@ -199,7 +220,9 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   if(Math.abs(receitaAlienacaoImobilizado-306900)>0.01)throw new Error(`Venda de imobilizado reconhecida deveria ser R$ 306.900,00; encontrado ${receitaAlienacaoImobilizado.toFixed(2)}.`);
   if(Math.abs(custoAlienacaoImobilizado-203278.15)>0.01)throw new Error(`Custo residual dos ativos vendidos deveria ser R$ 203.278,15; encontrado ${custoAlienacaoImobilizado.toFixed(2)}.`);
   if(Math.abs(resultadoAlienacaoImobilizado-103621.85)>0.01)throw new Error("Resultado de Mini + Corolla + Transformador não conciliou em R$ 103.621,85.");
-  if(Math.abs(energiaDebitosMatriz-35286.38)>0.01||Math.abs(energiaCreditosMatriz-17146.20)>0.01||Math.abs(energiaEletricaMatriz-18140.18)>0.01){
+  // Energia líquida de ICMS, PIS e COFINS recuperáveis. Os créditos reduzem
+  // diretamente o custo fabril e não aparecem como linha autônoma na DRE.
+  if(Math.abs(energiaDebitosMatriz-35286.38)>0.01||Math.abs(energiaCreditosMatriz-19998.21)>0.01||Math.abs(energiaEletricaMatriz-15288.17)>0.01){
     throw new Error(`Energia elétrica julho não concilia. Débitos ${energiaDebitosMatriz.toFixed(2)}, créditos ${energiaCreditosMatriz.toFixed(2)}, líquido ${energiaEletricaMatriz.toFixed(2)}.`);
   }
 
@@ -211,6 +234,10 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
     icms,icmsMatriz,icmsFilial,icmsFilialTransferenciasInternas,icmsSt,icmsStMatriz,icmsStFilial,
     ipi,ipiMatriz,ipiFilial,pis,pisMatriz,pisFilial,cofins,cofinsMatriz,cofinsFilial,deducoes,receitaLiquida,
     custosReconhecidos:custos,custosMatriz,custosFilial,cpvMatriz,cpvFilial,fechamentoEstoqueMatriz,fechamentoEstoqueFilial,outrosCustosMatriz,outrosCustosFilial,
+    memoriaCpv:{
+      matriz:{estoqueInicial:estoqueInicialMatriz,comprasLiquidas:comprasLiquidasMatriz,estoqueFinal:estoqueFinalMatriz,industrializacaoLiquida:industrializacaoLiquidaMatriz,total:cpvMatriz},
+      filial:{estoqueInicial:estoqueInicialFilial,comprasParaRevendaAbertura:comprasParaRevendaAberturaFilial,comprasLiquidasJulho:comprasLiquidasJulhoFilial,estoqueFinal:estoqueFinalFilial,saldoFinalComprasParaRevenda:saldoFinalComprasFilial,total:cpvFilial},
+    },
     despesasReconhecidas:despesas,despesasOperacionais,despesasOperacionaisMatriz,despesasOperacionaisFilial,creditosFederais,
     despesasFinanceiras,despesasFinanceirasMatriz,despesasFinanceirasFilial,
     receitasFinanceiras,receitasFinanceirasMatriz,receitasFinanceirasFilial,receitasFinanceirasPorConta,
@@ -233,7 +260,7 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
     status:"fechado_com_pendencias" as const,fechadoEm:"18/08/2026",
     possuiPendenciaBloqueante:false as const,
     pendenciasBloqueantes,
-    criterioFechamento:"Documento/fato real → Razão → Balancete → DRE. A DRE lê o movimento mensal das contas analíticas do Balancete; saldo acumulado e conta sintética não são somados para formar resultado. Custos industriais 5.3 entram no CPV somente quando vinculados a centro de custo produtivo; serviços administrativos/comerciais permanecem em despesas operacionais.",
+    criterioFechamento:"Documento/fato real → Razão → Balancete → DRE. A DRE lê o movimento mensal das contas analíticas do Balancete; saldo acumulado e conta sintética não são somados para formar resultado. O CPV decorre da movimentação periódica dos estoques. Gastos por área, inclusive produção e industrialização, permanecem em despesas operacionais conforme a estrutura de maio/2026.",
     resumoRazao:resumoFechamentoJulhoFinal,financeiro:resumoFinanceiroJulho,
     pendenciasNaoBloqueantes:[`R$ ${resumoFinanceiroJulho.valorEntradasSemCcPendente.toFixed(2)} de entradas ainda sem distribuição completa por centro de custo`,`${resumoFinanceiroJulho.contratosCambioPendentes} contrato(s) de câmbio aguardando amarração do valor contábil de origem`],
     itensSemFonte:[`R$ ${resumoFinanceiroJulho.valorEntradasSemCcPendente.toFixed(2)} de entradas ainda sem centro de custo/documento suficiente`,`Contratos de câmbio ainda pendentes de valor contábil de origem: ${resumoFinanceiroJulho.contratosCambioPendentes}`],
@@ -246,8 +273,12 @@ export const dreJulhoFinal=calculoEstatico.dre;
 
 const servicosAdmClassificadosComoCusto=composicaoResultadoJulhoFinal.find(x=>x.conta==="25938"&&["302","303","304","305","306","501"].includes(x.cc)&&ehCustoDreJulho(x));
 if(servicosAdmClassificadosComoCusto)throw new Error(`Serviço administrativo classificado indevidamente como custo: ${servicosAdmClassificadosComoCusto.id}`);
-const industrializacaoForaDoCusto=composicaoResultadoJulhoFinal.find(x=>x.conta==="25937"&&!ehCustoDreJulho(x));
-if(industrializacaoForaDoCusto)throw new Error(`Industrialização produtiva permaneceu fora de Custos/CPV/CMV: ${industrializacaoForaDoCusto.id}`);
+const industrializacaoIndevidaNoCpv=composicaoResultadoJulhoFinal.find(x=>x.conta==="25937"&&ehCustoDreJulho(x));
+if(industrializacaoIndevidaNoCpv)throw new Error(`Industrialização classificada indevidamente no CPV: ${industrializacaoIndevidaNoCpv.id}`);
+const materialConsumoNoCpv=composicaoResultadoJulhoFinal.find(x=>x.conta==="3244"&&ehCustoDreJulho(x));
+if(materialConsumoNoCpv)throw new Error(`Material de uso/consumo classificado indevidamente no CPV: ${materialConsumoNoCpv.id}`);
+const servicoGeralNoCpv=composicaoResultadoJulhoFinal.find(x=>x.conta==="25938"&&ehCustoDreJulho(x));
+if(servicoGeralNoCpv)throw new Error(`Serviço geral classificado indevidamente no CPV apenas pelo centro de custo: ${servicoGeralNoCpv.id}`);
 const cpvFilialEmMatriz=composicaoResultadoJulhoFinal.find(x=>x.conta==="25945"&&x.estabelecimento!=="Filial SP");
 if(cpvFilialEmMatriz)throw new Error(`Fechamento de estoque da Filial sem identificação de estabelecimento: ${cpvFilialEmMatriz.id}`);
 const alienacaoEmDespesa=composicaoResultadoJulhoFinal.find(x=>contasAlienacaoImobilizadoJulho.has(x.conta)&&ehDespesaOperacionalDreJulho(x));

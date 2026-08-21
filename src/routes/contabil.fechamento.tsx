@@ -8,6 +8,7 @@ import { gerarCsvLoteContabilJunho, montarLoteContabilJunho } from "@/data/nitap
 import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
+import { FechamentoManualJunho } from "@/components/nitaplast/fechamento-manual-junho";
 
 export const Route = createFileRoute("/contabil/fechamento")({ component: FechamentoPage });
 
@@ -75,6 +76,8 @@ function FechamentoPage() {
       ) : (
         <Card className="border-red-500/40 bg-red-500/5"><CardContent className="flex gap-3 pt-6"><TriangleAlert className="mt-0.5 size-5 shrink-0 text-red-700" /><div><p className="font-medium">Finalização bloqueada por erro estrutural real</p><p className="mt-1 text-sm text-muted-foreground">Abra “Lançamentos finais” para ver as partidas bloqueantes. Conta transitória 4859 e status de revisão não bloqueiam a exportação.</p></div></CardContent></Card>
       )}
+
+      <FechamentoManualJunho />
     </PageShell>
   );
 }

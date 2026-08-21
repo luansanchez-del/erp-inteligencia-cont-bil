@@ -22,7 +22,7 @@ type Item = ComposicaoResultadoJulho;
 type Linha = { id: string; descricao: string; nivel: number; valor: number; criterio: string; composicao?: Item[]; status?: "calculado" | "pendente" };
 type Estab = "Matriz" | "Filial SP";
 
-const ccProd = new Set(["101", "102", "103", "104", "105", "106", "107", "108", "109", "110", "111", "503", "10014", "10032", "10057", "10060", "19999", "20002"]);
+const ccProd = new Set(["101", "102", "103", "104", "105", "106", "107", "108", "109", "110", "111", "503", "10014", "10032", "10057", "10060", "19999"]);
 const ccCom = new Set(["201", "202", "203", "204", "205", "206", "207", "209", "210"]);
 const ccAdm = new Set(["301", "302", "303", "304", "305", "306"]);
 const contasCreditoFederal = new Set(["25946", "25947"]);
@@ -79,51 +79,57 @@ export function DreJulhoCompleta() {
   const grupos = useMemo(() => {
     const custosMatriz = base.custos.filter((x) => x.estabelecimento === "Matriz");
     const custosFilial = base.custos.filter((x) => x.estabelecimento === "Filial SP");
+    const energia = custosMatriz.filter((x) => x.conta === "3494");
     const filial = despesasSemNplog.filter((x) => x.estabelecimento === "Filial SP");
     const matriz = despesasSemNplog.filter((x) => x.estabelecimento === "Matriz");
-    const industrializacao = composicao.filter((x) => x.conta === "25937" && x.estabelecimento === "Matriz");
+    const industrializacao = matriz.filter((x) => x.conta === "25937");
     const depreciacao = matriz.filter((x) => x.classificacao.startsWith("5.7.01.011"));
-    const creditosFederais = composicao.filter((x) => contasCreditoFederal.has(x.conta));
+    const creditosFederaisMatriz = composicao.filter((x) => contasCreditoFederal.has(x.conta) && x.estabelecimento === "Matriz");
+    const creditosFederaisFilial = composicao.filter((x) => contasCreditoFederal.has(x.conta) && x.estabelecimento === "Filial SP");
     const importacao = matriz.filter((x) => x.conta === "25070");
     const exportacao = matriz.filter((x) => x.conta === "25072");
     const veiculos = matriz.filter((x) => x.classificacao.startsWith("5.7.05") || x.classificacao.startsWith("5.7.01.015"));
-    const energia = composicao.filter((x) => x.conta === "3494" && x.estabelecimento === "Matriz");
-    const excluidas = new Set([...industrializacao, ...depreciacao, ...creditosFederais, ...importacao, ...exportacao, ...veiculos, ...energia].map((x) => x.id));
+    const excluidas = new Set([...industrializacao, ...depreciacao, ...importacao, ...exportacao, ...veiculos].map((x) => x.id));
     const classificaveis = matriz.filter((x) => !excluidas.has(x.id));
     const comerciais = classificaveis.filter((x) => ccCom.has(x.cc));
-    const adm = classificaveis.filter((x) => ccAdm.has(x.cc));
-    const prod = [...classificaveis.filter((x) => ccProd.has(x.cc) && !comerciais.includes(x)), ...energia];
+    const adm = classificaveis.filter((x) => ccAdm.has(x.cc) || x.cc === "313" || x.cc === "0" || x.conta === "4250" || (x.conta === "25937" && x.cc === "503"));
+    const prod = classificaveis.filter((x) => ccProd.has(x.cc) && !comerciais.includes(x) && !adm.includes(x));
     const outras = classificaveis.filter((x) => !prod.includes(x) && !comerciais.includes(x) && !adm.includes(x));
 
     const financeira = garantirConta(base.financeira, "25109", itemZero("25109", "5.8.01.006", "Variações Cambiais Passivas", "902", "DESPESAS FINANCEIRAS"));
     const receitasFinanceiras = garantirConta(base.receitasFinanceiras, "25096", itemZero("25096", "5.7.12.001.006", "Variações Cambiais Ativas", "901", "RECEITAS FINANCEIRAS"));
-    return { custosMatriz, custosFilial, filial, matriz, industrializacao, depreciacao, creditosFederais, importacao, exportacao, veiculos, energia, prod, comerciais, adm, outras, financeira, receitasFinanceiras };
+    return { custosMatriz, custosFilial, energia, filial, matriz, industrializacao, depreciacao, creditosFederaisMatriz, creditosFederaisFilial, importacao, exportacao, veiculos, prod, comerciais, adm, outras, financeira, receitasFinanceiras };
   }, [base, despesasSemNplog, composicao]);
 
   const custosDre = dre.custosReconhecidos;
-  const despesasOperacionais = arred(soma(despesasSemNplog) + valorNplog);
-  const despesasMatriz = arred(soma(grupos.matriz) + valorNplog);
-  const despesasFilial = soma(grupos.filial);
+  const despesasOperacionaisBrutas = arred(soma(despesasSemNplog) + valorNplog);
+  const despesasMatriz = arred(soma(grupos.matriz) + valorNplog + soma(grupos.creditosFederaisMatriz));
+  const despesasFilial = arred(soma(grupos.filial) + soma(grupos.creditosFederaisFilial));
+  const despesasOperacionais = arred(despesasMatriz + despesasFilial);
   const despFin = soma(base.financeira);
   const lucroBruto = arred(dre.receitaLiquida - custosDre);
   const resultadoOper = arred(lucroBruto - despesasOperacionais);
-  const resultadoCalculado = arred(dre.receitaLiquida - dre.custosReconhecidos - dre.despesasReconhecidas + dre.receitasFinanceiras + dre.resultadoAlienacaoImobilizado);
+  const resultadoCalculado = arred(dre.receitaLiquida - dre.custosReconhecidos - despesasOperacionais - despFin + dre.receitasFinanceiras + dre.resultadoAlienacaoImobilizado);
    const memoriaCpvIrpjCsll = [
-     ["Estoque inicial de matéria-prima", 1505234.19],
-     ["(+) Compras líquidas de matéria-prima", 1006707.75],
-     ["(-) Estoque final de matéria-prima", -1443376.19],
-     ["(=) Matéria-prima consumida", 1068565.75],
-     ["(+) Variação PA, retalhos, WIP e PI", 296031.93],
-     ["(+) Outros custos diretos de produção", 520816.41],
-     ["(=) CPV Matriz", 1885414.09],
+     ["Estoque inicial — Matriz", dre.memoriaCpv.matriz.estoqueInicial],
+     ["(+) Compras líquidas de matéria-prima", dre.memoriaCpv.matriz.comprasLiquidas],
+     ["(-) Estoque final — Matriz", -dre.memoriaCpv.matriz.estoqueFinal],
+     ["(=) CPV Matriz", dre.memoriaCpv.matriz.total],
+     ["Estoque inicial de PA — Filial", dre.memoriaCpv.filial.estoqueInicial],
+     ["Saldo anterior de compras — preservado fora do CPV", dre.memoriaCpv.filial.comprasParaRevendaAbertura],
+     ["(+) Compras líquidas de julho — Filial", dre.memoriaCpv.filial.comprasLiquidasJulho],
+     ["(-) Estoque final de PA — Filial", -dre.memoriaCpv.filial.estoqueFinal],
+     ["(=) CPV Filial", dre.memoriaCpv.filial.total],
+     ["(=) CPV / CMV Total", dre.custosReconhecidos],
    ] as const;
 
   if (Math.abs(custosDre - arred(dre.cpvMatriz + dre.cpvFilial)) > 0.01) throw new Error("CPV Matriz + Filial não fecha com os custos do Razão.");
   if (Math.abs(despesasOperacionais - arred(despesasMatriz + despesasFilial)) > 0.01) throw new Error("Abertura de despesas Matriz/Filial não fecha com o Razão.");
+  if (Math.abs(despesasOperacionaisBrutas + dre.creditosFederais - despesasOperacionais) > 0.01) throw new Error("Créditos PIS/COFINS não conciliam com as despesas operacionais líquidas.");
+  if (Math.abs(soma(grupos.outras)) > 0.01) throw new Error("Existem despesas sem grupo definido na DRE.");
   if (Math.abs(resultadoCalculado - dre.resultado) > 0.01) throw new Error(`DRE visual divergiu do Razão: ${resultadoCalculado.toFixed(2)} / ${dre.resultado.toFixed(2)}`);
   if (Math.abs(arred(receitaProducaoMatriz + receitaProducaoFilial) - dre.receitaProducao) > 0.01) throw new Error("Receita de produção Matriz/Filial não concilia ao Razão.");
   if (Math.abs(arred(receitaRevendaMatriz + receitaRevendaFilial) - dre.receitaRevenda) > 0.01) throw new Error("Receita de revenda Matriz/Filial não concilia ao Razão.");
-  if (Math.abs(soma(grupos.energia) - dre.energiaEletricaMatriz) > 0.01) throw new Error("Energia elétrica visual não concilia ao movimento de julho do Razão.");
 
   const ajustesManuais = razaoAjustado.filter((x) => x.origem === "LANÇAMENTO MANUAL" || x.origem.startsWith("ALTERAÇÃO MANUAL") || x.origem.startsWith("EXCLUSÃO MANUAL")).length;
 
@@ -154,20 +160,18 @@ export function DreJulhoCompleta() {
     { id: "cpv-f", descricao: "CPV — Filial SP", nivel: 1, valor: dre.cpvFilial, criterio: "CPV completo da Filial SP. Abra para conferir as contas que compõem o valor.", composicao: grupos.custosFilial },
     { id: "lb", descricao: "(=) LUCRO BRUTO", nivel: 0, valor: lucroBruto, criterio: "Receita líquida menos CPV/CMV do Razão." },
 
-    { id: "despesas", descricao: "(-) Despesas Operacionais", nivel: 0, valor: despesasOperacionais, criterio: "Subtotal consolidado; Matriz e Filial SP não se misturam nas composições." },
-    { id: "desp-matriz-total", descricao: "Despesas Operacionais — Matriz", nivel: 1, valor: despesasMatriz, criterio: "Subtotal exclusivo da Matriz." },
-    { id: "industr", descricao: "Despesas com Industrialização — Matriz", nivel: 2, valor: soma(grupos.industrializacao), criterio: "Conta 25937 da Matriz.", composicao: grupos.industrializacao },
+    { id: "despesas", descricao: "(-) Despesas Operacionais Líquidas", nivel: 0, valor: despesasOperacionais, criterio: "Despesas do período líquidas dos créditos PIS/COFINS. Custos fabris aparecem somente no CPV." },
+    { id: "desp-matriz-total", descricao: "Despesas Operacionais — Matriz", nivel: 1, valor: despesasMatriz, criterio: "Subtotal exclusivo da Matriz, líquido dos créditos federais da Matriz." },
+    { id: "industrializacao", descricao: "Despesas com Industrialização — Matriz", nivel: 2, valor: soma(grupos.industrializacao), criterio: "Grupo operacional próprio, seguindo maio/2026; centro produtivo não transforma o serviço em CPV.", composicao: grupos.industrializacao },
     { id: "nplog", descricao: "Despesa com Serviço - NPLog — Matriz", nivel: 2, valor: valorNplog, criterio: "11.02.003 / CC 304 Matriz.", composicao: composicaoNplog },
-    { id: "prod", descricao: "Despesas Produção — Matriz", nivel: 2, valor: soma(grupos.prod), criterio: "Centros produtivos da Matriz, incluindo energia elétrica do movimento de julho.", composicao: grupos.prod },
+    { id: "prod", descricao: "Despesas com Produção — Matriz", nivel: 2, valor: soma(grupos.prod), criterio: "Despesas ocorridas em centros produtivos. O centro de custo abre a gestão, mas não transforma automaticamente a despesa em CPV.", composicao: grupos.prod },
     { id: "veic", descricao: "Despesas com Veículos — Matriz", nivel: 2, valor: soma(grupos.veiculos), criterio: "Contas/classes específicas de veículos antes da classificação genérica por CC.", composicao: grupos.veiculos },
     { id: "imp", descricao: "Despesas com Importação — Matriz", nivel: 2, valor: soma(grupos.importacao), criterio: "Conta 25070; natureza documental prevalece sobre o CC.", composicao: grupos.importacao },
     { id: "exp", descricao: "Despesas com Exportação — Matriz", nivel: 2, valor: soma(grupos.exportacao), criterio: "Conta 25072; natureza documental prevalece sobre o CC.", composicao: grupos.exportacao },
     { id: "com", descricao: "Despesas Comerciais — Matriz", nivel: 2, valor: soma(grupos.comerciais), criterio: "Somente Matriz.", composicao: grupos.comerciais },
     { id: "adm", descricao: "Despesas Administrativas — Matriz", nivel: 2, valor: soma(grupos.adm), criterio: "Centros administrativos da Matriz; CC 501 não entra aqui.", composicao: grupos.adm },
     { id: "dep", descricao: "Depreciação e Amortização — Matriz", nivel: 2, valor: soma(grupos.depreciacao), criterio: "Depreciação identificada como Matriz. Mini e Corolla vendidos no início de julho foram excluídos da cota mensal integral de veículos.", composicao: grupos.depreciacao },
-    { id: "cred-fed", descricao: "(-) Créditos PIS/COFINS sobre Custos e Despesas — Matriz", nivel: 2, valor: soma(grupos.creditosFederais), criterio: "Contas 25946/25947. Parcela da Filial SP não é mais forçada para Matriz.", composicao: grupos.creditosFederais },
-    { id: "outras", descricao: "Outras Despesas Operacionais — Matriz", nivel: 2, valor: soma(grupos.outras), criterio: "Somente o residual da Matriz após as classificações específicas.", composicao: grupos.outras },
-    { id: "filial-desp", descricao: "Despesas Operacionais — Filial SP", nivel: 1, valor: despesasFilial, criterio: "Bloco exclusivo da Filial SP; não se repete na Matriz.", composicao: grupos.filial },
+    { id: "filial-desp", descricao: "Despesas Operacionais — Filial SP", nivel: 1, valor: despesasFilial, criterio: "Gastos não incorporados à mercadoria, líquidos dos créditos PIS/COFINS da Filial. O CMV/CPV da mercadoria fica exclusivamente na conta 25945.", composicao: [...grupos.filial, ...grupos.creditosFederaisFilial] },
     { id: "fin-liquidas", descricao: "Despesas Financeiras Líquidas", nivel: 1, valor: arred(despFin - dre.receitasFinanceiras), criterio: "Despesas financeiras menos receitas financeiras, exibidas na estrutura de conferência sem alterar o CPV." },
     { id: "ro", descricao: "(=) Resultado Operacional", nivel: 0, valor: resultadoOper, criterio: "Lucro bruto menos despesas operacionais do Razão." },
 
@@ -203,8 +207,8 @@ export function DreJulhoCompleta() {
     <Card className="border-amber-500/40 bg-amber-500/5"><CardContent className="pt-6"><div className="flex gap-3"><CircleAlert className="mt-0.5 size-5 text-amber-700"/><div><p className="font-semibold">ICMS de transferência da Filial fora da DRE</p><p className="mt-1 text-sm text-muted-foreground">{brl.format(dre.icmsFilialTransferenciasInternas)} permanece identificado no Razão como transferência interna e não reduz receita de vendas. A conta patrimonial definitiva ainda está em revisão.</p></div></div></CardContent></Card>
     <Card className="border-blue-500/30 bg-blue-500/5"><CardContent className="pt-6"><p className="font-medium">Regra única aplicada</p><p className="mt-1 text-sm text-muted-foreground">Razão → Balancete → DRE. Centro de custo e estabelecimento abrem a gestão; não criam fato contábil.</p></CardContent></Card>
     <Card className="border-amber-500/40 bg-amber-50/40"><CardHeader><CardTitle className="text-base">Memória temporária IRPJ/CSLL — composição do CPV</CardTitle><CardDescription>Relatório explicativo para conferência com a apuração de maio. Não cria lançamento e não altera o resultado contábil.</CardDescription></CardHeader><CardContent><div className="overflow-x-auto"><table className="w-full text-sm"><tbody>{memoriaCpvIrpjCsll.map(([descricao, valor], index) => <tr key={descricao} className={`border-b last:border-0 ${index === memoriaCpvIrpjCsll.length - 1 ? "font-bold" : ""}`}><td className="py-2">{descricao}</td><td className="py-2 text-right tabular-nums">{brl.format(valor)}</td></tr>)}</tbody></table></div><p className="mt-3 text-xs text-muted-foreground">Fórmula: estoque inicial + compras líquidas − estoque final, seguida da variação dos demais estoques e dos custos diretos de produção. O saldo final permanece no estoque patrimonial.</p></CardContent></Card>
-    <Card><CardHeader><div className="flex flex-wrap items-start justify-between gap-3"><div><CardTitle className="text-base">DRE 07/2026 — detalhamento completo</CardTitle><CardDescription>Abra as linhas para conferir estabelecimento, conta, centro de custo, débito, crédito e impacto.</CardDescription></div><Badge variant="outline">07/2026 · TRANSFORMADOR PENDENTE</Badge></div></CardHeader><CardContent className="overflow-x-auto"><table className="w-full min-w-[1080px] text-sm"><thead><tr className="border-b bg-muted text-left text-xs"><th className="p-2">Linha da DRE</th><th className="p-2 text-right">DRE Calculada 07/2026</th><th className="p-2 text-center">Status</th></tr></thead><tbody>{linhas.map((x) => { const exp = x.nivel === 0 || (x.composicao?.length ?? 0) > 0; const aberta = abertas.has(x.id); const destaque = ["rl", "lb", "ro", "alien-res", "resultado"].includes(x.id); const pendente = x.status === "pendente"; return [<tr key={x.id} className={`border-b ${x.nivel === 0 ? "bg-slate-100/70 font-semibold" : ""} ${destaque ? "border-y-2" : ""}`}><td className="p-2" style={{ paddingLeft: 8 + x.nivel * 22 }}>{exp ? <button className="inline-flex items-center gap-1.5 hover:text-primary" onClick={() => alternar(x.id)}>{aberta ? <ChevronDown className="size-4"/> : <ChevronRight className="size-4"/>}{x.descricao}</button> : <span className="pl-[22px]">{x.descricao}</span>}</td><td className="p-2 text-right font-semibold tabular-nums">{brl.format(x.valor)}</td><td className="p-2 text-center">{pendente ? <span className="inline-flex items-center gap-1 text-amber-700"><CircleAlert className="size-4"/>Pendente</span> : <span className="inline-flex items-center gap-1 text-emerald-700"><CheckCircle2 className="size-4"/>Calculado</span>}</td></tr>, exp && aberta ? <tr key={`${x.id}-d`} className="border-b bg-slate-50/70"><td colSpan={3} className="p-4 pl-8"><p className="text-xs text-muted-foreground"><strong className="text-foreground">Critério:</strong> {x.criterio}</p>{x.composicao?.length ? <Composicao itens={x.composicao}/> : null}</td></tr> : null]; })}</tbody></table></CardContent></Card>
-    <Card className="border-amber-400/50 bg-amber-50/40"><CardContent className="pt-5"><div className="flex gap-3"><CircleAlert className="mt-0.5 size-5 text-amber-700"/><div><p className="font-semibold">Pendências de rastreabilidade</p><p className="mt-1 text-sm text-muted-foreground">Nenhum valor é criado ou rateado por aproximação. Os fretes 11.90.001 já identificados permanecem contabilizados e marcados para revisão documental. A venda do transformador de R$ 60.000,00 está identificada e visível na alienação; apenas o ganho/perda permanece pendente até confirmação do valor residual. Contratos de câmbio sem vínculo com o fato contábil de origem permanecem pendentes de conciliação.</p></div></div></CardContent></Card>
+    <Card><CardHeader><div className="flex flex-wrap items-start justify-between gap-3"><div><CardTitle className="text-base">DRE 07/2026 — detalhamento completo</CardTitle><CardDescription>Abra as linhas para conferir estabelecimento, conta, centro de custo, débito, crédito e impacto.</CardDescription></div><Badge variant="outline">07/2026 · RAZÃO CONCILIADO</Badge></div></CardHeader><CardContent className="overflow-x-auto"><table className="w-full min-w-[1080px] text-sm"><thead><tr className="border-b bg-muted text-left text-xs"><th className="p-2">Linha da DRE</th><th className="p-2 text-right">DRE Calculada 07/2026</th><th className="p-2 text-center">Status</th></tr></thead><tbody>{linhas.map((x) => { const exp = x.nivel === 0 || (x.composicao?.length ?? 0) > 0; const aberta = abertas.has(x.id); const destaque = ["rl", "lb", "ro", "alien-res", "resultado"].includes(x.id); const pendente = x.status === "pendente"; return [<tr key={x.id} className={`border-b ${x.nivel === 0 ? "bg-slate-100/70 font-semibold" : ""} ${destaque ? "border-y-2" : ""}`}><td className="p-2" style={{ paddingLeft: 8 + x.nivel * 22 }}>{exp ? <button className="inline-flex items-center gap-1.5 hover:text-primary" onClick={() => alternar(x.id)}>{aberta ? <ChevronDown className="size-4"/> : <ChevronRight className="size-4"/>}{x.descricao}</button> : <span className="pl-[22px]">{x.descricao}</span>}</td><td className="p-2 text-right font-semibold tabular-nums">{brl.format(x.valor)}</td><td className="p-2 text-center">{pendente ? <span className="inline-flex items-center gap-1 text-amber-700"><CircleAlert className="size-4"/>Pendente</span> : <span className="inline-flex items-center gap-1 text-emerald-700"><CheckCircle2 className="size-4"/>Calculado</span>}</td></tr>, exp && aberta ? <tr key={`${x.id}-d`} className="border-b bg-slate-50/70"><td colSpan={3} className="p-4 pl-8"><p className="text-xs text-muted-foreground"><strong className="text-foreground">Critério:</strong> {x.criterio}</p>{x.composicao?.length ? <Composicao itens={x.composicao}/> : null}</td></tr> : null]; })}</tbody></table></CardContent></Card>
+    <Card className="border-amber-400/50 bg-amber-50/40"><CardContent className="pt-5"><div className="flex gap-3"><CircleAlert className="mt-0.5 size-5 text-amber-700"/><div><p className="font-semibold">Pendências de rastreabilidade</p><p className="mt-1 text-sm text-muted-foreground">Nenhum valor é criado ou rateado por aproximação. Os fretes 11.90.001 já identificados permanecem contabilizados e marcados para revisão documental. Mini, Corolla e Transformador estão reconhecidos pelo valor contábil documentado. Contratos de câmbio sem vínculo com o fato contábil de origem permanecem pendentes de conciliação.</p></div></div></CardContent></Card>
   </div>;
 }
 

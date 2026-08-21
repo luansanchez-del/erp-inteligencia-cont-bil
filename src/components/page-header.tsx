@@ -66,7 +66,9 @@ export function PageShell({ children }: { children: ReactNode }) {
     if (tela) conteudo = tela;
   }
 
-  if (sensivel && competencia.id !== "2026-06" && competencia.id !== "2026-07") {
+  const balanceteDominioMaioCarregado = competencia.id === "2026-05" && pathname === "/contabil/balancete";
+
+  if (sensivel && competencia.id !== "2026-06" && competencia.id !== "2026-07" && !balanceteDominioMaioCarregado) {
     conteudo = (
       <>
         <PageHeader

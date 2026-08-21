@@ -10,7 +10,7 @@ import { nomesCcFonte } from "./nitaplast-centros-custo-fonte";
 
 const arred = (v:number) => Math.round(v*100)/100;
 type AberturaCcFonte = readonly [conta:string,cc:string,saldo:number];
-const aberturasCcFonte:ReadonlyArray<AberturaCcFonte> = [
+export const aberturasCcImplantacaoMaio:ReadonlyArray<AberturaCcFonte> = [
   ...aberturasCcFonte1,...aberturasCcFonte2,...aberturasCcFonte3,...aberturasCcFonte4,...aberturasCcFonte5,
 ];
 
@@ -38,7 +38,7 @@ const saldoPorConta=new Map(saldosImplantacao.map(x=>[x.conta,x]));
 function saldoImplantadoAssinado(conta:string){const s=saldoPorConta.get(conta);return s?(s.natureza==="C"?-Math.abs(s.saldo):Math.abs(s.saldo)):0;}
 
 const aberturaFontePorConta=new Map<string,AberturaCcFonte[]>();
-for(const r of aberturasCcFonte){const a=aberturaFontePorConta.get(r[0])??[];a.push(r);aberturaFontePorConta.set(r[0],a);}
+for(const r of aberturasCcImplantacaoMaio){const a=aberturaFontePorConta.get(r[0])??[];a.push(r);aberturaFontePorConta.set(r[0],a);}
 
 function calcularAberturaPorCc(){
   const valores=new Map<string,number>();const rateadas=new Set<string>();const falhas:string[]=[];

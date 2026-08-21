@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useErp } from "@/context/erp-context";
 import { posicoesImobilizadoJulho, resumoFechamentoJulhoFinal } from "@/data/nitaplast-razao-julho-final";
 import { totalMensalReferenciaDepreciacaoJunho } from "@/data/nitaplast-imobilizado";
+import { inventarioImobilizadoImplantacaoMaio, resumoInventarioImobilizadoImplantacaoMaio } from "@/data/nitaplast-imobilizado";
 
 export const Route = createFileRoute("/patrimonio")({
   head: () => ({
@@ -59,6 +60,20 @@ function ImobilizadoPage() {
         <Metric label="Saldo residual" value={posicoesImobilizadoJulho.totalResidual} />
         <Metric label="Depreciação 07/2026" value={posicoesImobilizadoJulho.totalDepreciacaoCalculada} />
       </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div><CardTitle className="text-base">Inventário de implantação — Domínio 31/05/2026</CardTitle><CardDescription>Contas contábeis e bens/centros de custo preservados do balancete anterior. Esta abertura não constitui lançamento de junho.</CardDescription></div>
+            <Badge variant="outline">{resumoInventarioImobilizadoImplantacaoMaio.itens} fichas · {brl.format(resumoInventarioImobilizadoImplantacaoMaio.total)}</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <table className="w-full min-w-[1250px] text-sm"><thead><tr className="border-b bg-muted/40 text-left text-xs"><th className="p-2">Bem / centro de custo</th><th className="p-2">CC</th><th className="p-2">Conta do ativo</th><th className="p-2">Descrição contábil</th><th className="p-2">Dep. acumulada</th><th className="p-2">Despesa depreciação</th><th className="p-2 text-right">Saldo implantado</th><th className="p-2">Origem</th></tr></thead>
+            <tbody>{inventarioImobilizadoImplantacaoMaio.map((item)=><tr key={item.id} className="border-b align-top"><td className="p-2 font-medium">{item.bem}</td><td className="p-2 font-mono">{item.cc}</td><td className="p-2 font-mono">{item.contaAtivo}</td><td className="p-2">{item.descricaoContaAtivo}</td><td className="p-2 font-mono">{item.contaDepreciacaoAcumulada??"A revisar"}</td><td className="p-2 font-mono">{item.contaDespesaDepreciacao??"A revisar"}</td><Money value={item.saldoImplantacao} strong/><td className="p-2 text-xs text-muted-foreground">Domínio · 31/05/2026</td></tr>)}</tbody>
+          </table>
+        </CardContent>
+      </Card>
 
       <Card className="border-blue-500/30 bg-blue-500/5">
         <CardContent className="pt-6">

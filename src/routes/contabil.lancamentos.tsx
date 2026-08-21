@@ -12,6 +12,7 @@ import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
 import { useAjustesLancamentos, type DadosLancamentoManual } from "@/hooks/use-ajustes-lancamentos";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
+import { useCentrosCusto } from "@/hooks/use-centros-custo";
 
 export const Route = createFileRoute("/contabil/lancamentos")({ component: Lancamentos });
 
@@ -55,6 +56,7 @@ function Lancamentos() {
   useNitaplastJunho();
   const { aplicar } = useReclassificacoesInteligentes("2026-06");
   const { ajustes, registrarNovo, registrarEdicao, registrarExclusao } = useAjustesLancamentos("2026-06");
+  const { centros } = useCentrosCusto();
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>("todos");
   const [editorAberto, setEditorAberto] = useState(false);
@@ -200,8 +202,12 @@ function Lancamentos() {
               <Campo label="Conta débito" value={form.debitoCodigo} onChange={(value) => setForm((atual) => ({ ...atual, debitoCodigo: value }))} detalhe={planoPorConta.get(form.debitoCodigo)} placeholder="Ex.: 25107" />
               <Campo label="Conta crédito" value={form.creditoCodigo} onChange={(value) => setForm((atual) => ({ ...atual, creditoCodigo: value }))} detalhe={planoPorConta.get(form.creditoCodigo)} placeholder="Ex.: 25253" />
               <Campo label="Valor" value={form.valor} onChange={(value) => setForm((atual) => ({ ...atual, valor: value }))} placeholder="0,00" />
-              <Campo label="Centro de custo" value={form.cc} onChange={(value) => setForm((atual) => ({ ...atual, cc: value }))} placeholder="Ex.: 902" />
-              <Campo label="Descrição do CC" value={form.centroCusto} onChange={(value) => setForm((atual) => ({ ...atual, centroCusto: value }))} placeholder="DESPESAS FINANCEIRAS" />
+              <label className="grid gap-1 text-xs font-medium">Centro de custo
+                <select className="h-9 rounded-md border bg-background px-3 text-sm" value={form.cc} onChange={(e) => { const centro=centros.find((c)=>c.codigo===e.target.value); setForm((atual)=>({...atual,cc:e.target.value,centroCusto:centro?.descricao??"SEM CENTRO DE CUSTO"})); }}>
+                  {centros.filter((c)=>c.situacao==="Ativo"||c.codigo===form.cc).map((c)=><option key={c.codigo} value={c.codigo}>{c.codigo} — {c.descricao}</option>)}
+                </select>
+              </label>
+              <div><label className="mb-1 block text-xs font-medium">Descrição do CC</label><Input value={form.centroCusto} disabled /><p className="mt-1 text-[11px] text-muted-foreground">Preenchida pelo cadastro mestre</p></div>
               <Campo label="Documento" value={form.documento} onChange={(value) => setForm((atual) => ({ ...atual, documento: value }))} placeholder="Documento/evidência" />
               <Campo label="Motivo da ação" value={form.motivo} onChange={(value) => setForm((atual) => ({ ...atual, motivo: value }))} placeholder="Por que este lançamento está sendo criado/alterado?" />
             </div>

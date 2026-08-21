@@ -189,10 +189,9 @@ export const fechamentoCpvJunho: LancamentoIntegrado[] = [
 ];
 
 const estoqueInicialMatriz = 5934857.03;
-// Inventário OFICIAL de 30/06/2026. O total inclui o ajuste de matéria-prima de
-// aproximadamente R$ 82,5 mil já incorporado ao fechamento final de junho.
-// Não gerar um segundo ajuste de resultado por esse valor.
-const estoqueFinalMatriz = 6161633.99;
+// Inventário físico da Matriz R$ 6.011.623,07 + ajuste contábil de
+// matéria-prima R$ 150.000,00, mantido em linha separada no Razão.
+const estoqueFinalMatriz = 6161623.07;
 const estoqueInicialFilial = 220860.25;
 const estoqueFinalFilial = 254477.93;
 

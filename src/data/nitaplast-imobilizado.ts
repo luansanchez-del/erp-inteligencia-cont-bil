@@ -1,5 +1,7 @@
 import type { LancamentoIntegrado } from "./nitaplast-razao-base";
 import { descricaoContaJulho, saldoAberturaJulhoPorConta } from "./nitaplast-saldos-julho";
+import { aberturasCcImplantacaoMaio } from "./nitaplast-balancete-cc-junho";
+import { nomesCcFonte } from "./nitaplast-centros-custo-fonte";
 
 const arred = (v: number) => Math.round(v * 100) / 100;
 const nomeConta = (codigo: string, fallback?: string) => `${codigo} - ${descricaoContaJulho.get(codigo) ?? fallback ?? "Conta a revisar"}`;
@@ -65,6 +67,35 @@ export const regrasImobilizadoNitaplast: RegraImobilizado[] = [
   { id: "consorcio", nome: "Consórcio de imobilizado", contasAtivo: ["25172"], naoDepreciavel: true, observacao: "Conta patrimonial sem regra de depreciação automática." },
   { id: "apartamento", nome: "Apartamento Sette Casa", contasAtivo: ["25177"], observacao: "Ativo exibido no módulo, mas sem parâmetro mensal histórico seguro cadastrado." },
 ];
+
+const regraPorContaAtivo = new Map(regrasImobilizadoNitaplast.flatMap((regra) => regra.contasAtivo.map((conta) => [conta, regra] as const)));
+
+/**
+ * Inventário de implantação preservado do Balancete por Centro de Custos do
+ * Domínio em 31/05/2026. É abertura informativa: não cria lançamento em junho.
+ */
+export const inventarioImobilizadoImplantacaoMaio = aberturasCcImplantacaoMaio.flatMap(([contaAtivo, cc, saldo]) => {
+  const regra = regraPorContaAtivo.get(contaAtivo);
+  if (!regra) return [];
+  return [{
+    id: `${contaAtivo}-${cc}`,
+    contaAtivo,
+    descricaoContaAtivo: descricaoContaJulho.get(contaAtivo) ?? "Conta a revisar",
+    cc,
+    bem: nomesCcFonte[cc] ?? "Centro de custo a revisar",
+    grupo: regra.nome,
+    contaDepreciacaoAcumulada: regra.contaDepreciacaoAcumulada ?? null,
+    contaDespesaDepreciacao: regra.contaDespesa ?? null,
+    saldoImplantacao: arred(saldo),
+    origem: "BALANCETE POR CENTRO DE CUSTOS 05.2026 - NITAPLAST / Domínio",
+  }];
+});
+
+export const resumoInventarioImobilizadoImplantacaoMaio = {
+  itens: inventarioImobilizadoImplantacaoMaio.length,
+  contas: new Set(inventarioImobilizadoImplantacaoMaio.map((item) => item.contaAtivo)).size,
+  total: arred(inventarioImobilizadoImplantacaoMaio.reduce((s, item) => s + item.saldoImplantacao, 0)),
+} as const;
 
 function movimentoConta(base: LancamentoIntegrado[], codigo: string) {
   return arred(base.reduce((total, l) => total + (l.debitoCodigo === codigo ? l.valor : 0) - (l.creditoCodigo === codigo ? l.valor : 0), 0));

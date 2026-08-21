@@ -7,14 +7,17 @@ import { estoqueFinalMatrizJunhoPorConta } from "./nitaplast-fechamento-estoque-
  * REGRA: isto é somente referência de cálculo. Não gera lançamento de abertura no Razão.
  */
 const movimentosJunho = new Map<string, { debitos: number; creditos: number }>();
+const metadadosContasJunho = new Map<string, { descricao: string }>();
 for (const lancamento of lancamentosJunho) {
   const d = movimentosJunho.get(lancamento.debitoCodigo) ?? { debitos: 0, creditos: 0 };
   d.debitos += lancamento.valor;
   movimentosJunho.set(lancamento.debitoCodigo, d);
+  metadadosContasJunho.set(lancamento.debitoCodigo, { descricao: lancamento.debito.replace(/^\d+\s*-\s*/, "") });
 
   const c = movimentosJunho.get(lancamento.creditoCodigo) ?? { debitos: 0, creditos: 0 };
   c.creditos += lancamento.valor;
   movimentosJunho.set(lancamento.creditoCodigo, c);
+  metadadosContasJunho.set(lancamento.creditoCodigo, { descricao: lancamento.credito.replace(/^\d+\s*-\s*/, "") });
 }
 
 // O congelamento de junho remove o lançamento inteiro de fechamento de estoque físico
@@ -25,27 +28,34 @@ for (const lancamento of lancamentosJunho) {
 // próprio saldo de junho) parta do número real, não do saldo de maio arrastado.
 const estoqueFinalMatrizJunho = estoqueFinalMatrizJunhoPorConta as Record<string, number>;
 
-export const saldosAberturaJulho = saldosImplantacao.map((conta) => {
-  const alvoInventarioJunho = estoqueFinalMatrizJunho[conta.conta];
+const implantacaoPorConta = new Map(saldosImplantacao.map((conta) => [conta.conta, conta]));
+const contasComSaldoEmJunho = new Set([
+  ...saldosImplantacao.map((conta) => conta.conta),
+  ...movimentosJunho.keys(),
+]);
+
+export const saldosAberturaJulho = [...contasComSaldoEmJunho].map((codigo) => {
+  const conta = implantacaoPorConta.get(codigo);
+  const alvoInventarioJunho = estoqueFinalMatrizJunho[codigo];
   if (alvoInventarioJunho !== undefined) {
     return {
-      conta: conta.conta,
-      classificacao: conta.classificacao,
-      descricao: conta.descricao,
-      grupo: conta.grupo,
-      natureza: conta.natureza,
+      conta: codigo,
+      classificacao: conta?.classificacao ?? "",
+      descricao: conta?.descricao ?? metadadosContasJunho.get(codigo)?.descricao ?? "Conta a revisar",
+      grupo: conta?.grupo,
+      natureza: conta?.natureza ?? "D",
       saldo30Junho: alvoInventarioJunho,
     };
   }
-  const movimento = movimentosJunho.get(conta.conta) ?? { debitos: 0, creditos: 0 };
-  const saldoBase = conta.natureza === "C" ? -Math.abs(conta.saldo) : Math.abs(conta.saldo);
+  const movimento = movimentosJunho.get(codigo) ?? { debitos: 0, creditos: 0 };
+  const saldoBase = conta ? (conta.natureza === "C" ? -Math.abs(conta.saldo) : Math.abs(conta.saldo)) : 0;
   const saldo30Junho = Math.round((saldoBase + movimento.debitos - movimento.creditos) * 100) / 100;
   return {
-    conta: conta.conta,
-    classificacao: conta.classificacao,
-    descricao: conta.descricao,
-    grupo: conta.grupo,
-    natureza: conta.natureza,
+    conta: codigo,
+    classificacao: conta?.classificacao ?? "",
+    descricao: conta?.descricao ?? metadadosContasJunho.get(codigo)?.descricao ?? "Conta a revisar",
+    grupo: conta?.grupo,
+    natureza: conta?.natureza ?? (saldo30Junho < 0 ? "C" : "D"),
     saldo30Junho,
   };
 });
@@ -55,5 +65,5 @@ export const saldoAberturaJulhoPorConta = new Map(
 );
 
 export const descricaoContaJulho = new Map(
-  saldosImplantacao.map((conta) => [conta.conta, conta.descricao]),
+  saldosAberturaJulho.map((conta) => [conta.conta, conta.descricao]),
 );

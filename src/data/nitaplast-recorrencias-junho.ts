@@ -213,6 +213,13 @@ const controlesIndustrializacao: LancamentoIntegrado[] = [
     valor: 804272.15, status: "validado", observacao: "Baixa do controle compensatório das remessas; sem efeito no resultado.", rastreio: "derivado",
     fonte: "ENTRADAS - NITAPLAST(3).xlsx / relação de documentos - CFOP 1902",
   },
+  {
+    id: "CTRL-IND-RET-NAO-06", data: "30/06/2026", origem: "CONTROLE FISCAL INDUSTRIALIZAÇÃO 06/2026",
+    debitoCodigo: "25242", debito: nomeConta("25242"), creditoCodigo: "25205", credito: nomeConta("25205"),
+    historico: "Retornos de mercadoria não industrializada - CFOP 1903", documento: "CFOP 1903 06/2026", cc: "102", centroCusto: "PRODUÇÃO",
+    valor: 110508.65, status: "validado", observacao: "Baixa do material retornado sem industrialização; movimenta somente as contas compensatórias, sem efeito no estoque patrimonial, fornecedor, CPV ou resultado.", rastreio: "documento",
+    fonte: "ENTRADAS - NITAPLAST(3).xlsx - 257 itens CFOP 1903",
+  },
 ];
 
 export const conciliacaoProvisoesJunho = {
@@ -262,7 +269,11 @@ export const resumoRecorrenciasJunho = {
   baixas13: 324.00,
   amortizacao: 133.73,
   remessasIndustrializacao: 1003019.30,
-  retornosIndustrializacao: 804272.15,
+  retornosIndustrializados: 804272.15,
+  retornosNaoIndustrializados: 110508.65,
+  retornosIndustrializacao: 914780.80,
+  saldoCompensatorioInicial: 5048029.19,
+  saldoCompensatorioFinal: 5136267.69,
   quantidade: recorrenciasJunho.length,
   revisar: recorrenciasJunho.filter((linha) => linha.status === "revisar").length,
 } as const;

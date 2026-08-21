@@ -46,6 +46,21 @@ for (const conta of saldosImplantacao) {
 classificacaoPorConta.set("4760", "5.9.01.003.002");
 descricaoPorConta.set("4760", "Custo Vendas do Ativo Imobilizado");
 
+// Contas que nasceram depois da implantação de 31/05 e possuem vínculo
+// documentado com o plano Domínio. Elas integram o Balancete/DRE sem criar saldo
+// de abertura ou conta de encaixe.
+const contasPosImplantacao = [
+  ["290", "1.1.04.009.001", "Adiantamento de importação"],
+  ["1734", "2.1.03.001.001", "Obrigação cambial em fornecedores"],
+  ["4405", "5.7.01.007.005", "Despesas e adiantamentos de viagem"],
+  ["4505", "5.7.05.001.001", "Combustíveis e Lubrificantes"],
+] as const;
+const contasPosImplantacaoConhecidas = new Set(contasPosImplantacao.map(([conta]) => conta));
+for (const [conta, classificacao, descricao] of contasPosImplantacao) {
+  classificacaoPorConta.set(conta, classificacao);
+  descricaoPorConta.set(conta, descricao);
+}
+
 export function calcularBalanceteJulho(base: LancamentoIntegrado[]) {
   const porConta = new Map<string, { debitos: number; creditos: number }>();
   const detalhado = new Map<string, MovimentoBalanceteJulho>();
@@ -87,7 +102,9 @@ export function calcularBalanceteJulho(base: LancamentoIntegrado[]) {
     }
   }
 
-  const contasRazaoSemEstrutura = [...contasRazao].filter((conta) => !contasAnaliticasEstrutura.has(conta)).sort();
+  const contasRazaoSemEstrutura = [...contasRazao]
+    .filter((conta) => !contasAnaliticasEstrutura.has(conta) && !contasPosImplantacaoConhecidas.has(conta))
+    .sort();
 
   // Inclui as contas analíticas da estrutura e, defensivamente, qualquer conta do Razão
   // ainda ausente da estrutura. Assim nenhum fato contábil desaparece da conferência.
