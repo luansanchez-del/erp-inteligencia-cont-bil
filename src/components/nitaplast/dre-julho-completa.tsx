@@ -186,14 +186,41 @@ export function DreJulhoCompleta() {
     { id: "resultado", descricao: "(=) RESULTADO CONTÁBIL 07/2026", nivel: 0, valor: dre.resultado, criterio: "Resultado do Razão incluindo Mini + Corolla + Transformador. Recebimento do Transformador em parcelas previstas para agosto e setembro/2026, mantido em Duplicatas a Receber." },
   ];
 
-  const expans = linhas.filter((x) => x.nivel === 0 || (x.composicao?.length ?? 0) > 0).map((x) => x.id);
-  const tudo = expans.every((x) => abertas.has(x));
+  const paiPorLinha = new Map<string, string | null>();
+  const pilhaHierarquia: Linha[] = [];
+  for (const linha of linhas) {
+    pilhaHierarquia.length = linha.nivel;
+    paiPorLinha.set(linha.id, linha.nivel > 0 ? pilhaHierarquia[linha.nivel - 1]?.id ?? null : null);
+    pilhaHierarquia[linha.nivel] = linha;
+  }
+
+  const linhasComFilhos = new Set<string>();
+  linhas.forEach((linha, indice) => {
+    const proxima = linhas[indice + 1];
+    if (proxima && proxima.nivel > linha.nivel) linhasComFilhos.add(linha.id);
+  });
+
+  const expans = linhas
+    .filter((linha) => linhasComFilhos.has(linha.id) || (linha.composicao?.length ?? 0) > 0)
+    .map((linha) => linha.id);
+  const tudo = expans.every((id) => abertas.has(id));
+
+  function linhaVisivel(linha: Linha) {
+    let pai = paiPorLinha.get(linha.id) ?? null;
+    while (pai) {
+      if (!abertas.has(pai)) return false;
+      pai = paiPorLinha.get(pai) ?? null;
+    }
+    return true;
+  }
+
+  const linhasVisiveis = linhas.filter(linhaVisivel);
   function alternar(id: string) { setAbertas((a) => { const n = new Set(a); n.has(id) ? n.delete(id) : n.add(id); return n; }); }
   function alternarTudo() { setAbertas(tudo ? new Set() : new Set(expans)); }
 
   function exportarDreExcel() {
     const percentual = (valor: number) => dre.receitaBruta ? valor / dre.receitaBruta : 0;
-    const linhasExcel = linhas.flatMap((linha) => [
+    const linhasExcel = linhasVisiveis.flatMap((linha) => [
       [`${"    ".repeat(Math.max(0, linha.nivel))}${linha.descricao}`, linha.valor, percentual(linha.valor)],
       ...(abertas.has(linha.id) ? (linha.composicao ?? []).map((item) => [`            ${item.estabelecimento} · ${item.conta} · ${item.descricao} — ${item.cc} ${item.centroCusto}`, item.valor, percentual(item.valor)]) : []),
     ]);
@@ -207,7 +234,7 @@ export function DreJulhoCompleta() {
     <Card className="border-amber-500/40 bg-amber-500/5"><CardContent className="pt-6"><div className="flex gap-3"><CircleAlert className="mt-0.5 size-5 text-amber-700"/><div><p className="font-semibold">ICMS de transferência da Filial fora da DRE</p><p className="mt-1 text-sm text-muted-foreground">{brl.format(dre.icmsFilialTransferenciasInternas)} permanece identificado no Razão como transferência interna e não reduz receita de vendas. A conta patrimonial definitiva ainda está em revisão.</p></div></div></CardContent></Card>
     <Card className="border-blue-500/30 bg-blue-500/5"><CardContent className="pt-6"><p className="font-medium">Regra única aplicada</p><p className="mt-1 text-sm text-muted-foreground">Razão → Balancete → DRE. Centro de custo e estabelecimento abrem a gestão; não criam fato contábil.</p></CardContent></Card>
     <Card className="border-amber-500/40 bg-amber-50/40"><CardHeader><CardTitle className="text-base">Memória temporária IRPJ/CSLL — composição do CPV</CardTitle><CardDescription>Relatório explicativo para conferência com a apuração de maio. Não cria lançamento e não altera o resultado contábil.</CardDescription></CardHeader><CardContent><div className="overflow-x-auto"><table className="w-full text-sm"><tbody>{memoriaCpvIrpjCsll.map(([descricao, valor], index) => <tr key={descricao} className={`border-b last:border-0 ${index === memoriaCpvIrpjCsll.length - 1 ? "font-bold" : ""}`}><td className="py-2">{descricao}</td><td className="py-2 text-right tabular-nums">{brl.format(valor)}</td></tr>)}</tbody></table></div><p className="mt-3 text-xs text-muted-foreground">Fórmula: estoque inicial + compras líquidas − estoque final, seguida da variação dos demais estoques e dos custos diretos de produção. O saldo final permanece no estoque patrimonial.</p></CardContent></Card>
-    <Card><CardHeader><div className="flex flex-wrap items-start justify-between gap-3"><div><CardTitle className="text-base">DRE 07/2026 — detalhamento completo</CardTitle><CardDescription>Abra as linhas para conferir estabelecimento, conta, centro de custo, débito, crédito e impacto.</CardDescription></div><Badge variant="outline">07/2026 · RAZÃO CONCILIADO</Badge></div></CardHeader><CardContent className="overflow-x-auto"><table className="w-full min-w-[1080px] text-sm"><thead><tr className="border-b bg-muted text-left text-xs"><th className="p-2">Linha da DRE</th><th className="p-2 text-right">DRE Calculada 07/2026</th><th className="p-2 text-center">Status</th></tr></thead><tbody>{linhas.map((x) => { const exp = x.nivel === 0 || (x.composicao?.length ?? 0) > 0; const aberta = abertas.has(x.id); const destaque = ["rl", "lb", "ro", "alien-res", "resultado"].includes(x.id); const pendente = x.status === "pendente"; return [<tr key={x.id} className={`border-b ${x.nivel === 0 ? "bg-slate-100/70 font-semibold" : ""} ${destaque ? "border-y-2" : ""}`}><td className="p-2" style={{ paddingLeft: 8 + x.nivel * 22 }}>{exp ? <button className="inline-flex items-center gap-1.5 hover:text-primary" onClick={() => alternar(x.id)}>{aberta ? <ChevronDown className="size-4"/> : <ChevronRight className="size-4"/>}{x.descricao}</button> : <span className="pl-[22px]">{x.descricao}</span>}</td><td className="p-2 text-right font-semibold tabular-nums">{brl.format(x.valor)}</td><td className="p-2 text-center">{pendente ? <span className="inline-flex items-center gap-1 text-amber-700"><CircleAlert className="size-4"/>Pendente</span> : <span className="inline-flex items-center gap-1 text-emerald-700"><CheckCircle2 className="size-4"/>Calculado</span>}</td></tr>, exp && aberta ? <tr key={`${x.id}-d`} className="border-b bg-slate-50/70"><td colSpan={3} className="p-4 pl-8"><p className="text-xs text-muted-foreground"><strong className="text-foreground">Critério:</strong> {x.criterio}</p>{x.composicao?.length ? <Composicao itens={x.composicao}/> : null}</td></tr> : null]; })}</tbody></table></CardContent></Card>
+    <Card><CardHeader><div className="flex flex-wrap items-start justify-between gap-3"><div><CardTitle className="text-base">DRE 07/2026 — detalhamento completo</CardTitle><CardDescription>Abra as linhas para conferir estabelecimento, conta, centro de custo, débito, crédito e impacto.</CardDescription></div><Badge variant="outline">07/2026 · RAZÃO CONCILIADO</Badge></div></CardHeader><CardContent className="overflow-x-auto"><table className="w-full min-w-[1080px] text-sm"><thead><tr className="border-b bg-muted text-left text-xs"><th className="p-2">Linha da DRE</th><th className="p-2 text-right">DRE Calculada 07/2026</th><th className="p-2 text-center">Status</th></tr></thead><tbody>{linhasVisiveis.map((x) => { const exp = linhasComFilhos.has(x.id) || (x.composicao?.length ?? 0) > 0; const aberta = abertas.has(x.id); const destaque = ["rl", "lb", "ro", "alien-res", "resultado"].includes(x.id); const pendente = x.status === "pendente"; return [<tr key={x.id} className={`border-b ${x.nivel === 0 ? "bg-slate-100/70 font-semibold" : ""} ${destaque ? "border-y-2" : ""}`}><td className="p-2" style={{ paddingLeft: 8 + x.nivel * 22 }}>{exp ? <button className="inline-flex items-center gap-1.5 hover:text-primary" onClick={() => alternar(x.id)}>{aberta ? <ChevronDown className="size-4"/> : <ChevronRight className="size-4"/>}{x.descricao}</button> : <span className="pl-[22px]">{x.descricao}</span>}</td><td className="p-2 text-right font-semibold tabular-nums">{brl.format(x.valor)}</td><td className="p-2 text-center">{pendente ? <span className="inline-flex items-center gap-1 text-amber-700"><CircleAlert className="size-4"/>Pendente</span> : <span className="inline-flex items-center gap-1 text-emerald-700"><CheckCircle2 className="size-4"/>Calculado</span>}</td></tr>, exp && aberta ? <tr key={`${x.id}-d`} className="border-b bg-slate-50/70"><td colSpan={3} className="p-4 pl-8"><p className="text-xs text-muted-foreground"><strong className="text-foreground">Critério:</strong> {x.criterio}</p>{x.composicao?.length ? <Composicao itens={x.composicao}/> : null}</td></tr> : null]; })}</tbody></table></CardContent></Card>
     <Card className="border-amber-400/50 bg-amber-50/40"><CardContent className="pt-5"><div className="flex gap-3"><CircleAlert className="mt-0.5 size-5 text-amber-700"/><div><p className="font-semibold">Pendências de rastreabilidade</p><p className="mt-1 text-sm text-muted-foreground">Nenhum valor é criado ou rateado por aproximação. Os fretes 11.90.001 já identificados permanecem contabilizados e marcados para revisão documental. Mini, Corolla e Transformador estão reconhecidos pelo valor contábil documentado. Contratos de câmbio sem vínculo com o fato contábil de origem permanecem pendentes de conciliação.</p></div></div></CardContent></Card>
   </div>;
 }
