@@ -47,9 +47,9 @@ classificacaoPorConta.set("4760", "5.9.01.003.002");
 descricaoPorConta.set("4760", "Custo Vendas do Ativo Imobilizado");
 
 // Contas que nasceram depois da implantação de 31/05 e possuem vínculo
-// documentado com o plano Domínio. Elas integram o Balancete/DRE sem criar saldo
-// de abertura ou conta de encaixe.
-const contasPosImplantacao = [
+// documentado com o plano Domínio. Elas integram o Balancete/DRE com os saldos
+// e movimentos existentes, sem criar conta de encaixe.
+export const contasPosImplantacao = [
   ["290", "1.1.04.009.001", "Adiantamento de importação"],
   ["1734", "2.1.03.001.001", "Obrigação cambial em fornecedores"],
   ["4405", "5.7.01.007.005", "Despesas e adiantamentos de viagem"],
