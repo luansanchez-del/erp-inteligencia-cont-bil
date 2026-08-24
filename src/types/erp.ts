@@ -171,6 +171,34 @@ export interface ImportacaoJob {
   criadoEm: string;
 }
 
+export type FluxoImportacao = "implantacao" | "recorrencia";
+export type CategoriaFonteImportacao =
+  | "plano_contas" | "saldos_abertura" | "saldos_auxiliares"
+  | "fiscal_entradas" | "fiscal_saidas" | "bancos" | "folha" | "tributos"
+  | "estoque" | "imobilizado" | "aplicacoes" | "outros_documentos"
+  | "relatorio_conferencia";
+export type StatusDossieImportacao = "aguardando_conferencia" | "aprovado" | "duplicado" | "rejeitado";
+
+/** Evidência importada. Aprovar o item não o transforma em fato contábil. */
+export interface ItemDossieImportacao {
+  id: string;
+  empresaId: string;
+  competenciaId: string;
+  fluxo: FluxoImportacao;
+  categoria: CategoriaFonteImportacao;
+  formato: FormatoImportacao;
+  arquivo: string;
+  tamanho: number;
+  tipoMime: string;
+  hash: string;
+  ultimaModificacao: number;
+  finalidade: "fonte" | "conferencia";
+  podeGerarLancamento: boolean;
+  status: StatusDossieImportacao;
+  criadoEm: string;
+  aprovadoEm?: string;
+}
+
 export interface Integracao {
   id: string;
   nome: string;
