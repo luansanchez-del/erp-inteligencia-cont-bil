@@ -4,6 +4,7 @@ import { lancamentosBancariosOperacionaisJulho, resumoLancamentosBancariosOperac
 import { descricaoContaJulho, saldoAberturaJulhoPorConta } from "./nitaplast-saldos-julho";
 import { calcularDepreciacaoImobilizado } from "./nitaplast-imobilizado";
 import { lancamentosFolhaJulho, resumoFolhaJulho } from "./nitaplast-folha-julho";
+import { entradasDetalhadasFilialJulho, resumoEntradasDetalhadasFilialJulho } from "./nitaplast-entradas-filial-julho";
 
 const nome = (c:string) => `${c} - ${descricaoContaJulho.get(c) ?? "Conta a revisar"}`;
 const arred = (v:number) => Math.round(v*100)/100;
@@ -45,12 +46,57 @@ const creditosPisCofins: LancamentoIntegrado[] = [
   ...cof.map(([creditoCodigo,valor,cfop],i)=>l({id:`JUL-COF-CRED-${String(i+1).padStart(2,"0")}`,data:"31/07/2026",origem:"APURAÇÃO COFINS 07/2026",debitoCodigo:"1552",creditoCodigo,historico:`Crédito COFINS CFOP ${cfop}`,documento:`CFOP ${cfop}`,cc:"0",centroCusto:"SEM CENTRO DE CUSTO",valor,observacao:"Crédito fiscal aberto pela natureza da entrada; não é lançamento de ajuste por alvo.",fonte:"REGISTRO APURAÇÃO COFINS(4).pdf"})),
 ];
 
-const filialCompras: LancamentoIntegrado[] = [
-  l({id:"JUL-FIL-COMP-1102",data:"31/07/2026",origem:"ENTRADAS FILIAL 07/2026",debitoCodigo:"25139",creditoCodigo:"1496",historico:"Compras externas da filial - mercadorias para revenda",documento:"CFOP 1102",cc:"502",centroCusto:"COMERCIAL SP",valor:493098.04,observacao:"Compra externa documentada da filial. Créditos tributários são contabilizados separadamente.",fonte:"RESUMO NOTAS FISCAIS ENTRADA FILIAL 07/2026"}),
+const contaEntradaFilial: Record<string,string> = {
+  "11.02.002":"25938", "12.03.001":"4028", "12.03.003":"5799", "12.03.004":"4351",
+  "12.03.008":"25056", "14.03.001":"4253", "15.02.015":"4912",
+};
+
+// O PDF analítico da filial é escriturado pela data de recepção. Transferências
+// CFOP 2152 e devoluções CFOP 1202 permanecem no controle fiscal e nos lançamentos
+// próprios já existentes; não geram nova obrigação com fornecedor nesta camada.
+const filialCompras: LancamentoIntegrado[] = entradasDetalhadasFilialJulho
+  .filter((entrada) => entrada.cfop === "1102")
+  .map((entrada) => l({
+    id:`JUL-FIL-ENT-${entrada.id}`,data:entrada.dataRecepcao,origem:"ENTRADAS DETALHADAS FILIAL 07/2026",
+    debitoCodigo:"25139",creditoCodigo:"1496",historico:`Compra filial - ${entrada.emitente}`,
+    documento:`NF ${entrada.documento} série ${entrada.serie} / CFOP ${entrada.cfop}`,
+    cc:entrada.rateios[0]?.cc ?? "502",centroCusto:entrada.rateios[0]?.centroCusto ?? "COMERCIAL SP",valor:entrada.valor,
+    observacao:`Documento recebido em ${entrada.dataRecepcao}; emissão ${entrada.dataEmissao}; CNPJ ${entrada.cnpj}. Créditos tributários contabilizados separadamente.`,
+    fonte:"RLF447.REL1912856a2-141112.pdf",
+  }));
+
+const despesasFilialJulho: LancamentoIntegrado[] = entradasDetalhadasFilialJulho.flatMap((entrada) => {
+  const debitoCodigo = contaEntradaFilial[entrada.gerencial];
+  if (!debitoCodigo || entrada.cfop === "1102" || entrada.cfop === "1202" || entrada.cfop === "2152") return [];
+  return entrada.rateios.map((rateio, indice) => l({
+    id:`JUL-FIL-ENT-${entrada.id}-${indice + 1}`,data:entrada.dataRecepcao,origem:"ENTRADAS DETALHADAS FILIAL 07/2026",
+    debitoCodigo,creditoCodigo:"1496",historico:`${entrada.descricaoGerencial || "Frete vendas"} - ${entrada.emitente}`,
+    documento:`NF ${entrada.documento} série ${entrada.serie} / CFOP ${entrada.cfop}`,
+    cc:rateio.cc,centroCusto:rateio.centroCusto,valor:rateio.valor,
+    observacao:`Documento recebido em ${entrada.dataRecepcao}; emissão ${entrada.dataEmissao}; CNPJ ${entrada.cnpj}. Rateio preservado do relatório analítico da filial.`,
+    fonte:"RLF447.REL1912856a2-141112.pdf",
+  }));
+});
+
+if (arred(filialCompras.reduce((s,x)=>s+x.valor,0)) !== resumoEntradasDetalhadasFilialJulho.comprasCfop1102) throw new Error("Compras detalhadas da filial não conciliam.");
+if (arred(despesasFilialJulho.reduce((s,x)=>s+x.valor,0)) !== 22096.86) throw new Error("Despesas detalhadas da filial não conciliam.");
+
+// Correção extemporânea solicitada para 01/07: as compras líquidas documentadas
+// em junho permaneceram na conta patrimonial 25139 e não foram encerradas no CPV.
+// Não altera junho nem o inventário; baixa apenas o saldo identificado por documentos.
+export const ajusteExtemporaneoComprasFilialJunho: LancamentoIntegrado[] = [
+  l({
+    id:"JUL-AJ-FIL-COMP-JUN",data:"01/07/2026",origem:"CORREÇÃO EXTEMPORÂNEA DOCUMENTADA - FILIAL",
+    debitoCodigo:"25945",creditoCodigo:"25139",historico:"Encerramento em julho das compras líquidas da filial não apropriadas ao CPV de junho",
+    documento:"ENTRADAS FILIAL 06/2026 / CFOP 1101-1102",cc:"502",centroCusto:"COMERCIAL SP",valor:41201.95,
+    observacao:"Lançamento em 01/07/2026, sem reabrir junho. Composição: compras R$ 57.614,21 menos ICMS R$ 9.740,31, PIS R$ 824,82, COFINS R$ 3.799,12 e IPI R$ 2.048,01. Correção suportada pelos documentos fiscais e apurações; não é ajuste por meta de resultado.",
+    fonte:"RLF447.REL1912856a7-142319.pdf + apurações ICMS/IPI/PIS/COFINS filial 06/2026",rastreio:"derivado",
+  }),
 ];
 
 // Folha matriz + filial e suas provisões entram no Razão antes do fechamento de estoque/depreciação.
-const antesEstoque = [...baseSaneada,...lancamentosBancariosOperacionaisJulho,...impostosEstaduaisFederais,...creditosPisCofins,...filialCompras,...lancamentosFolhaJulho];
+const antesEstoqueSemAjusteExtemporaneo = [...baseSaneada,...lancamentosBancariosOperacionaisJulho,...impostosEstaduaisFederais,...creditosPisCofins,...filialCompras,...despesasFilialJulho,...lancamentosFolhaJulho];
+const antesEstoque = [...antesEstoqueSemAjusteExtemporaneo,...ajusteExtemporaneoComprasFilialJunho];
 function movConta(c:string,base:LancamentoIntegrado[]) { return arred(base.reduce((s,x)=>s+(x.debitoCodigo===c?x.valor:0)-(x.creditoCodigo===c?x.valor:0),0)); }
 
 const estoqueMatriz:Record<string,number>={"25133":4207698.55,"25134":39464.14,"25135":1443376.19,"25136":107919.59,"25137":5285.59};
@@ -100,7 +146,7 @@ const fechamentoEstoqueMatriz: LancamentoIntegrado[] = Object.entries(estoqueMat
 // venda/baixa. Por isso somente o movimento líquido das compras de julho é
 // encerrado no CPV; o saldo anterior permanece destacado para conciliação.
 const aberturaFilial = saldoAberturaJulhoPorConta.get("25138") ?? 254477.93;
-const comprasLiquidasFilialJulho = movConta("25139", antesEstoque);
+const comprasLiquidasFilialJulho = movConta("25139", antesEstoqueSemAjusteExtemporaneo);
 const fechamentoEstoqueFilial: LancamentoIntegrado[] = [
   l({id:"JUL-CPV-F-ABERT",data:"31/07/2026",origem:"FECHAMENTO ESTOQUE FILIAL 07/2026",debitoCodigo:"25945",creditoCodigo:"25138",historico:"Baixa do estoque inicial da filial para apuração do CPV de julho",documento:"SALDO 30/06 + INVENTÁRIO",cc:"502",centroCusto:"COMERCIAL SP",valor:Math.abs(aberturaFilial),observacao:"Fechamento periódico do estoque; não é lançamento de abertura gerencial.",fonte:"Saldo contábil fechado 30/06/2026",rastreio:"derivado"}),
   l({id:"JUL-CPV-F-COMP",data:"31/07/2026",origem:"FECHAMENTO ESTOQUE FILIAL 07/2026",debitoCodigo:"25945",creditoCodigo:"25139",historico:"Encerramento das compras líquidas de julho da filial no CPV",documento:"CFOP 1102 + CRÉDITOS 07/2026",cc:"502",centroCusto:"COMERCIAL SP",valor:Math.abs(comprasLiquidasFilialJulho),observacao:`Somente as compras líquidas da competência foram encerradas: R$ ${comprasLiquidasFilialJulho.toFixed(2)}. O saldo anterior de R$ ${(saldoAberturaJulhoPorConta.get("25139") ?? 0).toFixed(2)} permanece patrimonial até conciliação, sem contaminar o resultado de julho.`,fonte:"RESUMO NOTAS FISCAIS ENTRADA FILIAL 07/2026 + EFD Contribuições",rastreio:"derivado"}),
