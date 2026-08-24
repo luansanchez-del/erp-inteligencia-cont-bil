@@ -26,6 +26,8 @@ export interface Empresa {
   atividade?: string;
   tipo: TipoEstabelecimento;
   grupoId?: string;
+  responsavelLegal?: { nome: string; cargo: string; cpf?: string };
+  responsavelContabil?: { nome: string; registro: string; cpf?: string };
   ativa: boolean;
 }
 

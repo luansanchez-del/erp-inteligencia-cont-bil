@@ -12,6 +12,7 @@ const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" 
 const arred = (valor: number) => Math.round(valor * 100) / 100;
 
 export function BalancetePrintSummary({ linhas }: { linhas: LinhaResumoBalancete[] }) {
+  const { empresa } = useErp();
   const analiticas = linhas.filter((linha) => linha.tipo === "A");
   const total = (campo: "saldoAnterior" | "debitos" | "creditos" | "saldoAtual") => arred(analiticas.reduce((soma, linha) => soma + linha[campo], 0));
   const porClassificacao = (classificacao: string) => linhas.find((linha) => linha.tipo === "S" && linha.classificacao === classificacao);
@@ -46,8 +47,15 @@ export function BalancetePrintSummary({ linhas }: { linhas: LinhaResumoBalancete
         {[resultado("RESULTADO DO MÊS", true), resultado("RESULTADO DO EXERCÍCIO", false)].map((linha) => <tr key={linha.descricao} className="font-bold"><td className="px-2 py-1">{linha.descricao}</td><Valor valor={linha.saldoAnterior} natureza/><Valor valor={linha.debitos}/><Valor valor={linha.creditos}/><Valor valor={linha.saldoAtual} natureza/></tr>)}
       </tbody>
     </table>
+    {(empresa.responsavelLegal || empresa.responsavelContabil) ? <div className="mt-12 grid grid-cols-2 gap-20 text-[7pt]">
+      <Assinatura nome={empresa.responsavelLegal?.nome} detalhe={[empresa.responsavelLegal?.cargo, empresa.responsavelLegal?.cpf ? `CPF: ${empresa.responsavelLegal.cpf}` : undefined]}/>
+      <Assinatura nome={empresa.responsavelContabil?.nome} detalhe={[empresa.responsavelContabil?.registro, empresa.responsavelContabil?.cpf ? `CPF: ${empresa.responsavelContabil.cpf}` : undefined]}/>
+    </div> : null}
   </section>;
 }
 
+function Assinatura({ nome, detalhe }: { nome?: string; detalhe: Array<string | undefined> }) { if (!nome) return <div/>; return <div className="border-t border-black pt-1"><div>{nome}</div>{detalhe.filter(Boolean).map((item) => <div key={item}>{item}</div>)}</div>; }
+
 function Valor({ valor, natureza = false }: { valor: number; natureza?: boolean }) { return <td className="px-2 py-1 text-right tabular-nums">{formatar(valor, natureza)}</td>; }
 function formatar(valor: number, natureza = false) { if (Math.abs(valor) < 0.005) return "0,00"; const numero = brl.format(Math.abs(valor)).replace("R$ ", ""); return natureza ? `${numero}${valor < 0 ? "C" : "D"}` : numero; }
+import { useErp } from "@/context/erp-context";
