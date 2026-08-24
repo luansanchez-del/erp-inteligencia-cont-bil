@@ -24,7 +24,7 @@ type Estab = "Matriz" | "Filial SP";
 type LinhaApresentacao = { descricao: string; valor: number | null; percentual?: string; nivel?: 0 | 1; destaque?: boolean };
 
 const receitaBrutaApresentacao = 4_138_549.72;
-const resultadoApresentacao = 253_957.66;
+const resultadoApresentacao = 234_732.08;
 const linhasApresentacao: LinhaApresentacao[] = [
   { descricao: "(+) Receita Operacional Bruta", valor: receitaBrutaApresentacao, percentual: "100,00%", destaque: true },
   { descricao: "Receita Venda Produção Matriz", valor: 3_443_785.35, nivel: 1 },
@@ -49,24 +49,24 @@ const linhasApresentacao: LinhaApresentacao[] = [
   { descricao: "(-) CPV Filial", valor: 177_301.11, nivel: 1 },
   { descricao: "(-) CMV Filial", valor: 0, nivel: 1 },
   { descricao: "(=) Lucro bruto", valor: 1_568_244.40, percentual: "37,89%", destaque: true },
-  { descricao: "(-) Despesas operacionais", valor: 1_417_908.59, percentual: "34,26%", destaque: true },
+  { descricao: "(-) Despesas operacionais", valor: 1_437_134.17, percentual: "34,73%", destaque: true },
   { descricao: "Despesas Administrativas", valor: 175_861.49, percentual: "4,25%", nivel: 1 },
   { descricao: "Despesas com Serviço - NPLog", valor: 135_289.01, percentual: "3,27%", nivel: 1 },
   { descricao: "Despesas Comerciais", valor: 406_412.20, percentual: "9,82%", nivel: 1 },
-  { descricao: "Despesas Produção", valor: 106_154.68, percentual: "2,56%", nivel: 1 },
+  { descricao: "Despesas Produção", valor: 124_407.23, percentual: "3,01%", nivel: 1 },
   { descricao: "Despesas Veículos", valor: 6_238.56, percentual: "0,15%", nivel: 1 },
   { descricao: "Despesas com Imobilizado", valor: 52_237.96, percentual: "1,26%", nivel: 1 },
-  { descricao: "Despesas com Industrialização", valor: 363_777.95, percentual: "8,79%", nivel: 1 },
+  { descricao: "Despesas com Industrialização", valor: 364_750.98, percentual: "8,81%", nivel: 1 },
   { descricao: "Despesas com Exportação — Matriz", valor: 5_225.43, percentual: "0,13%", nivel: 1 },
   { descricao: "Despesas comerciais SP", valor: 58_910.56, percentual: "1,42%", nivel: 1 },
-  { descricao: "Subtotal das despesas operacionais antes do resultado financeiro", valor: 1_310_107.84, destaque: true },
+  { descricao: "Subtotal das despesas operacionais antes do resultado financeiro", valor: 1_329_333.42, destaque: true },
   { descricao: "Despesas Financeiras", valor: 143_700.96, percentual: "3,47%", nivel: 1 },
   { descricao: "(-) Receitas Financeiras", valor: 35_900.21, percentual: "0,87%", nivel: 1 },
   { descricao: "Despesas Financeiras Líquidas", valor: 107_800.75, destaque: true },
   { descricao: "(-) PIS não cumulativo sobre despesas", valor: 0, percentual: "0,00%", nivel: 1 },
   { descricao: "(-) COFINS não cumulativo sobre despesas", valor: 0, percentual: "0,00%", nivel: 1 },
-  { descricao: "Total das despesas operacionais", valor: 1_417_908.59, destaque: true },
-  { descricao: "(=) Resultado Operacional", valor: 150_335.81, percentual: "3,63%", destaque: true },
+  { descricao: "Total das despesas operacionais", valor: 1_437_134.17, destaque: true },
+  { descricao: "(=) Resultado Operacional", valor: 131_110.23, percentual: "3,17%", destaque: true },
   { descricao: "Resultado não operacional", valor: 103_621.85, destaque: true },
   { descricao: "Receita de Alienação de Imobilizado", valor: 306_900, percentual: "7,42%", nivel: 1 },
   { descricao: "Custo na Baixa/Alienação de Imobilizado", valor: 203_278.15, percentual: "4,91%", nivel: 1 },
