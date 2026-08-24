@@ -24,12 +24,21 @@ const arred=(v:number)=>Math.round(v*100)/100;
 
 type LinhaBalancete=LinhaEstruturaBalancete&{saldoAnterior:number;debitos:number;creditos:number;movimento:number;saldoAtual:number;lancamentos:number;estabelecimento:EscopoContaNitaplast};
 const contasEstrutura=new Set(estruturaBalanceteNitaplast.map(x=>x.conta));
+function compararClassificacao(a:LinhaEstruturaBalancete,b:LinhaEstruturaBalancete){
+  const pa=a.classificacao.split(".").map(Number);const pb=b.classificacao.split(".").map(Number);
+  for(let i=0;i<Math.max(pa.length,pb.length);i++){
+    if(i>=pa.length)return -1;if(i>=pb.length)return 1;
+    if(pa[i]!==pb[i])return pa[i]-pb[i];
+  }
+  if(a.tipo!==b.tipo)return a.tipo==="S"?-1:1;
+  return Number(a.conta)-Number(b.conta);
+}
 const estruturaBalanceteCompleta: LinhaEstruturaBalancete[]=[
   ...estruturaBalanceteNitaplast,
   ...contasPosImplantacao
     .filter(([conta])=>!contasEstrutura.has(conta))
     .map(([conta,classificacao,descricao])=>({conta,tipo:"A" as const,classificacao,descricao,nivel:classificacao.split(".").length})),
-];
+].sort(compararClassificacao);
 function descendente(a:LinhaEstruturaBalancete,s:LinhaEstruturaBalancete){return a.classificacao===s.classificacao||a.classificacao.startsWith(`${s.classificacao}.`);}
 function combinarEscopos(escopos:Iterable<EscopoContaNitaplast>):EscopoContaNitaplast{
   let matriz=false;let filial=false;
