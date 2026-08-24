@@ -70,12 +70,6 @@ const linhasApresentacao: LinhaApresentacao[] = [
   { descricao: "Resultado não operacional", valor: 103_621.85, destaque: true },
   { descricao: "Receita de Alienação de Imobilizado", valor: 306_900, percentual: "7,42%", nivel: 1 },
   { descricao: "Custo na Baixa/Alienação de Imobilizado", valor: 203_278.15, percentual: "4,91%", nivel: 1 },
-  { descricao: "Provisão para Custos - meses anteriores", valor: 0, nivel: 1 },
-  { descricao: "Provisão para Custos - Abril/2026", valor: 0, nivel: 1 },
-  { descricao: "Recuperação de Despesas Vinter", valor: 0, nivel: 1 },
-  { descricao: "Ganhos ou Perdas com Sinistros de Bens", valor: 0, nivel: 1 },
-  { descricao: "Outras Receitas não Operacionais", valor: 0, nivel: 1 },
-  { descricao: "Resultado da Equivalência Patrimonial", valor: 0, nivel: 1 },
   { descricao: "(=) Lucro líquido", valor: resultadoApresentacao, percentual: "5,67%", destaque: true },
 ];
 
