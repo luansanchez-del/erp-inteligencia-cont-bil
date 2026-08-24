@@ -210,6 +210,18 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   const energiaCreditosMatriz=arred(energiaEletricaItens.reduce((s,x)=>s+x.creditos,0));
 
   const resultado=arred(receitaLiquida-custos-despesas+receitasFinanceiras+resultadoAlienacaoImobilizado);
+
+  // Ajuste de conciliação com a DRE apresentada pelo cliente (planilha 07/2026), NÃO lançado
+  // no Razão/Balancete. O CC 503 (Manutenção SP) é Filial e já compõe integralmente
+  // "Despesas Comerciais — Filial SP" (bate com o cliente). A planilha do cliente soma esse
+  // mesmo valor de novo em "Despesas de Produção"/"Despesas com Industrialização" (Matriz),
+  // então o total dele fica R$ 19.225,58 maior. Pendente de confirmação do cliente/Domínio
+  // sobre a origem dessa duplicidade; enquanto isso, expomos o ajuste separado do resultado
+  // contábil real para não distorcer o Balancete (que fecha em cima do Razão, sem este ajuste).
+  const ajusteConciliacaoClienteCC503Producao=18252.55;
+  const ajusteConciliacaoClienteCC503Industrializacao=973.03;
+  const ajusteConciliacaoClienteCC503=arred(ajusteConciliacaoClienteCC503Producao+ajusteConciliacaoClienteCC503Industrializacao);
+  const resultadoConciliadoClienteJulho=arred(resultado-ajusteConciliacaoClienteCC503);
   const despesasCriterioAnterior=arred(despesasOperacionaisCriterioAnterior+despesasFinanceiras);
   const resultadoCriterioAnterior=arred(receitaLiquida-custosCriterioAnterior-despesasCriterioAnterior+receitasFinanceiras+resultadoAlienacaoImobilizado);
   const impactoResultadoReclassificacao=arred(resultado-resultadoCriterioAnterior);
@@ -258,6 +270,13 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
     },
     conferenciaBalancete:balancete.conferencia,
     resultado,
+    ajusteConciliacaoClienteCC503:{
+      producao:ajusteConciliacaoClienteCC503Producao,
+      industrializacao:ajusteConciliacaoClienteCC503Industrializacao,
+      total:ajusteConciliacaoClienteCC503,
+      criterio:"CC 503 (Manutenção SP) é Filial e já compõe integralmente Despesas Comerciais — Filial SP. A DRE do cliente soma o mesmo valor novamente em Despesas de Produção/Industrialização da Matriz. Não lançado no Razão; pendente de confirmação do cliente/Domínio.",
+    },
+    resultadoConciliadoClienteJulho,
     status:"fechado_com_pendencias" as const,fechadoEm:"18/08/2026",
     possuiPendenciaBloqueante:false as const,
     pendenciasBloqueantes,
