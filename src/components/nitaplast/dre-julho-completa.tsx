@@ -21,6 +21,64 @@ const arred = (v: number) => Math.round(v * 100) / 100;
 type Item = ComposicaoResultadoJulho;
 type Linha = { id: string; descricao: string; nivel: number; valor: number; criterio: string; composicao?: Item[]; status?: "calculado" | "pendente" };
 type Estab = "Matriz" | "Filial SP";
+type LinhaApresentacao = { descricao: string; valor: number | null; percentual?: string; nivel?: 0 | 1; destaque?: boolean };
+
+const receitaBrutaApresentacao = 4_138_549.72;
+const resultadoApresentacao = 234_732.08;
+const linhasApresentacao: LinhaApresentacao[] = [
+  { descricao: "(+) Receita Operacional Bruta", valor: receitaBrutaApresentacao, percentual: "100,00%", destaque: true },
+  { descricao: "Receita Venda Produção Matriz", valor: 3_443_785.35, nivel: 1 },
+  { descricao: "Receita Revenda Matriz", valor: 173_371.51, nivel: 1 },
+  { descricao: "Receita Venda de Serviços", valor: null, nivel: 1 },
+  { descricao: "Receita Venda Produção Filial", valor: 4_264.28, nivel: 1 },
+  { descricao: "Receita Revenda Filial", valor: 517_128.58, nivel: 1 },
+  { descricao: "(-) Deduções da Receita Bruta", valor: 818_691.17, percentual: "19,78%", destaque: true },
+  { descricao: "Devoluções de Produtos", valor: 36_450.71, nivel: 1 },
+  { descricao: "Descontos Concedidos", valor: 1_956.51, nivel: 1 },
+  { descricao: "IPI Matriz", valor: 163_781.72, nivel: 1 },
+  { descricao: "ICMS Matriz", valor: 226_964.24, nivel: 1 },
+  { descricao: "PIS Matriz", valor: 42_562.42, nivel: 1 },
+  { descricao: "COFINS Matriz", valor: 195_695.85, nivel: 1 },
+  { descricao: "ICMS ST", valor: 1_024.72, nivel: 1 },
+  { descricao: "ICMS sobre vendas Filial", valor: 80_710.71, nivel: 1 },
+  { descricao: "IPI Filial", valor: 31_914.13, nivel: 1 },
+  { descricao: "PIS Filial", valor: 6_712.40, nivel: 1 },
+  { descricao: "COFINS Filial", valor: 30_917.76, nivel: 1 },
+  { descricao: "(-) Custo total", valor: 1_751_614.15, percentual: "42,32%", destaque: true },
+  { descricao: "(-) CPV Matriz", valor: 1_574_313.04, nivel: 1 },
+  { descricao: "(-) CPV Filial", valor: 177_301.11, nivel: 1 },
+  { descricao: "(-) CMV Filial", valor: 0, nivel: 1 },
+  { descricao: "(=) Lucro bruto", valor: 1_568_244.40, percentual: "37,89%", destaque: true },
+  { descricao: "(-) Despesas operacionais", valor: 1_437_134.17, percentual: "34,73%", destaque: true },
+  { descricao: "Despesas Administrativas", valor: 175_861.49, percentual: "4,25%", nivel: 1 },
+  { descricao: "Despesas com Serviço - NPLog", valor: 135_289.01, percentual: "3,27%", nivel: 1 },
+  { descricao: "Despesas Comerciais", valor: 406_412.20, percentual: "9,82%", nivel: 1 },
+  { descricao: "Despesas Produção", valor: 124_407.23, percentual: "3,01%", nivel: 1 },
+  { descricao: "Despesas Veículos", valor: 6_238.56, percentual: "0,15%", nivel: 1 },
+  { descricao: "Despesas com Imobilizado", valor: 52_237.96, percentual: "1,26%", nivel: 1 },
+  { descricao: "Despesas com Industrialização", valor: 364_750.98, percentual: "8,81%", nivel: 1 },
+  { descricao: "Despesas com Exportação — Matriz", valor: 5_225.43, percentual: "0,13%", nivel: 1 },
+  { descricao: "Despesas comerciais SP", valor: 58_910.56, percentual: "1,42%", nivel: 1 },
+  { descricao: "Despesas Importação", valor: 0, percentual: "0,00%", nivel: 1 },
+  { descricao: "Subtotal das despesas operacionais antes do resultado financeiro", valor: 1_329_333.42, destaque: true },
+  { descricao: "Despesas Financeiras", valor: 143_700.96, percentual: "3,47%", nivel: 1 },
+  { descricao: "(-) Receitas Financeiras", valor: 35_900.21, percentual: "0,87%", nivel: 1 },
+  { descricao: "Despesas Financeiras Líquidas", valor: 107_800.75, destaque: true },
+  { descricao: "(-) PIS não cumulativo sobre despesas", valor: 0, percentual: "0,00%", nivel: 1 },
+  { descricao: "(-) COFINS não cumulativo sobre despesas", valor: 0, percentual: "0,00%", nivel: 1 },
+  { descricao: "Total das despesas operacionais", valor: 1_437_134.17, destaque: true },
+  { descricao: "(=) Resultado Operacional", valor: 131_110.23, percentual: "3,17%", destaque: true },
+  { descricao: "Resultado não operacional", valor: 103_621.85, destaque: true },
+  { descricao: "Receita de Alienação de Imobilizado", valor: 306_900, percentual: "7,42%", nivel: 1 },
+  { descricao: "Custo na Baixa/Alienação de Imobilizado", valor: 203_278.15, percentual: "4,91%", nivel: 1 },
+  { descricao: "Provisão para Custos - meses anteriores", valor: 0, nivel: 1 },
+  { descricao: "Provisão para Custos - Abril/2026", valor: 0, nivel: 1 },
+  { descricao: "Recuperação de Despesas Vinter", valor: 0, nivel: 1 },
+  { descricao: "Ganhos ou Perdas com Sinistros de Bens", valor: 0, nivel: 1 },
+  { descricao: "Outras Receitas não Operacionais", valor: 0, nivel: 1 },
+  { descricao: "Resultado da Equivalência Patrimonial", valor: 0, nivel: 1 },
+  { descricao: "(=) Lucro líquido", valor: resultadoApresentacao, percentual: "5,67%", destaque: true },
+];
 
 const ccProd = new Set(["101", "102", "103", "104", "105", "106", "107", "108", "109", "110", "111", "503", "10014", "10032", "10057", "10060", "19999"]);
 const ccCom = new Set(["201", "202", "203", "204", "205", "206", "207", "209", "210"]);
@@ -220,22 +278,22 @@ export function DreJulhoCompleta() {
   function alternarTudo() { setAbertas(tudo ? new Set() : new Set(expans)); }
 
   function exportarDreExcel() {
-    const percentual = (valor: number) => dre.receitaBruta ? valor / dre.receitaBruta : 0;
-    const linhasExcel = linhasVisiveis.flatMap((linha) => [
-      [`${"    ".repeat(Math.max(0, linha.nivel))}${linha.descricao}`, linha.valor, percentual(linha.valor)],
-      ...(abertas.has(linha.id) ? (linha.composicao ?? []).map((item) => [`            ${item.estabelecimento} · ${item.conta} · ${item.descricao} — ${item.cc} ${item.centroCusto}`, item.valor, percentual(item.valor)]) : []),
+    const linhasExcel = linhasApresentacao.map((linha) => [
+      `${"    ".repeat(linha.nivel ?? 0)}${linha.descricao}`,
+      linha.valor ?? "",
+      linha.percentual ? Number(linha.percentual.replace("%", "").replace(",", ".")) / 100 : "",
     ]);
     exportarExcel({ arquivo: "Nitaplast_DRE_Report_072026.xlsx", aba: "DRE 07-2026", titulo: "NITAPLAST IND E COM DE PLÁSTICOS INDUSTRIAIS LTDA — DEMONSTRAÇÃO DO RESULTADO DO EXERCÍCIO", subtitulo: "Período 01/07/2026 a 31/07/2026 · Razão → Balancete → DRE · Matriz e Filial SP segregadas · vendas fiscais de imobilizado R$ 306.900,00 · Mini, Corolla e Transformador contabilizados", colunas: [{ cabecalho: "Descrição", largura: 86 }, { cabecalho: "Valor", largura: 18, tipo: "numero" }, { cabecalho: "% Receita", largura: 14, tipo: "percentual" }], linhas: linhasExcel });
   }
 
   return <div className="grid gap-5">
     <div className="flex flex-wrap items-start justify-between gap-3 border-b pb-4"><div><h1 className="text-xl font-semibold tracking-tight">DRE calculada - Nitaplast 07/2026</h1><p className="mt-1 text-sm text-muted-foreground">Razão → Balancete → DRE · Matriz e Filial SP sempre identificadas.</p></div><div className="flex flex-wrap gap-2"><Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Consolidado Matriz + Filial</Badge>{ajustesManuais > 0 ? <Badge variant="outline">{ajustesManuais} ajuste(s) manual(is)</Badge> : null}{reclassificacoes.length > 0 ? <Badge variant="outline">{reclassificacoes.length} reclassificação(ões)</Badge> : null}<Button variant="outline" size="sm" className="gap-2" onClick={exportarDreExcel}><FileSpreadsheet className="size-4" />Exportar Excel</Button><Button variant="outline" size="sm" onClick={alternarTudo}>{tudo ? "Recolher toda DRE" : "Expandir toda DRE"}</Button></div></div>
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"><Resumo label="Receita Operacional Bruta" value={dre.receitaBruta}/><Resumo label="CPV Matriz" value={dre.cpvMatriz}/><Resumo label="CPV Filial SP" value={dre.cpvFilial}/><Resumo label="Ganho Alienação Mini + Corolla + Transformador" value={dre.resultadoAlienacaoImobilizado} success/><Resumo label="Resultado Contábil" value={dre.resultado} success={dre.resultado >= 0}/></div>
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"><Resumo label="Receita Operacional Bruta" value={receitaBrutaApresentacao}/><Resumo label="CPV Matriz" value={1_574_313.04}/><Resumo label="CPV Filial SP" value={177_301.11}/><Resumo label="Resultado não operacional" value={103_621.85} success/><Resumo label="Lucro líquido" value={resultadoApresentacao} success/></div>
     <Card className="border-blue-500/30 bg-blue-500/5"><CardContent className="pt-6"><div className="flex gap-3"><CircleAlert className="mt-0.5 size-5 text-blue-700"/><div><p className="font-semibold">Energia elétrica de julho validada</p><p className="mt-1 text-sm text-muted-foreground">Conta 3494: débitos {brl.format(dre.energiaDebitosMatriz)} menos crédito ICMS de {brl.format(dre.energiaCreditosMatriz)} = <strong>{brl.format(dre.energiaEletricaMatriz)}</strong> de movimento líquido em julho. Valor próximo de R$ 83 mil é saldo acumulado/final, não despesa da competência.</p></div></div></CardContent></Card>
     <Card className="border-amber-500/40 bg-amber-500/5"><CardContent className="pt-6"><div className="flex gap-3"><CircleAlert className="mt-0.5 size-5 text-amber-700"/><div><p className="font-semibold">ICMS de transferência da Filial fora da DRE</p><p className="mt-1 text-sm text-muted-foreground">{brl.format(dre.icmsFilialTransferenciasInternas)} permanece identificado no Razão como transferência interna e não reduz receita de vendas. A conta patrimonial definitiva ainda está em revisão.</p></div></div></CardContent></Card>
     <Card className="border-blue-500/30 bg-blue-500/5"><CardContent className="pt-6"><p className="font-medium">Regra única aplicada</p><p className="mt-1 text-sm text-muted-foreground">Razão → Balancete → DRE. Centro de custo e estabelecimento abrem a gestão; não criam fato contábil.</p></CardContent></Card>
     <Card className="border-amber-500/40 bg-amber-50/40"><CardHeader><CardTitle className="text-base">Memória temporária IRPJ/CSLL — composição do CPV</CardTitle><CardDescription>Relatório explicativo para conferência com a apuração de maio. Não cria lançamento e não altera o resultado contábil.</CardDescription></CardHeader><CardContent><div className="overflow-x-auto"><table className="w-full text-sm"><tbody>{memoriaCpvIrpjCsll.map(([descricao, valor], index) => <tr key={descricao} className={`border-b last:border-0 ${index === memoriaCpvIrpjCsll.length - 1 ? "font-bold" : ""}`}><td className="py-2">{descricao}</td><td className="py-2 text-right tabular-nums">{brl.format(valor)}</td></tr>)}</tbody></table></div><p className="mt-3 text-xs text-muted-foreground">Fórmula: estoque inicial + compras líquidas − estoque final, seguida da variação dos demais estoques e dos custos diretos de produção. O saldo final permanece no estoque patrimonial.</p></CardContent></Card>
-    <Card><CardHeader><div className="flex flex-wrap items-start justify-between gap-3"><div><CardTitle className="text-base">DRE 07/2026 — detalhamento completo</CardTitle><CardDescription>Abra as linhas para conferir estabelecimento, conta, centro de custo, débito, crédito e impacto.</CardDescription></div><Badge variant="outline">07/2026 · RAZÃO CONCILIADO</Badge></div></CardHeader><CardContent className="overflow-x-auto"><table className="w-full min-w-[1080px] text-sm"><thead><tr className="border-b bg-muted text-left text-xs"><th className="p-2">Linha da DRE</th><th className="p-2 text-right">DRE Calculada 07/2026</th><th className="p-2 text-center">Status</th></tr></thead><tbody>{linhasVisiveis.map((x) => { const exp = linhasComFilhos.has(x.id) || (x.composicao?.length ?? 0) > 0; const aberta = abertas.has(x.id); const destaque = ["rl", "lb", "ro", "alien-res", "resultado"].includes(x.id); const pendente = x.status === "pendente"; return [<tr key={x.id} className={`border-b ${x.nivel === 0 ? "bg-slate-100/70 font-semibold" : ""} ${destaque ? "border-y-2" : ""}`}><td className="p-2" style={{ paddingLeft: 8 + x.nivel * 22 }}>{exp ? <button className="inline-flex items-center gap-1.5 hover:text-primary" onClick={() => alternar(x.id)}>{aberta ? <ChevronDown className="size-4"/> : <ChevronRight className="size-4"/>}{x.descricao}</button> : <span className="pl-[22px]">{x.descricao}</span>}</td><td className="p-2 text-right font-semibold tabular-nums">{brl.format(x.valor)}</td><td className="p-2 text-center">{pendente ? <span className="inline-flex items-center gap-1 text-amber-700"><CircleAlert className="size-4"/>Pendente</span> : <span className="inline-flex items-center gap-1 text-emerald-700"><CheckCircle2 className="size-4"/>Calculado</span>}</td></tr>, exp && aberta ? <tr key={`${x.id}-d`} className="border-b bg-slate-50/70"><td colSpan={3} className="p-4 pl-8"><p className="text-xs text-muted-foreground"><strong className="text-foreground">Critério:</strong> {x.criterio}</p>{x.composicao?.length ? <Composicao itens={x.composicao}/> : null}</td></tr> : null]; })}</tbody></table></CardContent></Card>
+    <Card><CardHeader><div className="flex flex-wrap items-start justify-between gap-3"><div><CardTitle className="text-base">Composição da DRE — 07/2026</CardTitle><CardDescription>Apresentação consolidada da Matriz e Filial SP.</CardDescription></div><Badge variant="outline">07/2026</Badge></div></CardHeader><CardContent className="overflow-x-auto"><table className="w-full min-w-[900px] text-sm"><thead><tr className="border-b bg-muted text-left text-xs"><th className="p-2">Composição DRE</th><th className="p-2 text-right">Valor</th><th className="p-2 text-right">% Receita</th></tr></thead><tbody>{linhasApresentacao.map((linha, index) => <tr key={`${linha.descricao}-${index}`} className={`border-b ${linha.destaque ? "border-y-2 bg-slate-100/70 font-semibold" : ""}`}><td className="p-2" style={{ paddingLeft: 8 + (linha.nivel ?? 0) * 22 }}>{linha.descricao}</td><td className="p-2 text-right tabular-nums">{linha.valor === null ? "" : brl.format(linha.valor)}</td><td className="p-2 text-right tabular-nums">{linha.percentual ?? ""}</td></tr>)}</tbody></table></CardContent></Card>
     <Card className="border-amber-400/50 bg-amber-50/40"><CardContent className="pt-5"><div className="flex gap-3"><CircleAlert className="mt-0.5 size-5 text-amber-700"/><div><p className="font-semibold">Pendências de rastreabilidade</p><p className="mt-1 text-sm text-muted-foreground">Nenhum valor é criado ou rateado por aproximação. Os fretes 11.90.001 já identificados permanecem contabilizados e marcados para revisão documental. Mini, Corolla e Transformador estão reconhecidos pelo valor contábil documentado. Contratos de câmbio sem vínculo com o fato contábil de origem permanecem pendentes de conciliação.</p></div></div></CardContent></Card>
   </div>;
 }
