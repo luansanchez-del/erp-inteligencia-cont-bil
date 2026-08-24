@@ -157,13 +157,19 @@ export function PageShell({ children }: { children: ReactNode }) {
             .erp-report-page[data-report-kind="Balancete"] .erp-route-content th:nth-child(1),
             .erp-report-page[data-report-kind="Balancete"] .erp-route-content td:nth-child(1) { width: 7% !important; }
             .erp-report-page[data-report-kind="Balancete"] .erp-route-content th:nth-child(2),
-            .erp-report-page[data-report-kind="Balancete"] .erp-route-content td:nth-child(2) { width: 4% !important; }
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content td:nth-child(2) { display: none !important; }
             .erp-report-page[data-report-kind="Balancete"] .erp-route-content th:nth-child(3),
             .erp-report-page[data-report-kind="Balancete"] .erp-route-content td:nth-child(3) { width: 15% !important; }
             .erp-report-page[data-report-kind="Balancete"] .erp-route-content th:nth-child(4),
             .erp-report-page[data-report-kind="Balancete"] .erp-route-content td:nth-child(4) { width: 30% !important; overflow-wrap: anywhere !important; }
             .erp-report-page[data-report-kind="Balancete"] .erp-route-content th:nth-child(n+5),
             .erp-report-page[data-report-kind="Balancete"] .erp-route-content td:nth-child(n+5) { white-space: nowrap !important; }
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content thead th:nth-child(1),
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content thead th:nth-child(3),
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content thead th:nth-child(4) { font-size: 0 !important; }
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content thead th:nth-child(1)::after { content: "Código"; font-size: 5.5pt; }
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content thead th:nth-child(3)::after { content: "Classificação"; font-size: 5.5pt; }
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content thead th:nth-child(4)::after { content: "Descrição da conta"; font-size: 5.5pt; }
             .erp-report-page[data-report-period="2026-06"][data-report-kind="Balancete"] .erp-route-content th:nth-child(8),
             .erp-report-page[data-report-period="2026-06"][data-report-kind="Balancete"] .erp-route-content td:nth-child(8) { display: none !important; }
             .erp-report-page[data-report-period="2026-07"][data-report-kind="Balancete"] .erp-route-content th:nth-child(5),
@@ -180,6 +186,15 @@ export function PageShell({ children }: { children: ReactNode }) {
             .erp-report-page[data-report-period="2026-07"][data-report-kind="Balancete"] .erp-route-content > div > :last-child > div:first-child { display: none !important; }
             .erp-report-page[data-report-kind="Balancete"] .erp-route-content [class*="shadow"] { box-shadow: none !important; }
             .erp-report-page[data-report-kind="Balancete"] .erp-route-content .overflow-x-auto { overflow: visible !important; }
+            .erp-report-page[data-report-kind="Balancete"] .erp-print-document-header {
+              margin-bottom: 1.5mm !important; padding-bottom: 1mm !important; border-bottom: 0 !important;
+            }
+            .erp-report-page[data-report-kind="Balancete"] .erp-print-balancete-header { font-size: 6.5pt !important; line-height: 1.15 !important; }
+            .erp-report-page[data-report-kind="Balancete"] .erp-print-balancete-header strong { display: inline-block; min-width: 15mm; }
+            .erp-report-page[data-report-kind="Balancete"] .erp-print-balancete-title {
+              margin-top: 2mm !important; border-bottom: 0.6px solid #000 !important; padding-bottom: 1mm !important;
+              text-align: center !important; font-size: 8pt !important; font-weight: 700 !important;
+            }
           }
         `}</style>
       ) : null}
@@ -269,6 +284,14 @@ function PrintDocumentHeader({
   competenciaId: string;
   competenciaLabel: string;
 }) {
+  if (titulo === "Balancete") {
+    return (
+      <header className="erp-print-document-header" aria-hidden="true">
+        <div className="erp-print-balancete-header"><div><strong>Empresa:</strong> {empresa}</div><div><strong>C.N.P.J.:</strong> {cnpj}</div><div><strong>Período:</strong> {periodoCompetencia(competenciaId, competenciaLabel)}</div><div>CONSOLIDADO</div></div>
+        <div className="erp-print-balancete-title">BALANCETE</div>
+      </header>
+    );
+  }
   return (
     <header className="erp-print-document-header" aria-hidden="true">
       <div className="erp-print-company">{empresa}</div>
