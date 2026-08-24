@@ -1,4 +1,5 @@
 import { estruturaBalanceteNitaplast } from "./nitaplast-balancete-estrutura";
+import { centroCustoFilialNitaplast } from "./nitaplast-estabelecimento";
 import type { LancamentoIntegrado } from "./nitaplast-razao-base";
 
 const arred = (valor: number) => Math.round(valor * 100) / 100;
@@ -70,12 +71,14 @@ function resolverCategoria(codigo: string, lancamento: LancamentoIntegrado): Cat
   if (classificacao.startsWith("5.7.12") || classificacao.startsWith("5.8")) return null;
   if (!(classificacao.startsWith("5.3") || classificacao.startsWith("5.7"))) return null;
 
+  // Todo gasto nos CC 501 a 505 pertence ao agrupamento Comercial SP.
+  if (centroCustoFilialNitaplast(cc)) return "comercial-sp";
+
   // Exceções documentais já validadas no fechamento.
   if (codigo === "4213" && cc === "204") return "comerciais";
   if (codigo === "25077" && cc === "106") return "producao";
   if (cc === "10061" && ["25938", "3244"].includes(codigo)) return "imobilizado";
 
-  if (cc === "502") return "comercial-sp";
   if (lancamento.documento.startsWith("11.02.003") || t.includes("NPLOG")) return "nplog";
   if (classificacao.startsWith("5.7.05") || classificacao.startsWith("5.7.01.015")) return "veiculos";
   if (classificacao.startsWith("5.7.01.009") || classificacao.startsWith("5.7.03.007")) return "barracao";
