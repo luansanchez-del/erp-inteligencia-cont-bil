@@ -220,14 +220,14 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   //    R$ 19.225,58 maior que a nossa, então o resultado comparável precisa ser R$ 19.225,58
   //    menor. Pendente de confirmação do cliente/Domínio sobre a origem da duplicidade.
   //
-  // 2) ICMS/COFINS Matriz: nossa apuração de ICMS "saídas externas" (R$ 230.381,99) não
-  //    segrega as 3 notas de venda do imobilizado (Mini Cooper + Corolla + Transformador,
-  //    R$ 306.900,00, fora da Receita Operacional Bruta) do restante das saídas — o ICMS
-  //    específico dessas notas nunca foi documentado (planilha Composicao_ICMS_Imobilizado
-  //    ainda está "a preencher"). Os créditos de COFINS por CFOP (1201/1202/2201/2911,
-  //    R$ 2.512,44) também não têm segregação Matriz/Filial na fonte (EFD bloco D). Nossa
-  //    dedução de ICMS+COFINS Matriz fica R$ 3.768,38 maior que a do cliente, então o
-  //    resultado comparável precisa ser R$ 3.768,38 maior. Pendente do detalhamento fiscal.
+  // 2) ICMS/COFINS Matriz: CONFIRMADO contra o Balancete oficial do Domínio (competência
+  //    07/2026) que R$ 230.381,99 de débito de ICMS (conta 2827) e R$ 229.476,68 de débito
+  //    de COFINS (conta 2830, R$ 2.512,44 de crédito, líquido R$ 226.964,24 total Matriz+
+  //    Filial) são os valores corretos do Razão — batem com o Domínio até o centavo, assim
+  //    como Ativo, Passivo, PL, Receitas e Custos e Despesas do Balancete inteiro. A planilha
+  //    do cliente está R$ 3.768,38 abaixo do Domínio oficial nessas duas contas; não é uma
+  //    pendência de documentação nossa. Mantemos o ajuste aqui só para reproduzir o número
+  //    que o cliente enviou, não porque o Razão esteja incompleto.
   const ajusteConciliacaoClienteCC503Producao=-18252.55;
   const ajusteConciliacaoClienteCC503Industrializacao=-973.03;
   const ajusteConciliacaoClienteCC503=arred(ajusteConciliacaoClienteCC503Producao+ajusteConciliacaoClienteCC503Industrializacao);
@@ -291,7 +291,7 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
       },
       icmsCofinsMatriz:{
         total:ajusteConciliacaoClienteIcmsCofinsMatriz,
-        criterio:"ICMS das 3 notas de venda do imobilizado (fora da Receita Operacional Bruta) não está segregado da apuração de saídas externas, e os créditos de COFINS por CFOP não têm segregação Matriz/Filial na fonte. Não lançado no Razão; pendente do detalhamento fiscal (ICMS por NF do imobilizado e EFD bloco D por estabelecimento).",
+        criterio:"Conferido contra o Balancete oficial do Domínio 07/2026: ICMS conta 2827 débito R$ 230.381,99 e COFINS conta 2830 débito R$ 229.476,68/crédito R$ 2.512,44 batem exatamente com o Razão. A planilha do cliente está R$ 3.768,38 abaixo do Domínio nessas duas contas — não é pendência de documentação nossa, é o número do cliente que diverge da própria contabilidade dele. Não lançado no Razão.",
       },
       total:ajusteConciliacaoClienteTotal,
     },
