@@ -211,23 +211,24 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
 
   const resultado=arred(receitaLiquida-custos-despesas+receitasFinanceiras+resultadoAlienacaoImobilizado);
 
-  // Ajustes de conciliação com a DRE apresentada pelo cliente (planilha 07/2026). NENHUM dos
-  // dois é lançado no Razão/Balancete — o Balancete continua fechando só com o Razão real.
+  // Lançamento de versão de julho/2026 — decisão do contador em 24/08/2026: o fechamento
+  // oficial de julho é R$ 234.732,08 (igual à DRE enviada ao cliente). O Razão de julho NÃO é
+  // reaberto; a diferença para o resultado bruto do Razão (R$ 250.189,28) é absorvida por
+  // lançamento de versão em agosto/2026. Os dois componentes abaixo documentam essa diferença
+  // e não são lançados no Razão/Balancete de julho — o Balancete continua fechando com o
+  // Razão real, sem estes ajustes.
   //
   // 1) CC 503 (Manutenção SP) é Filial e já compõe integralmente "Despesas Comerciais —
   //    Filial SP" (bate com o cliente). A planilha do cliente soma esse mesmo valor de novo em
   //    "Despesas de Produção"/"Despesas com Industrialização" (Matriz): despesa do cliente
-  //    R$ 19.225,58 maior que a nossa, então o resultado comparável precisa ser R$ 19.225,58
-  //    menor. Pendente de confirmação do cliente/Domínio sobre a origem da duplicidade.
+  //    R$ 19.225,58 maior que a nossa.
   //
   // 2) ICMS/COFINS Matriz: CONFIRMADO contra o Balancete oficial do Domínio (competência
   //    07/2026) que R$ 230.381,99 de débito de ICMS (conta 2827) e R$ 229.476,68 de débito
   //    de COFINS (conta 2830, R$ 2.512,44 de crédito, líquido R$ 226.964,24 total Matriz+
   //    Filial) são os valores corretos do Razão — batem com o Domínio até o centavo, assim
   //    como Ativo, Passivo, PL, Receitas e Custos e Despesas do Balancete inteiro. A planilha
-  //    do cliente está R$ 3.768,38 abaixo do Domínio oficial nessas duas contas; não é uma
-  //    pendência de documentação nossa. Mantemos o ajuste aqui só para reproduzir o número
-  //    que o cliente enviou, não porque o Razão esteja incompleto.
+  //    do cliente está R$ 3.768,38 abaixo do Domínio oficial nessas duas contas.
   const ajusteConciliacaoClienteCC503Producao=-18252.55;
   const ajusteConciliacaoClienteCC503Industrializacao=-973.03;
   const ajusteConciliacaoClienteCC503=arred(ajusteConciliacaoClienteCC503Producao+ajusteConciliacaoClienteCC503Industrializacao);
