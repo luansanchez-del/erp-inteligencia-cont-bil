@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { estruturaBalanceteNitaplast, type LinhaEstruturaBalancete } from "@/data/nitaplast-balancete-estrutura";
-import { calcularBalanceteJulho } from "@/data/nitaplast-balancete-julho-engine";
+import { calcularBalanceteJulho, contasPosImplantacao } from "@/data/nitaplast-balancete-julho-engine";
 import { saldoAberturaJulhoPorConta } from "@/data/nitaplast-saldos-julho";
 import { lancamentosIntegradosJulhoFinal } from "@/data/nitaplast-razao-julho-final-v2";
 import type { LancamentoIntegrado } from "@/data/nitaplast-razao-base";
@@ -22,6 +22,13 @@ const brl=new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
 const arred=(v:number)=>Math.round(v*100)/100;
 
 type LinhaBalancete=LinhaEstruturaBalancete&{saldoAnterior:number;debitos:number;creditos:number;movimento:number;saldoAtual:number;lancamentos:number;estabelecimento:EscopoContaNitaplast};
+const contasEstrutura=new Set(estruturaBalanceteNitaplast.map(x=>x.conta));
+const estruturaBalanceteCompleta: LinhaEstruturaBalancete[]=[
+  ...estruturaBalanceteNitaplast,
+  ...contasPosImplantacao
+    .filter(([conta])=>!contasEstrutura.has(conta))
+    .map(([conta,classificacao,descricao])=>({conta,tipo:"A" as const,classificacao,descricao,nivel:classificacao.split(".").length})),
+];
 function descendente(a:LinhaEstruturaBalancete,s:LinhaEstruturaBalancete){return a.classificacao===s.classificacao||a.classificacao.startsWith(`${s.classificacao}.`);}
 function combinarEscopos(escopos:Iterable<EscopoContaNitaplast>):EscopoContaNitaplast{
   let matriz=false;let filial=false;
@@ -39,14 +46,14 @@ function calcularBalancete(base:LancamentoIntegrado[]):LinhaBalancete[]{
     const d=mov.get(x.debitoCodigo)??{debitos:0,creditos:0,lancamentos:0};d.debitos+=x.valor;d.lancamentos++;mov.set(x.debitoCodigo,d);addEst(x.debitoCodigo,e);
     const c=mov.get(x.creditoCodigo)??{debitos:0,creditos:0,lancamentos:0};c.creditos+=x.valor;c.lancamentos++;mov.set(x.creditoCodigo,c);addEst(x.creditoCodigo,e);
   }
-  const analiticas=estruturaBalanceteNitaplast.filter(x=>x.tipo==="A");
+  const analiticas=estruturaBalanceteCompleta.filter(x=>x.tipo==="A");
   const vals=new Map<string,{saldoAnterior:number;debitos:number;creditos:number;movimento:number;saldoAtual:number;lancamentos:number;estabelecimento:EscopoContaNitaplast}>();
   for(const x of analiticas){
     const m=mov.get(x.conta)??{debitos:0,creditos:0,lancamentos:0};const sa=saldoAberturaJulhoPorConta.get(x.conta)??0;const liq=arred(m.debitos-m.creditos);
     const estabelecimento=escopoContaBalanceteNitaplast(x.conta,x.descricao,estabs.get(x.conta)??[]);
     vals.set(x.conta,{saldoAnterior:sa,debitos:arred(m.debitos),creditos:arred(m.creditos),movimento:liq,saldoAtual:arred(sa+liq),lancamentos:m.lancamentos,estabelecimento});
   }
-  return estruturaBalanceteNitaplast.map(x=>{
+  return estruturaBalanceteCompleta.map(x=>{
     if(x.tipo==="A")return {...x,...(vals.get(x.conta)??{saldoAnterior:0,debitos:0,creditos:0,movimento:0,saldoAtual:0,lancamentos:0,estabelecimento:escopoContaBalanceteNitaplast(x.conta,x.descricao,[])})};
     const t={saldoAnterior:0,debitos:0,creditos:0,movimento:0,saldoAtual:0,lancamentos:0};const escopos:EscopoContaNitaplast[]=[];
     for(const a of analiticas){if(!descendente(a,x))continue;const v=vals.get(a.conta);if(!v)continue;t.saldoAnterior+=v.saldoAnterior;t.debitos+=v.debitos;t.creditos+=v.creditos;t.movimento+=v.movimento;t.saldoAtual+=v.saldoAtual;t.lancamentos+=v.lancamentos;escopos.push(v.estabelecimento);}
