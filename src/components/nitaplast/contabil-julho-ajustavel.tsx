@@ -90,7 +90,15 @@ export function BalanceteJulhoAjustavel(){
   const revisao=razao.filter(x=>x.status==="revisar").length;
   const conferencia=motor.conferencia;
   const fechado=Math.abs(conferencia.diferencaDebitosCreditos)<0.01&&Math.abs(conferencia.somaMovimentosAnaliticos)<0.01&&Math.abs(conferencia.somaSaldoAtualAnalitico)<0.01&&conferencia.contasRazaoSemEstrutura.length===0;
-  const csv=()=>exportar("Balancete_Nitaplast_07-2026.csv",[["Conta","S/A","Classificação","Descrição","Estabelecimento","Saldo anterior","Débito","Crédito","Movimento","Saldo atual","Incluir na soma"],...linhas.map(x=>[x.conta,x.tipo,x.classificacao,x.descricao,x.estabelecimento,x.saldoAnterior,x.debitos,x.creditos,x.movimento,x.saldoAtual,x.tipo==="A"?"SIM":"NÃO"])]);
+  const csv=()=>{
+    const analiticas=linhas.filter(x=>x.tipo==="A");
+    const total=(campo:"debitos"|"creditos"|"saldoAtual")=>arred(analiticas.reduce((s,x)=>s+x[campo],0));
+    exportar("Balancete_Nitaplast_07-2026.csv",[
+      ["Conta","S/A","Classificação","Descrição","Estabelecimento","Saldo anterior","Débito","Crédito","Movimento","Saldo atual","Incluir na soma","Débito conferência","Crédito conferência","Saldo conferência"],
+      ...linhas.map(x=>[x.conta,x.tipo,x.classificacao,x.descricao,x.estabelecimento,x.saldoAnterior,x.debitos,x.creditos,x.movimento,x.saldoAtual,x.tipo==="A"?"SIM":"NÃO",x.tipo==="A"?x.debitos:"",x.tipo==="A"?x.creditos:"",x.tipo==="A"?x.saldoAtual:""]),
+      ["","","","TOTAL DAS CONTAS ANALÍTICAS","","","","","","","",total("debitos"),total("creditos"),total("saldoAtual")],
+    ]);
+  };
   return <div className="grid gap-5">
     <Header titulo="Balancete consolidado - Nitaplast" descricao="Razão → Balancete → DRE. A DRE de 07/2026 lê o movimento mensal deste Balancete." acoes={<><Button variant="outline" size="sm" onClick={csv}><Download className="mr-2 size-4"/>Exportar CSV</Button><Button variant="outline" size="sm" onClick={()=>window.print()}><Printer className="mr-2 size-4"/>Imprimir / PDF</Button></>}/>
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6"><Metric label="Partidas do Razão" value={razao.length} money={false}/><Metric label="Débitos 07" value={conferencia.totalDebitos}/><Metric label="Créditos 07" value={conferencia.totalCreditos}/><Metric label="Diferença contábil" value={conferencia.diferencaDebitosCreditos}/><Metric label="Em revisão" value={revisao} money={false}/><Metric label="Reclassificações" value={reclassificacoes.length} money={false}/></div>
