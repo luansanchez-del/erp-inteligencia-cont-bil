@@ -11,7 +11,9 @@ type LinhaResumoBalancete = {
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const arred = (valor: number) => Math.round(valor * 100) / 100;
 
-export function BalancetePrintSummary({ linhas }: { linhas: LinhaResumoBalancete[] }) {
+type ResultadoResumo = { saldoAnterior: number; movimentoMes: number };
+
+export function BalancetePrintSummary({ linhas, resultadoContabil }: { linhas: LinhaResumoBalancete[]; resultadoContabil?: ResultadoResumo }) {
   const analiticas = linhas.filter((linha) => linha.tipo === "A");
   const contasResultado = analiticas.filter((linha) => /^(4|5)(\.|$)/.test(linha.classificacao));
   const total = (campo: "saldoAnterior" | "debitos" | "creditos" | "saldoAtual") => arred(analiticas.reduce((soma, linha) => soma + linha[campo], 0));
@@ -30,8 +32,8 @@ export function BalancetePrintSummary({ linhas }: { linhas: LinhaResumoBalancete
   const compensacaoAtiva = { ...compensacaoAtivaBase, descricao: "CONTAS DE COMPENSAÇÃO" };
   const compensacaoPassivaBase = linhas.filter((linha) => linha.tipo === "S" && /^(PASSIVO COMPENSATÓRIO|CONTAS DE COMPENSAÇÃO)$/i.test(linha.descricao)).sort((a, b) => b.classificacao.localeCompare(a.classificacao))[0];
   const compensacaoPassiva = { ...(compensacaoPassivaBase ?? vazio("CONTAS DE COMPENSAÇÃO")), descricao: "CONTAS DE COMPENSAÇÃO" };
-  const saldoAnteriorResultado = arred(contasResultado.reduce((soma, linha) => soma + linha.saldoAnterior, 0));
-  const movimentoResultado = arred(contasResultado.reduce((soma, linha) => soma + linha.debitos - linha.creditos, 0));
+  const saldoAnteriorResultado = arred(resultadoContabil?.saldoAnterior ?? contasResultado.reduce((soma, linha) => soma + linha.saldoAnterior, 0));
+  const movimentoResultado = arred(resultadoContabil?.movimentoMes ?? contasResultado.reduce((soma, linha) => soma + linha.debitos - linha.creditos, 0));
   const linhaResultado = (descricao: string, incluirAnterior: boolean): LinhaResumoBalancete => ({
     tipo: "S",
     classificacao: "",
