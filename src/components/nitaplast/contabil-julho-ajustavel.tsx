@@ -99,11 +99,11 @@ export function BalanceteJulhoAjustavel(){
   const fechado=Math.abs(conferencia.diferencaDebitosCreditos)<0.01&&Math.abs(conferencia.somaMovimentosAnaliticos)<0.01&&Math.abs(conferencia.somaSaldoAtualAnalitico)<0.01&&conferencia.contasRazaoSemEstrutura.length===0;
   const csv=()=>{
     const analiticas=linhas.filter(x=>x.tipo==="A");
-    const total=(campo:"debitos"|"creditos"|"saldoAtual")=>arred(analiticas.reduce((s,x)=>s+x[campo],0));
+    const total=(campo:"saldoAnterior"|"debitos"|"creditos"|"saldoAtual")=>arred(analiticas.reduce((s,x)=>s+x[campo],0));
     exportar("Balancete_Nitaplast_07-2026.csv",[
-      ["Conta","S/A","Classificação","Descrição","Estabelecimento","Saldo anterior","Débito","Crédito","Movimento","Saldo atual","Incluir na soma","Débito conferência","Crédito conferência","Saldo conferência"],
-      ...linhas.map(x=>[x.conta,x.tipo,x.classificacao,x.descricao,x.estabelecimento,x.saldoAnterior,x.debitos,x.creditos,x.movimento,x.saldoAtual,x.tipo==="A"?"SIM":"NÃO",x.tipo==="A"?x.debitos:"",x.tipo==="A"?x.creditos:"",x.tipo==="A"?x.saldoAtual:""]),
-      ["","","","TOTAL DAS CONTAS ANALÍTICAS","","","","","","","",total("debitos"),total("creditos"),total("saldoAtual")],
+      ["Conta","S/A","Classificação","Descrição","Estabelecimento","Saldo anterior","Débito","Crédito","Movimento","Saldo atual","Incluir na soma","Saldo anterior conferência","Débito conferência","Crédito conferência","Saldo conferência"],
+      ...linhas.map(x=>[x.conta,x.tipo,x.classificacao,x.descricao,x.estabelecimento,x.saldoAnterior,x.debitos,x.creditos,x.movimento,x.saldoAtual,x.tipo==="A"?"SIM":"NÃO",x.tipo==="A"?x.saldoAnterior:"",x.tipo==="A"?x.debitos:"",x.tipo==="A"?x.creditos:"",x.tipo==="A"?x.saldoAtual:""]),
+      ["","","","TOTAL DAS CONTAS ANALÍTICAS","","","","","","","",total("saldoAnterior"),total("debitos"),total("creditos"),total("saldoAtual")],
     ]);
   };
   return <div className="grid gap-5">
