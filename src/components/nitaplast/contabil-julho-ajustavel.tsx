@@ -58,7 +58,15 @@ function calcularBalancete(base:LancamentoIntegrado[]):LinhaBalancete[]{
 function Header({titulo,descricao,acoes}:{titulo:string;descricao:string;acoes?:React.ReactNode}){return <div className="flex flex-wrap items-start justify-between gap-3 border-b pb-4"><div><h1 className="text-xl font-semibold tracking-tight">{titulo}</h1><p className="mt-1 text-sm text-muted-foreground">{descricao}</p></div><div className="flex flex-wrap gap-2">{acoes}<Badge variant="outline">Matriz + Filial SP · 07/2026</Badge></div></div>}
 function Metric({label,value,money=true}:{label:string;value:number;money?:boolean}){return <Card><CardContent className="pt-5"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 text-xl font-semibold tabular-nums">{money?brl.format(value):value.toLocaleString("pt-BR")}</p></CardContent></Card>}
 function Money({value,strong=false}:{value:number;strong?:boolean}){return <td className={`p-2 text-right tabular-nums ${strong?"font-semibold":""}`}>{value<0?`(${brl.format(Math.abs(value))})`:brl.format(value)}</td>}
-function exportar(nome:string,linhas:string[][],sep=";"){const texto=linhas.map(r=>r.map(v=>String(v).replaceAll('"','""')).map(v=>`"${v}"`).join(sep)).join("\n");const blob=new Blob(["\ufeff",texto],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=nome;a.click();URL.revokeObjectURL(a.href);}
+type CelulaCsv=string|number;
+function exportar(nome:string,linhas:CelulaCsv[][],sep=";"){
+  const celula=(valor:CelulaCsv)=>typeof valor==="number"
+    ? valor.toFixed(2).replace(".",",")
+    : `"${String(valor).replaceAll('"','""')}"`;
+  const texto=linhas.map(linha=>linha.map(celula).join(sep)).join("\n");
+  const blob=new Blob(["\ufeff",texto],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=nome;a.click();URL.revokeObjectURL(a.href);
+}
 
 function useRazaoJulhoAjustado(){const controles=useReclassificacoesInteligentes("2026-07");const razao=useMemo(()=>controles.aplicar(lancamentosIntegradosJulhoFinal),[controles.aplicar]);return {...controles,razao};}
 
@@ -84,7 +92,7 @@ export function BalanceteJulhoAjustavel(){
   const revisao=razao.filter(x=>x.status==="revisar").length;
   const conferencia=motor.conferencia;
   const fechado=Math.abs(conferencia.diferencaDebitosCreditos)<0.01&&Math.abs(conferencia.somaMovimentosAnaliticos)<0.01&&Math.abs(conferencia.somaSaldoAtualAnalitico)<0.01&&conferencia.contasRazaoSemEstrutura.length===0;
-  const csv=()=>exportar("Balancete_Nitaplast_07-2026.csv",[["Conta","S/A","Classificação","Descrição","Estabelecimento","Saldo anterior","Débito","Crédito","Movimento","Saldo atual"],...linhas.map(x=>[x.conta,x.tipo,x.classificacao,x.descricao,x.estabelecimento,String(x.saldoAnterior),String(x.debitos),String(x.creditos),String(x.movimento),String(x.saldoAtual)])]);
+  const csv=()=>exportar("Balancete_Nitaplast_07-2026.csv",[["Conta","S/A","Classificação","Descrição","Estabelecimento","Saldo anterior","Débito","Crédito","Movimento","Saldo atual","Incluir na soma"],...linhas.map(x=>[x.conta,x.tipo,x.classificacao,x.descricao,x.estabelecimento,x.saldoAnterior,x.debitos,x.creditos,x.movimento,x.saldoAtual,x.tipo==="A"?"SIM":"NÃO"])]);
   return <div className="grid gap-5">
     <Header titulo="Balancete consolidado - Nitaplast" descricao="Razão → Balancete → DRE. A DRE de 07/2026 lê o movimento mensal deste Balancete." acoes={<><Button variant="outline" size="sm" onClick={csv}><Download className="mr-2 size-4"/>Exportar CSV</Button><Button variant="outline" size="sm" onClick={()=>window.print()}><Printer className="mr-2 size-4"/>Imprimir / PDF</Button></>}/>
     <ResultadoCompetencia resultado={resultado}/>
@@ -119,7 +127,7 @@ export function DiarioJulhoAjustavel(){const {razao,registrar}=useRazaoJulhoAjus
 
 export function LancamentosJulhoAjustavel(){
   const {razao,registrar}=useRazaoJulhoAjustado();const[busca,setBusca]=useState("");const linhas=useMemo(()=>filtrar(razao,busca,""),[razao,busca]);
-  const csv=()=>exportar("Lancamentos_Nitaplast_07-2026.csv",[["ID","Data","Estabelecimento","Origem","Débito","Crédito","Histórico","Documento","CC","Centro de Custo","Valor","Status","Fonte"],...linhas.map(x=>[x.id,x.data,estabelecimentoLancamentoNitaplast(x),x.origem,x.debito,x.credito,x.historico,x.documento,x.cc,x.centroCusto,String(x.valor),x.status,x.fonte])]);
+  const csv=()=>exportar("Lancamentos_Nitaplast_07-2026.csv",[["ID","Data","Estabelecimento","Origem","Débito","Crédito","Histórico","Documento","CC","Centro de Custo","Valor","Status","Fonte"],...linhas.map(x=>[x.id,x.data,estabelecimentoLancamentoNitaplast(x),x.origem,x.debito,x.credito,x.historico,x.documento,x.cc,x.centroCusto,x.valor,x.status,x.fonte])]);
   return <div className="grid gap-5"><Header titulo="Lançamentos contábeis - Nitaplast 07/2026" descricao="Partidas que formam Razão → Balancete → DRE, sempre com Matriz/Filial identificada." acoes={<Button variant="outline" size="sm" onClick={csv}><Download className="mr-2 size-4"/>Exportar CSV</Button>}/><div className="grid gap-3 sm:grid-cols-4"><Metric label="Lançamentos" value={razao.length} money={false}/><Metric label="Débitos" value={arred(razao.reduce((s,x)=>s+x.valor,0))}/><Metric label="Créditos" value={arred(razao.reduce((s,x)=>s+x.valor,0))}/><Metric label="Em revisão" value={razao.filter(x=>x.status==="revisar").length} money={false}/></div><Card><CardHeader><div className="relative"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground"/><Input className="pl-9" value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar lançamento, estabelecimento, conta, documento ou fonte"/></div></CardHeader><CardContent className="overflow-x-auto"><TabelaLancamentos linhas={linhas} onRegistrar={registrar}/></CardContent></Card></div>;
 }
 
