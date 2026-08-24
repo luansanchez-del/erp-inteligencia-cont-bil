@@ -87,9 +87,9 @@ for (const atual of saldosImplantacao) {
   const descricao = porDescricao.get(texto(atual.descricao)) ?? [];
   const saldoAssinado = atual.natureza === "C" ? -Math.abs(atual.saldo) : Math.abs(atual.saldo);
   const saldo = Math.abs(saldoAssinado) >= 0.005 ? (porSaldo.get(centavos(saldoAssinado)) ?? []) : [];
-  const candidata = descricao.length === 1
+  const candidata = descricao.length === 1 && descricao[0]
     ? { conta: descricao[0], criterio: "descricao" as const, prioridade: 2 }
-    : saldo.length === 1
+    : saldo.length === 1 && saldo[0]
       ? { conta: saldo[0], criterio: "saldo" as const, prioridade: 1 }
       : null;
   if (!candidata) continue;

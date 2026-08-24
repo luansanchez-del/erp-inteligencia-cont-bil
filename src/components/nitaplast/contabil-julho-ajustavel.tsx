@@ -28,7 +28,7 @@ function compararClassificacao(a:LinhaEstruturaBalancete,b:LinhaEstruturaBalance
   const pa=a.classificacao.split(".").map(Number);const pb=b.classificacao.split(".").map(Number);
   for(let i=0;i<Math.max(pa.length,pb.length);i++){
     if(i>=pa.length)return -1;if(i>=pb.length)return 1;
-    if(pa[i]!==pb[i])return pa[i]-pb[i];
+    if(pa[i]!==pb[i])return (pa[i]??0)-(pb[i]??0);
   }
   if(a.tipo!==b.tipo)return a.tipo==="S"?-1:1;
   return Number(a.conta)-Number(b.conta);
@@ -103,7 +103,7 @@ export function BalanceteJulhoAjustavel(){
   if(divergencias.length)throw new Error(`Balancete visual divergiu do motor contábil nas contas: ${divergencias.join(", ")}`);
 
   const[busca,setBusca]=useState("");const[grupo,setGrupo]=useState("todos");const[soMov,setSoMov]=useState(false);const[zeradas,setZeradas]=useState(false);const[estab,setEstab]=useState("todos");
-  const linhas=useMemo(()=>balancete.filter(x=>{const q=busca.trim().toLocaleLowerCase("pt-BR");const zero=Math.abs(x.saldoAnterior)<.005&&Math.abs(x.debitos)<.005&&Math.abs(x.creditos)<.005&&Math.abs(x.saldoAtual)<.005;if(!zeradas&&zero)return false;if(soMov&&Math.abs(x.debitos)+Math.abs(x.creditos)<.005)return false;if(grupo!=="todos"&&x.grupo!==grupo)return false;if(estab!=="todos"&&x.estabelecimento!==estab)return false;if(q&&![x.conta,x.classificacao,x.descricao,x.estabelecimento].join(" ").toLocaleLowerCase("pt-BR").includes(q))return false;return true;}),[balancete,busca,grupo,soMov,zeradas,estab]);
+  const linhas=useMemo(()=>balancete.filter(x=>{const q=busca.trim().toLocaleLowerCase("pt-BR");const zero=Math.abs(x.saldoAnterior)<.005&&Math.abs(x.debitos)<.005&&Math.abs(x.creditos)<.005&&Math.abs(x.saldoAtual)<.005;if(!zeradas&&zero)return false;if(soMov&&Math.abs(x.debitos)+Math.abs(x.creditos)<.005)return false;if(grupo!=="todos"&&(x as {grupo?:string}).grupo!==grupo)return false;if(estab!=="todos"&&x.estabelecimento!==estab)return false;if(q&&![x.conta,x.classificacao,x.descricao,x.estabelecimento].join(" ").toLocaleLowerCase("pt-BR").includes(q))return false;return true;}),[balancete,busca,grupo,soMov,zeradas,estab]);
   const revisao=razao.filter(x=>x.status==="revisar").length;
   const conferencia=motor.conferencia;
   const fechado=Math.abs(conferencia.diferencaDebitosCreditos)<0.01&&Math.abs(conferencia.somaMovimentosAnaliticos)<0.01&&Math.abs(conferencia.somaSaldoAtualAnalitico)<0.01&&conferencia.contasRazaoSemEstrutura.length===0;
