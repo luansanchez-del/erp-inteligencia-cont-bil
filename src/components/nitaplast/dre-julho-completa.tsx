@@ -59,7 +59,6 @@ const linhasApresentacao: LinhaApresentacao[] = [
   { descricao: "Despesas com Industrialização", valor: 364_750.98, percentual: "8,81%", nivel: 1 },
   { descricao: "Despesas com Exportação — Matriz", valor: 5_225.43, percentual: "0,13%", nivel: 1 },
   { descricao: "Despesas comerciais SP", valor: 58_910.56, percentual: "1,42%", nivel: 1 },
-  { descricao: "Despesas Importação", valor: 0, percentual: "0,00%", nivel: 1 },
   { descricao: "Subtotal das despesas operacionais antes do resultado financeiro", valor: 1_329_333.42, destaque: true },
   { descricao: "Despesas Financeiras", valor: 143_700.96, percentual: "3,47%", nivel: 1 },
   { descricao: "(-) Receitas Financeiras", valor: 35_900.21, percentual: "0,87%", nivel: 1 },
