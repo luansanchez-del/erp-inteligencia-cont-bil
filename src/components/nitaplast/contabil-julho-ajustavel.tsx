@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { estruturaBalanceteNitaplast, type LinhaEstruturaBalancete } from "@/data/nitaplast-balancete-estrutura";
 import { calcularBalanceteJulho } from "@/data/nitaplast-balancete-julho-engine";
+import { calcularDreJulhoFinal } from "@/data/nitaplast-dre-julho-final";
 import { saldoAberturaJulhoPorConta } from "@/data/nitaplast-saldos-julho";
 import { lancamentosIntegradosJulhoFinal } from "@/data/nitaplast-razao-julho-final-v2";
 import type { LancamentoIntegrado } from "@/data/nitaplast-razao-base";
@@ -65,6 +66,7 @@ export function BalanceteJulhoAjustavel(){
   const {razao,reclassificacoes}=useRazaoJulhoAjustado();
   const motor=useMemo(()=>calcularBalanceteJulho(razao),[razao]);
   const balancete=useMemo(()=>calcularBalancete(razao),[razao]);
+  const resultado=useMemo(()=>calcularDreJulhoFinal(razao).dre,[razao]);
 
   // A tela do Balancete não pode divergir do mesmo motor consumido pela DRE.
   const divergencias=useMemo(()=>{
@@ -85,6 +87,7 @@ export function BalanceteJulhoAjustavel(){
   const csv=()=>exportar("Balancete_Nitaplast_07-2026.csv",[["Conta","S/A","Classificação","Descrição","Estabelecimento","Saldo anterior","Débito","Crédito","Movimento","Saldo atual"],...linhas.map(x=>[x.conta,x.tipo,x.classificacao,x.descricao,x.estabelecimento,String(x.saldoAnterior),String(x.debitos),String(x.creditos),String(x.movimento),String(x.saldoAtual)])]);
   return <div className="grid gap-5">
     <Header titulo="Balancete consolidado - Nitaplast" descricao="Razão → Balancete → DRE. A DRE de 07/2026 lê o movimento mensal deste Balancete." acoes={<><Button variant="outline" size="sm" onClick={csv}><Download className="mr-2 size-4"/>Exportar CSV</Button><Button variant="outline" size="sm" onClick={()=>window.print()}><Printer className="mr-2 size-4"/>Imprimir / PDF</Button></>}/>
+    <ResultadoCompetencia resultado={resultado}/>
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6"><Metric label="Partidas do Razão" value={razao.length} money={false}/><Metric label="Débitos 07" value={conferencia.totalDebitos}/><Metric label="Créditos 07" value={conferencia.totalCreditos}/><Metric label="Diferença contábil" value={conferencia.diferencaDebitosCreditos}/><Metric label="Em revisão" value={revisao} money={false}/><Metric label="Reclassificações" value={reclassificacoes.length} money={false}/></div>
     <Card className={fechado?"border-emerald-500/40 bg-emerald-50/40":"border-amber-500/50 bg-amber-50/40"}><CardContent className="pt-5 text-sm"><strong>Conferência contábil: {fechado?"FECHADO":"REVISAR"}.</strong> Débitos − Créditos: <strong>{brl.format(conferencia.diferencaDebitosCreditos)}</strong> · soma do movimento das contas analíticas: <strong>{brl.format(conferencia.somaMovimentosAnaliticos)}</strong> · soma assinada do saldo final analítico: <strong>{brl.format(conferencia.somaSaldoAtualAnalitico)}</strong>. Para conferir se o Balancete zera, some somente as linhas <strong>A (analíticas)</strong> com seus sinais; não some linhas sintéticas + analíticas, pois isso duplica os mesmos saldos.{conferencia.contasRazaoSemEstrutura.length>0?<span className="block mt-2 font-semibold text-amber-800">Contas do Razão ausentes na estrutura do Balancete: {conferencia.contasRazaoSemEstrutura.join(", ")}</span>:null}</CardContent></Card>
     <Card><CardHeader><div className="flex flex-wrap items-center justify-between gap-3"><CardTitle className="text-base">Balancete 07/2026</CardTitle><div className="relative w-full sm:w-96"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground"/><Input className="pl-9" value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar conta, estabelecimento ou descrição"/></div></div></CardHeader><CardContent>
@@ -93,6 +96,8 @@ export function BalanceteJulhoAjustavel(){
     </CardContent></Card>
   </div>;
 }
+
+function ResultadoCompetencia({resultado}:{resultado:ReturnType<typeof calcularDreJulhoFinal>["dre"]}){return <Card><CardHeader><CardTitle className="text-base">Resultado contábil 07/2026</CardTitle></CardHeader><CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6"><Metric label="Receita líquida" value={resultado.receitaLiquida}/><Metric label="CPV / CMV" value={resultado.custosReconhecidos}/><Metric label="Despesas operacionais" value={resultado.despesasOperacionais}/><Metric label="Resultado operacional" value={arred(resultado.receitaLiquida-resultado.custosReconhecidos-resultado.despesasReconhecidas+resultado.receitasFinanceiras)}/><Metric label="Resultado na alienação" value={resultado.resultadoAlienacaoImobilizado}/><Metric label="Resultado contábil" value={resultado.resultado}/></CardContent></Card>}
 
 function filtrar(base:LancamentoIntegrado[],busca:string,conta:string,estab="todos"){const q=busca.trim().toLocaleLowerCase("pt-BR");return base.filter(x=>{const e=estabelecimentoLancamentoNitaplast(x);return(!conta||x.debitoCodigo===conta||x.creditoCodigo===conta)&&(estab==="todos"||e===estab)&&(!q||[x.id,x.origem,x.historico,x.documento,x.debito,x.credito,x.cc,x.centroCusto,x.fonte,e].join(" ").toLocaleLowerCase("pt-BR").includes(q));});}
 
