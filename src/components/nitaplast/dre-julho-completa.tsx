@@ -89,9 +89,9 @@ export function DreJulhoCompleta() {
     const exportacao = matriz.filter((x) => x.conta === "25072");
     const importacao = matriz.filter((x) => x.conta === "25070");
     const veiculos = matriz.filter((x) => x.classificacao.startsWith("5.7.05") || x.classificacao.startsWith("5.7.01.015"));
-    const excluidas = new Set([...industrializacao, ...depreciacao, ...exportacao, ...importacao, ...veiculos].map((x) => x.id));
+    const excluidas = new Set([...industrializacao, ...depreciacao, ...exportacao, ...veiculos].map((x) => x.id));
     const classificaveis = matriz.filter((x) => !excluidas.has(x.id));
-    const comerciais = classificaveis.filter((x) => ccCom.has(x.cc));
+    const comerciais = classificaveis.filter((x) => ccCom.has(x.cc) || x.conta === "25070");
     const adm = classificaveis.filter((x) => ccAdm.has(x.cc) || x.cc === "313" || x.cc === "0" || x.conta === "4250" || (x.conta === "25937" && x.cc === "503"));
     const prod = classificaveis.filter((x) => ccProd.has(x.cc) && !comerciais.includes(x) && !adm.includes(x));
     const outras = classificaveis.filter((x) => !prod.includes(x) && !comerciais.includes(x) && !adm.includes(x));
@@ -168,11 +168,10 @@ export function DreJulhoCompleta() {
     { id: "prod", descricao: "Despesas com Produção — Matriz", nivel: 2, valor: soma(grupos.prod), criterio: "Despesas ocorridas em centros produtivos. O centro de custo abre a gestão, mas não transforma automaticamente a despesa em CPV.", composicao: grupos.prod },
     { id: "veic", descricao: "Despesas com Veículos — Matriz", nivel: 2, valor: soma(grupos.veiculos), criterio: "Contas/classes específicas de veículos antes da classificação genérica por CC.", composicao: grupos.veiculos },
     { id: "exp", descricao: "Despesas com Exportação — Matriz", nivel: 2, valor: soma(grupos.exportacao), criterio: "Conta 25072; natureza documental prevalece sobre o CC.", composicao: grupos.exportacao },
-    { id: "imp", descricao: "Despesas com Importação — Matriz", nivel: 2, valor: soma(grupos.importacao), criterio: "Conta 25070, apresentada em linha própria conforme o modelo de conferência do cliente.", composicao: grupos.importacao },
-    { id: "com", descricao: "Despesas Comerciais — Matriz", nivel: 2, valor: soma(grupos.comerciais), criterio: "Somente Matriz.", composicao: grupos.comerciais },
+    { id: "com", descricao: "Despesas Comerciais — Matriz (incluindo Importação)", nivel: 2, valor: soma(grupos.comerciais), criterio: "Somente Matriz; inclui as despesas de importação da conta 25070.", composicao: grupos.comerciais },
     { id: "adm", descricao: "Despesas Administrativas — Matriz", nivel: 2, valor: soma(grupos.adm), criterio: "Centros administrativos da Matriz; CC 501 não entra aqui.", composicao: grupos.adm },
     { id: "dep", descricao: "Depreciação e Amortização — Matriz", nivel: 2, valor: soma(grupos.depreciacao), criterio: "Depreciação identificada como Matriz. Mini e Corolla vendidos no início de julho foram excluídos da cota mensal integral de veículos.", composicao: grupos.depreciacao },
-    { id: "filial-desp", descricao: "Despesas Operacionais — Filial SP", nivel: 1, valor: despesasFilial, criterio: "Gastos não incorporados à mercadoria, líquidos dos créditos PIS/COFINS da Filial. O CMV/CPV da mercadoria fica exclusivamente na conta 25945.", composicao: [...grupos.filial, ...grupos.creditosFederaisFilial] },
+    { id: "filial-desp", descricao: "Despesas Comerciais — Filial SP", nivel: 1, valor: despesasFilial, criterio: "Reúne todas as despesas operacionais identificadas como Filial SP que não compõem o CPV. Preserva as contas analíticas originais e apresenta o grupo líquido dos créditos PIS/COFINS da Filial. CPV, deduções de vendas, despesas financeiras, ativos, impostos recuperáveis e transferências patrimoniais permanecem em seus grupos próprios.", composicao: [...grupos.filial, ...grupos.creditosFederaisFilial] },
     { id: "fin-liquidas", descricao: "Despesas Financeiras Líquidas", nivel: 1, valor: arred(despFin - dre.receitasFinanceiras), criterio: "Despesas financeiras menos receitas financeiras." },
     { id: "fin-d", descricao: "(-) Despesas Financeiras", nivel: 2, valor: despFin, criterio: "Juros, tarifas, IOF, JCP e variação cambial passiva, por conta e estabelecimento.", composicao: grupos.financeira },
     { id: "fin-r", descricao: "(+) Receitas Financeiras", nivel: 2, valor: dre.receitasFinanceiras, criterio: "Descontos obtidos, juros ativos, variação cambial ativa, aplicações, receitas eventuais, recuperações e SELIC.", composicao: grupos.receitasFinanceiras },
