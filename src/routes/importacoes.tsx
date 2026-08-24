@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, CheckCircle2, Database, FileCheck2, RotateCcw, ShieldCheck, UploadCloud } from "lucide-react";
+import { AlertTriangle, Building2, CheckCircle2, Database, FileCheck2, Plus, RotateCcw, ShieldCheck, UploadCloud } from "lucide-react";
 import { PageHeader, PageShell } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,13 +34,15 @@ const formato = (nome: string) => extensoes[nome.split(".").pop()?.toLowerCase()
 const tamanho = (bytes: number) => bytes < 1024 ? `${bytes} B` : bytes < 1024 ** 2 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1024 ** 2).toFixed(1)} MB`;
 
 function ImportacoesPage() {
-  const { empresa, competencia } = useErp();
+  const { empresa, empresas, competencia, setEmpresaId, registrarEmpresa } = useErp();
   const inputRef = useRef<HTMLInputElement>(null);
   const [fluxo, setFluxo] = useState<FluxoImportacao>("recorrencia");
   const [categoria, setCategoria] = useState<CategoriaFonteImportacao>(categorias.recorrencia[0]!.valor);
   const [itens, setItens] = useState<ItemDossieImportacao[]>([]);
   const [processando, setProcessando] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
+  const [novaEmpresaAberta, setNovaEmpresaAberta] = useState(false);
+  const [novaEmpresa, setNovaEmpresa] = useState({ codigo: "", razaoSocial: "", nomeFantasia: "", cnpj: "", municipio: "", uf: "", tipo: "matriz" as const });
   useEffect(() => setItens(carregarDossieImportacao()), []);
   useEffect(() => setCategoria(categorias[fluxo][0]!.valor), [fluxo]);
   const contexto = useMemo(() => itens.filter((item) => item.empresaId === empresa.id && item.competenciaId === competencia.id), [competencia.id, empresa.id, itens]);
@@ -73,9 +75,21 @@ function ImportacoesPage() {
       return { ...item, categoria: proxima, finalidade: definicao.finalidade ?? "fonte", podeGerarLancamento: definicao.finalidade !== "conferencia" && proxima !== "plano_contas", status: "aguardando_conferencia", aprovadoEm: undefined };
     }));
   }
+  function cadastrarEmpresa() {
+    if (!novaEmpresa.codigo.trim() || !novaEmpresa.razaoSocial.trim() || !novaEmpresa.nomeFantasia.trim() || novaEmpresa.cnpj.replace(/\D/g, "").length !== 14 || novaEmpresa.uf.trim().length !== 2) {
+      setMensagem("Preencha código, razão social, nome fantasia, CNPJ com 14 dígitos e UF com 2 letras.");
+      return;
+    }
+    const criada = registrarEmpresa({ ...novaEmpresa, uf: novaEmpresa.uf.toUpperCase(), regimeConfirmado: false });
+    setEmpresaId(criada.id);
+    setNovaEmpresaAberta(false);
+    setNovaEmpresa({ codigo: "", razaoSocial: "", nomeFantasia: "", cnpj: "", municipio: "", uf: "", tipo: "matriz" });
+    setMensagem(`Empresa ${criada.nomeFantasia} cadastrada e selecionada. Os próximos arquivos serão vinculados a ela.`);
+  }
 
   return <PageShell>
     <PageHeader titulo="Dossiê de Importação" descricao={`Arquivos de ${empresa.nomeFantasia} · competência ${competencia.label}. Importar registra evidência; não contabiliza.`} acoes={<Badge variant="outline">Controle de origem ativo</Badge>} />
+    <Card className="border-primary/30"><CardHeader><div className="flex flex-wrap items-start justify-between gap-3"><div><CardTitle className="flex items-center gap-2 text-base"><Building2 className="size-4"/>0. Empresa da implantação</CardTitle><CardDescription>Esta seleção define a empresa proprietária dos arquivos. Um arquivo não é transferido automaticamente entre empresas.</CardDescription></div><Button size="sm" variant="outline" onClick={() => setNovaEmpresaAberta((valor) => !valor)}><Plus className="mr-1.5 size-4"/>{novaEmpresaAberta ? "Cancelar cadastro" : "Cadastrar nova empresa"}</Button></div></CardHeader><CardContent className="grid gap-4"><label className="grid gap-1.5 text-sm font-medium">Empresa selecionada<select className="h-10 rounded-md border bg-background px-3 text-sm" value={empresa.id} onChange={(e) => setEmpresaId(e.target.value)}>{empresas.map((item) => <option key={item.id} value={item.id}>{item.codigo} — {item.nomeFantasia} — {item.cnpj}</option>)}</select></label>{novaEmpresaAberta ? <div className="grid gap-3 rounded-md border bg-muted/20 p-4 sm:grid-cols-2 lg:grid-cols-3"><CampoCadastro label="Código no escritório/Questor" value={novaEmpresa.codigo} onChange={(valor) => setNovaEmpresa((atual) => ({ ...atual, codigo: valor }))}/><CampoCadastro label="Razão social" value={novaEmpresa.razaoSocial} onChange={(valor) => setNovaEmpresa((atual) => ({ ...atual, razaoSocial: valor }))}/><CampoCadastro label="Nome fantasia" value={novaEmpresa.nomeFantasia} onChange={(valor) => setNovaEmpresa((atual) => ({ ...atual, nomeFantasia: valor }))}/><CampoCadastro label="CNPJ" value={novaEmpresa.cnpj} onChange={(valor) => setNovaEmpresa((atual) => ({ ...atual, cnpj: valor }))}/><CampoCadastro label="Município" value={novaEmpresa.municipio} onChange={(valor) => setNovaEmpresa((atual) => ({ ...atual, municipio: valor }))}/><CampoCadastro label="UF" value={novaEmpresa.uf} maxLength={2} onChange={(valor) => setNovaEmpresa((atual) => ({ ...atual, uf: valor }))}/><div className="sm:col-span-2 lg:col-span-3"><Button type="button" onClick={cadastrarEmpresa}>Salvar e selecionar empresa</Button></div></div> : null}</CardContent></Card>
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Resumo label="Arquivos no dossiê" valor={resumo.total}/><Resumo label="Aguardando conferência" valor={resumo.pendentes}/><Resumo label="Aprovados como fonte" valor={resumo.aprovados}/><Resumo label="Duplicados bloqueados" valor={resumo.duplicados} alerta={resumo.duplicados > 0}/></div>
     <Card className="border-blue-500/30 bg-blue-500/5"><CardContent className="flex gap-3 pt-5"><ShieldCheck className="mt-0.5 size-5 shrink-0 text-blue-700"/><div><p className="font-medium">Separação obrigatória</p><p className="mt-1 text-sm text-muted-foreground">Implantação recebe a abertura patrimonial. Recorrência recebe documentos do mês. Diário, Razão, Balancete e DRE serão saídas do motor contábil.</p></div></CardContent></Card>
     <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
@@ -88,4 +102,5 @@ function ImportacoesPage() {
 }
 
 function Resumo({ label, valor, alerta = false }: { label: string; valor: number; alerta?: boolean }) { return <Card><CardContent className="pt-5"><p className="text-xs text-muted-foreground">{label}</p><p className={`mt-2 text-2xl font-semibold tabular-nums ${alerta ? "text-amber-700" : ""}`}>{valor.toLocaleString("pt-BR")}</p></CardContent></Card>; }
+function CampoCadastro({ label, value, onChange, maxLength }: { label: string; value: string; onChange: (valor: string) => void; maxLength?: number }) { return <label className="grid gap-1.5 text-xs font-medium">{label}<Input value={value} maxLength={maxLength} onChange={(e) => onChange(e.target.value)}/></label>; }
 function Status({ item }: { item: ItemDossieImportacao }) { if (item.status === "duplicado") return <span className="inline-flex items-center gap-1 text-amber-700"><AlertTriangle className="size-4"/>Duplicado</span>; if (item.status === "aprovado") return <span className="inline-flex items-center gap-1 text-emerald-700"><CheckCircle2 className="size-4"/>Aprovado</span>; return <span className="inline-flex items-center gap-1 text-blue-700"><Database className="size-4"/>Aguardando</span>; }

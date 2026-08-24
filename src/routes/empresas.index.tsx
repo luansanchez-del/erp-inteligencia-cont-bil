@@ -1,10 +1,11 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { CircleAlert, Plus } from "lucide-react";
 import { PageHeader, PageShell } from "@/components/page-header";
 import { DataTable, type Column } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { empresas, grupos } from "@/data/mock";
+import { grupos } from "@/data/mock";
+import { useErp } from "@/context/erp-context";
 import { regimeTexto } from "@/lib/empresa";
 import type { Empresa } from "@/types/erp";
 
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/empresas/")({
 
 function EmpresasPage() {
   const navigate = useNavigate();
+  const { empresas } = useErp();
 
   const colunas: Column<Empresa>[] = [
     {
@@ -106,9 +108,7 @@ function EmpresasPage() {
         titulo="Empresas"
         descricao="Cadastro base das empresas atendidas. Vínculos de grupo e parâmetros contábeis."
         acoes={
-          <Button size="sm" className="gap-2" disabled>
-            <Plus className="size-4" /> Nova empresa
-          </Button>
+          <Button size="sm" className="gap-2" asChild><Link to="/importacoes"><Plus className="size-4" /> Nova empresa / implantação</Link></Button>
         }
       />
       <DataTable
