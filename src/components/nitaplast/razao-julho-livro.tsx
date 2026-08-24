@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { estruturaBalanceteNitaplast } from "@/data/nitaplast-balancete-estrutura";
+import { calcularDreJulhoFinal } from "@/data/nitaplast-dre-julho-final";
 import { saldoAberturaJulhoPorConta } from "@/data/nitaplast-saldos-julho";
 import { lancamentosIntegradosJulhoFinal } from "@/data/nitaplast-razao-julho-final-v2";
 import type { LancamentoIntegrado } from "@/data/nitaplast-razao-base";
@@ -64,6 +65,7 @@ export function RazaoJulhoLivro() {
   const contaUrl = typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("conta") ?? "";
   const { aplicar, registrar, reclassificacoes } = useReclassificacoesInteligentes("2026-07");
   const razao = useMemo(() => aplicar(lancamentosIntegradosJulhoFinal), [aplicar]);
+  const resultado = useMemo(() => calcularDreJulhoFinal(razao).dre, [razao]);
   const contas = useMemo(
     () => estruturaBalanceteNitaplast
       .filter((item) => item.tipo === "A")
@@ -111,6 +113,8 @@ export function RazaoJulhoLivro() {
   return (
     <div className="grid gap-5">
       <Cabecalho />
+
+      <ResultadoCompetencia resultado={resultado} />
 
       {conta ? (
         <div className="rounded-lg border bg-card p-4">
@@ -254,5 +258,20 @@ export function RazaoJulhoLivro() {
         Regra do livro: saldo anterior é transportado da competência anterior para apresentação e cálculo do saldo, mas não compõe a quantidade de partidas nem gera débito/crédito na competência atual. Reclassificações: {reclassificacoes.length}.
       </p>
     </div>
+  );
+}
+
+function ResultadoCompetencia({ resultado }: { resultado: ReturnType<typeof calcularDreJulhoFinal>["dre"] }) {
+  return (
+    <Card>
+      <CardContent className="grid gap-3 pt-5 sm:grid-cols-2 xl:grid-cols-6">
+        <Metric label="Receita líquida" value={resultado.receitaLiquida} />
+        <Metric label="CPV / CMV" value={resultado.custosReconhecidos} />
+        <Metric label="Despesas operacionais" value={resultado.despesasReconhecidas} />
+        <Metric label="Resultado operacional" value={arred(resultado.receitaLiquida - resultado.custosReconhecidos - resultado.despesasReconhecidas + resultado.receitasFinanceiras)} />
+        <Metric label="Resultado na alienação" value={resultado.resultadoAlienacaoImobilizado} />
+        <Metric label="Resultado contábil" value={resultado.resultado} />
+      </CardContent>
+    </Card>
   );
 }
