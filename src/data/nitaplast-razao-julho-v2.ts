@@ -269,7 +269,7 @@ export const diagnosticoFechamentoJulho = {
   saldoCredorIcmsFilialEsperadoAposClassificacao: 11980.13,
   folha: "pendente de documento 07/2026",
   bancosArAp: resumoIntegracaoBancariaJulho.situacao,
-  fontesBancariasRecebidas: resumoIntegracaoBancariaJulho.fontesRecebidas.length,
+  fontesBancariasRecebidas: resumoIntegracaoBancariaJulho.fontesRecebidas,
   movimentosBancariosSegurosIntegrados: resumoIntegracaoBancariaJulho.movimentosPatrimoniaisIntegrados,
   estoque: "alvo 31/07 carregado; ajuste técnico bloqueado até completar movimentos reais",
   itensManuaisExcluidos: ["JCP", "Depreciação", "Juros ativos", "Juros passivos", "Variação cambial"],

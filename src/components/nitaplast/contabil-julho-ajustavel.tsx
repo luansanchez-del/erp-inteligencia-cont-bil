@@ -24,13 +24,20 @@ import { saldoAnteriorResultadoJulho2026 } from "@/data/nitaplast-resultado-tran
 const brl=new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
 const arred=(v:number)=>Math.round(v*100)/100;
 
-type LinhaBalancete=LinhaEstruturaBalancete&{saldoAnterior:number;debitos:number;creditos:number;movimento:number;saldoAtual:number;lancamentos:number;estabelecimento:EscopoContaNitaplast};
+type LinhaBalancete=LinhaEstruturaBalancete&{saldoAnterior:number;debitos:number;creditos:number;movimento:number;saldoAtual:number;lancamentos:number;estabelecimento:EscopoContaNitaplast;grupo:string};
+function grupoClassificacao(classificacao:string):string{
+  if(classificacao.startsWith("1"))return "Ativo";
+  if(classificacao.startsWith("2"))return "Passivo e patrimônio líquido";
+  if(classificacao.startsWith("4"))return "Receitas acumuladas";
+  if(classificacao.startsWith("5"))return "Custos e despesas acumulados";
+  return "Outros";
+}
 const contasEstrutura=new Set(estruturaBalanceteNitaplast.map(x=>x.conta));
 function compararClassificacao(a:LinhaEstruturaBalancete,b:LinhaEstruturaBalancete){
   const pa=a.classificacao.split(".").map(Number);const pb=b.classificacao.split(".").map(Number);
   for(let i=0;i<Math.max(pa.length,pb.length);i++){
     if(i>=pa.length)return -1;if(i>=pb.length)return 1;
-    if(pa[i]!==pb[i])return pa[i]-pb[i];
+    if((pa[i]??0)!==(pb[i]??0))return (pa[i]??0)-(pb[i]??0);
   }
   if(a.tipo!==b.tipo)return a.tipo==="S"?-1:1;
   return Number(a.conta)-Number(b.conta);
@@ -66,10 +73,11 @@ function calcularBalancete(base:LancamentoIntegrado[]):LinhaBalancete[]{
     vals.set(x.conta,{saldoAnterior:sa,debitos:arred(m.debitos),creditos:arred(m.creditos),movimento:liq,saldoAtual:arred(sa+liq),lancamentos:m.lancamentos,estabelecimento});
   }
   return estruturaBalanceteCompleta.map(x=>{
-    if(x.tipo==="A")return {...x,...(vals.get(x.conta)??{saldoAnterior:0,debitos:0,creditos:0,movimento:0,saldoAtual:0,lancamentos:0,estabelecimento:escopoContaBalanceteNitaplast(x.conta,x.descricao,[])})};
+    const grupo=grupoClassificacao(x.classificacao);
+    if(x.tipo==="A")return {...x,grupo,...(vals.get(x.conta)??{saldoAnterior:0,debitos:0,creditos:0,movimento:0,saldoAtual:0,lancamentos:0,estabelecimento:escopoContaBalanceteNitaplast(x.conta,x.descricao,[])})};
     const t={saldoAnterior:0,debitos:0,creditos:0,movimento:0,saldoAtual:0,lancamentos:0};const escopos:EscopoContaNitaplast[]=[];
     for(const a of analiticas){if(!descendente(a,x))continue;const v=vals.get(a.conta);if(!v)continue;t.saldoAnterior+=v.saldoAnterior;t.debitos+=v.debitos;t.creditos+=v.creditos;t.movimento+=v.movimento;t.saldoAtual+=v.saldoAtual;t.lancamentos+=v.lancamentos;escopos.push(v.estabelecimento);}
-    return {...x,saldoAnterior:arred(t.saldoAnterior),debitos:arred(t.debitos),creditos:arred(t.creditos),movimento:arred(t.movimento),saldoAtual:arred(t.saldoAtual),lancamentos:t.lancamentos,estabelecimento:combinarEscopos(escopos)};
+    return {...x,grupo,saldoAnterior:arred(t.saldoAnterior),debitos:arred(t.debitos),creditos:arred(t.creditos),movimento:arred(t.movimento),saldoAtual:arred(t.saldoAtual),lancamentos:t.lancamentos,estabelecimento:combinarEscopos(escopos)};
   });
 }
 
