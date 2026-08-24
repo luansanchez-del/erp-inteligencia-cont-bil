@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { CheckCircle2, ChevronDown, ChevronRight, CircleAlert, ExternalLink, FileSearch } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronRight, CircleAlert, ExternalLink, FileSearch, FileSpreadsheet } from "lucide-react";
 import { PageHeader, PageShell } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,12 +11,71 @@ import {
 } from "@/data/nitaplast-dre-detalhada";
 import { useDreComReclassificacoes } from "@/hooks/use-dre-com-reclassificacoes";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
+import { exportarExcel } from "@/lib/exportar-excel";
 
 export const Route = createFileRoute("/contabil/dre")({ component: DrePage });
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const tolerancia = 0.01;
 const idsFederaisExplicados = new Set(["pis-m", "cofins-m", "pis-f", "cofins-f"]);
+type LinhaApresentacao = { descricao: string; valor: number | null; percentual?: string; nivel?: 0 | 1; destaque?: boolean };
+
+const receitaBrutaJunho = 3_402_624.71;
+const ajusteEstoqueJunho = 82_536.10;
+const baseIrpjCsllJunho = 132_502.91;
+const resultadoNaoOperacionalJunho = 7_295.86;
+const lucroLiquidoJunho = 139_798.77;
+const linhasApresentacaoJunho: LinhaApresentacao[] = [
+  { descricao: "(+) Receita Operacional Bruta", valor: receitaBrutaJunho, percentual: "100,00%", destaque: true },
+  { descricao: "Receita Venda Produção Matriz", valor: 2_890_314.30, nivel: 1 },
+  { descricao: "Receita Revenda Matriz", valor: 162_137.33, nivel: 1 },
+  { descricao: "Receita Venda de Serviços", valor: null, nivel: 1 },
+  { descricao: "Receita Venda Produção Filial", valor: 350_173.08, nivel: 1 },
+  { descricao: "Receita Revenda Filial", valor: 0, nivel: 1 },
+  { descricao: "(-) Deduções da Receita Bruta", valor: 811_074.77, percentual: "23,84%", destaque: true },
+  { descricao: "Devoluções de Produtos", valor: 30_997.14, nivel: 1 },
+  { descricao: "Descontos Concedidos", valor: 0, nivel: 1 },
+  { descricao: "IPI Matriz", valor: 171_148.81, nivel: 1 },
+  { descricao: "ICMS Matriz", valor: 239_206.46, nivel: 1 },
+  { descricao: "PIS Matriz", valor: 47_548.49, nivel: 1 },
+  { descricao: "COFINS Matriz", valor: 219_011.34, nivel: 1 },
+  { descricao: "ICMS ST", valor: 1_496.86, nivel: 1 },
+  { descricao: "ICMS sobre vendas Filial", valor: 56_744.23, nivel: 1 },
+  { descricao: "IPI Filial", valor: 20_469.32, nivel: 1 },
+  { descricao: "PIS Filial", valor: 4_361.70, nivel: 1 },
+  { descricao: "COFINS Filial", valor: 20_090.42, nivel: 1 },
+  { descricao: "(-) Custo total", valor: 1_188_509.50, percentual: "34,93%", destaque: true },
+  { descricao: "(-) CPV Matriz", valor: 1_075_274.84, nivel: 1 },
+  { descricao: "(-) CPV Filial", valor: 113_234.66, nivel: 1 },
+  { descricao: "(-) CMV Filial", valor: 0, nivel: 1 },
+  { descricao: "(=) Lucro bruto", valor: 1_403_040.44, percentual: "41,23%", destaque: true },
+  { descricao: "(-) Despesas operacionais", valor: 1_256_946.43, percentual: "36,94%", destaque: true },
+  { descricao: "Despesas Administrativas", valor: 132_400.28, percentual: "3,89%", nivel: 1 },
+  { descricao: "Despesas com Serviço - NPLog", valor: 115_364.37, percentual: "3,39%", nivel: 1 },
+  { descricao: "Despesas Comerciais", valor: 237_639.64, percentual: "6,98%", nivel: 1 },
+  { descricao: "Despesas Produção", valor: 180_057.01, percentual: "5,29%", nivel: 1 },
+  { descricao: "Despesas Veículos", valor: 42_644.85, percentual: "1,25%", nivel: 1 },
+  { descricao: "Despesas Barracão", valor: 3_304.32, percentual: "0,10%", nivel: 1 },
+  { descricao: "Despesas com Imobilizado", valor: 1_429.39, percentual: "0,04%", nivel: 1 },
+  { descricao: "Despesas com Industrialização", valor: 394_965.03, percentual: "11,61%", nivel: 1 },
+  { descricao: "Despesas Tributárias", valor: 0, percentual: "0,00%", nivel: 1 },
+  { descricao: "Despesas comerciais SP", valor: 40_095.68, percentual: "1,18%", nivel: 1 },
+  { descricao: "Despesas Financeiras", valor: 153_961.84, percentual: "4,52%", nivel: 1 },
+  { descricao: "(-) Receitas Financeiras", valor: 44_915.98, percentual: "1,32%", nivel: 1 },
+  { descricao: "Despesas Financeiras Líquidas", valor: 109_045.86, destaque: true },
+  { descricao: "(-) PIS não cumulativo sobre despesas", valor: 12_298.30, percentual: "0,36%", nivel: 1 },
+  { descricao: "(-) COFINS não cumulativo sobre despesas", valor: 56_646.70, percentual: "1,66%", nivel: 1 },
+  { descricao: "Total das despesas operacionais", valor: 1_188_001.43, destaque: true },
+  { descricao: "(=) Resultado operacional antes do ajuste de estoque", valor: 215_039.01, percentual: "6,32%", destaque: true },
+  { descricao: "(-) Ajuste de estoque na apuração de junho", valor: ajusteEstoqueJunho, percentual: "2,43%", nivel: 1 },
+  { descricao: "(=) Base informada para IRPJ e CSLL", valor: baseIrpjCsllJunho, percentual: "3,89%", destaque: true },
+  { descricao: "Resultado não operacional", valor: resultadoNaoOperacionalJunho, percentual: "0,21%", destaque: true },
+  { descricao: "Receita de Alienação de Imobilizado", valor: 7_295.86, percentual: "0,21%", nivel: 1 },
+  { descricao: "Custo na Baixa/Alienação de Imobilizado", valor: 0, percentual: "0,00%", nivel: 1 },
+  { descricao: "(=) Lucro líquido", valor: lucroLiquidoJunho, percentual: "4,11%", destaque: true },
+  { descricao: "IRPJ pago por estimativa em 31/07/2026 (informativo)", valor: 30_564.35, nivel: 1 },
+  { descricao: "CSLL paga por estimativa em 31/07/2026 (informativo)", valor: 11_964.01, nivel: 1 },
+];
 
 function DrePage() {
   useNitaplastJunho();
@@ -58,6 +117,21 @@ function DrePage() {
     setAbertas(todaDreAberta ? new Set() : new Set(todosIds));
   }
 
+  function exportarDreJunho() {
+    exportarExcel({
+      arquivo: "Nitaplast_DRE_Report_062026.xlsx",
+      aba: "DRE 06-2026",
+      titulo: "NITAPLAST IND E COM DE PLÁSTICOS INDUSTRIAIS LTDA — DEMONSTRAÇÃO DO RESULTADO DO EXERCÍCIO",
+      subtitulo: "Período 01/06/2026 a 30/06/2026 · Razão → Balancete → DRE · Matriz e Filial SP consolidadas · ajuste de estoque evidenciado separadamente",
+      colunas: [{ cabecalho: "Descrição", largura: 86 }, { cabecalho: "Valor", largura: 18, tipo: "numero" }, { cabecalho: "% Receita", largura: 14, tipo: "percentual" }],
+      linhas: linhasApresentacaoJunho.map((linha) => [
+        `${"    ".repeat(linha.nivel ?? 0)}${linha.descricao}`,
+        linha.valor ?? "",
+        linha.percentual ? Number(linha.percentual.replace("%", "").replace(",", ".")) / 100 : "",
+      ]),
+    });
+  }
+
   return (
     <PageShell>
       <PageHeader
@@ -67,12 +141,36 @@ function DrePage() {
           <div className="flex flex-wrap items-center gap-2">
             <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Consolidado Matriz + Filial</Badge>
             {reclassificacoes.length > 0 ? <Badge variant="outline">{reclassificacoes.length} reclassificação(ões)</Badge> : null}
+            <Button variant="outline" size="sm" className="gap-2" onClick={exportarDreJunho}><FileSpreadsheet className="size-4" />Exportar Excel</Button>
             <Button variant="outline" size="sm" onClick={alternarTodaDre}>
               {todaDreAberta ? "Recolher toda DRE" : "Expandir toda DRE"}
             </Button>
           </div>
         }
       />
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <Metric label="Receita Operacional Bruta" value={receitaBrutaJunho} />
+        <Metric label="Resultado antes do ajuste" value={215_039.01} />
+        <Metric label="Ajuste de estoque" value={ajusteEstoqueJunho} />
+        <Metric label="Base IRPJ e CSLL" value={baseIrpjCsllJunho} success />
+        <Metric label="Lucro líquido" value={lucroLiquidoJunho} success />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div><CardTitle className="text-base">Composição da DRE — 06/2026</CardTitle><CardDescription>Mesmo formato de julho, com o ajuste de estoque e a base fiscal identificados separadamente.</CardDescription></div>
+            <Badge variant="outline">06/2026</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <table className="w-full min-w-[900px] text-sm">
+            <thead><tr className="border-b bg-muted text-left text-xs"><th className="p-2">Composição DRE</th><th className="p-2 text-right">Valor</th><th className="p-2 text-right">% Receita</th></tr></thead>
+            <tbody>{linhasApresentacaoJunho.map((linha, index) => <tr key={`${linha.descricao}-${index}`} className={`border-b ${linha.destaque ? "border-y-2 bg-slate-100/70 font-semibold" : ""}`}><td className="p-2" style={{ paddingLeft: 8 + (linha.nivel ?? 0) * 22 }}>{linha.descricao}</td><td className="p-2 text-right tabular-nums">{linha.valor === null ? "" : brl.format(linha.valor)}</td><td className="p-2 text-right tabular-nums">{linha.percentual ?? ""}</td></tr>)}</tbody>
+          </table>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <CompareMetric
