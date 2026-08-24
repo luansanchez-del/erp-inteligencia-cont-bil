@@ -13,6 +13,7 @@ const arred = (valor: number) => Math.round(valor * 100) / 100;
 
 export function BalancetePrintSummary({ linhas }: { linhas: LinhaResumoBalancete[] }) {
   const analiticas = linhas.filter((linha) => linha.tipo === "A");
+  const contasResultado = analiticas.filter((linha) => /^(4|5)(\.|$)/.test(linha.classificacao));
   const total = (campo: "saldoAnterior" | "debitos" | "creditos" | "saldoAtual") => arred(analiticas.reduce((soma, linha) => soma + linha[campo], 0));
   const porClassificacao = (classificacao: string) => linhas.find((linha) => linha.tipo === "S" && linha.classificacao === classificacao);
   const porDescricao = (expressao: RegExp) => linhas.filter((linha) => linha.tipo === "S" && expressao.test(linha.descricao)).sort((a, b) => a.classificacao.split(".").length - b.classificacao.split(".").length)[0];
@@ -29,24 +30,28 @@ export function BalancetePrintSummary({ linhas }: { linhas: LinhaResumoBalancete
   const compensacaoAtiva = { ...compensacaoAtivaBase, descricao: "CONTAS DE COMPENSAÇÃO" };
   const compensacaoPassivaBase = linhas.filter((linha) => linha.tipo === "S" && /^(PASSIVO COMPENSATÓRIO|CONTAS DE COMPENSAÇÃO)$/i.test(linha.descricao)).sort((a, b) => b.classificacao.localeCompare(a.classificacao))[0];
   const compensacaoPassiva = { ...(compensacaoPassivaBase ?? vazio("CONTAS DE COMPENSAÇÃO")), descricao: "CONTAS DE COMPENSAÇÃO" };
-  const resultado = (descricao: string, somenteMes: boolean): LinhaResumoBalancete => {
-    const saldoAnterior = somenteMes ? 0 : arred(receitas.saldoAnterior + despesas.saldoAnterior);
-    const despesasLiquidas = arred(despesas.debitos - despesas.creditos);
-    const receitasLiquidas = arred(receitas.creditos - receitas.debitos);
-    const debitos = Math.max(0, despesasLiquidas) + Math.max(0, -receitasLiquidas);
-    const creditos = Math.max(0, receitasLiquidas) + Math.max(0, -despesasLiquidas);
-    return { tipo: "S", classificacao: "", descricao, saldoAnterior, debitos, creditos, saldoAtual: arred(saldoAnterior + debitos - creditos) };
-  };
+  const saldoAnteriorResultado = arred(contasResultado.reduce((soma, linha) => soma + linha.saldoAnterior, 0));
+  const movimentoResultado = arred(contasResultado.reduce((soma, linha) => soma + linha.debitos - linha.creditos, 0));
+  const linhaResultado = (descricao: string, incluirAnterior: boolean): LinhaResumoBalancete => ({
+    tipo: "S",
+    classificacao: "",
+    descricao,
+    saldoAnterior: incluirAnterior ? saldoAnteriorResultado : 0,
+    debitos: Math.max(0, movimentoResultado),
+    creditos: Math.max(0, -movimentoResultado),
+    saldoAtual: arred((incluirAnterior ? saldoAnteriorResultado : 0) + movimentoResultado),
+  });
   const linhasResumo = [ativo, passivo, patrimonio, receitas, despesas, naoOperacional, compensacaoAtiva, compensacaoPassiva];
   const devedoras: LinhaResumoBalancete = { tipo: "S", classificacao: "", descricao: "CONTAS DEVEDORAS", saldoAnterior: arred(analiticas.reduce((s, x) => s + Math.max(0, x.saldoAnterior), 0)), debitos: total("debitos"), creditos: total("creditos"), saldoAtual: arred(analiticas.reduce((s, x) => s + Math.max(0, x.saldoAtual), 0)) };
   const credoras: LinhaResumoBalancete = { tipo: "S", classificacao: "", descricao: "CONTAS CREDORAS", saldoAnterior: -arred(analiticas.reduce((s, x) => s + Math.max(0, -x.saldoAnterior), 0)), debitos: total("debitos"), creditos: total("creditos"), saldoAtual: -arred(analiticas.reduce((s, x) => s + Math.max(0, -x.saldoAtual), 0)) };
-  const resultadoMes = resultado("RESULTADO DO MÊS", true);
-  const resultadoExercicio = resultado("RESULTADO DO EXERCÍCIO", false);
+  const resultadoMes = linhaResultado("RESULTADO DO MÊS", false);
+  const resultadoExercicio = linhaResultado("RESULTADO DO EXERCÍCIO", true);
   if (Math.abs(resultadoExercicio.saldoAtual - arred(resultadoExercicio.saldoAnterior + resultadoMes.saldoAtual)) > 0.01) throw new Error("Resultado anterior + resultado do mês não fecha com o resultado do exercício.");
 
-  return <section className="mt-5 hidden break-inside-avoid border border-black p-3 text-black print:block">
-    <h2 className="mb-2 text-[10pt] font-bold uppercase">Resumo do Balancete</h2>
-    <table className="w-full border-collapse text-[8pt]">
+  return <section className="mt-5 hidden break-before-page break-inside-avoid text-black print:block">
+    <h2 className="mb-3 text-center text-[10pt] font-bold uppercase">Resumo do Balancete</h2>
+    <table className="w-full table-fixed border-collapse text-[8pt]">
+      <colgroup><col className="w-[36%]"/><col className="w-[16%]"/><col className="w-[16%]"/><col className="w-[16%]"/><col className="w-[16%]"/></colgroup>
       <thead><tr className="border-y border-black"><th className="px-2 py-1 text-left">Grupo</th><th className="px-2 py-1 text-right">Saldo anterior</th><th className="px-2 py-1 text-right">Débitos</th><th className="px-2 py-1 text-right">Créditos</th><th className="px-2 py-1 text-right">Saldo atual</th></tr></thead>
       <tbody>
         {linhasResumo.map((linha, indice) => <tr key={`${linha.descricao}-${indice}`} className="border-b border-black/20"><td className="px-2 py-1 font-semibold">{linha.descricao}</td><Valor valor={linha.saldoAnterior} natureza/><Valor valor={linha.debitos}/><Valor valor={linha.creditos}/><Valor valor={linha.saldoAtual} natureza/></tr>)}
