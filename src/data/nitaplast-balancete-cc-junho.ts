@@ -72,7 +72,7 @@ export function calcularBalanceteCcJunho(lancamentos:LancamentoIntegrado[]){
 
   const linhas:LinhaBalanceteCcJunho[]=[];
   for(const chave of new Set([...abertura.valores.keys(),...movimentos.keys()])){
-    const [conta,cc]=chave.split("|");const est=estruturaPorConta.get(conta);const saldo=saldoPorConta.get(conta);const m=movimentos.get(chave)??{debitos:0,creditos:0,lancamentos:0};
+    const [conta="",cc="0"]=chave.split("|");const est=estruturaPorConta.get(conta);const saldo=saldoPorConta.get(conta);const m=movimentos.get(chave)??{debitos:0,creditos:0,lancamentos:0};
     const saldoAnterior=arred(abertura.valores.get(chave)??0);const debitos=arred(m.debitos);const creditos=arred(m.creditos);const movimento=arred(debitos-creditos);
     linhas.push({chave,cc,centroCusto:nomesCc.get(cc)??"SEM CENTRO DE CUSTO",conta,classificacao:est?.classificacao??saldo?.classificacao??"",descricao:est?.descricao??saldo?.descricao??"Conta não encontrada no plano",grupo:grupoCentroCustoNitaplast(cc),saldoAnterior,debitos,creditos,movimento,saldoAtual:arred(saldoAnterior+movimento),lancamentos:m.lancamentos,aberturaRateada:abertura.rateadas.has(conta)});
   }

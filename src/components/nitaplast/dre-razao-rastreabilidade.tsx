@@ -48,7 +48,7 @@ function auditarItem(razao: LancamentoIntegrado[], item: ComposicaoResultadoJulh
     else motivo = `DRE D ${brl.format(item.debitos)} / C ${brl.format(item.creditos)}; Razão D ${brl.format(debitosRazao)} / C ${brl.format(creditosRazao)}.`;
   }
 
-  return { item, lancamentos, debitosRazao, creditosRazao, movimentoRazao, conciliado, motivo };
+  return { item, lancamentos, debitosRazao, creditosRazao, movimentoRazao, conciliado, ...(motivo !== undefined ? { motivo } : {}) };
 }
 
 export function AuditoriaDreRazaoJulho() {

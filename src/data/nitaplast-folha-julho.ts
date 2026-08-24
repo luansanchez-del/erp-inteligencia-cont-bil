@@ -79,7 +79,7 @@ const fonteMatriz = "FOLHA MENSAL 07.2026 - MATRIZ(1).pdf + DEMONSTRATIVO INSS 0
 const fonteFilial = "DEMONSTRATIVO INSS 07.2026(1).pdf + 1-FGTS Relatorio (Atualizado)(1).pdf + COMUNICADO FGTS-07.2026 / consignado";
 
 const lancamentosMatriz:LancamentoIntegrado[] = folhaMatrizDetalhe.flatMap((e)=>{
-  const cc=e.cc, centroCusto=centros[cc];
+  const cc=e.cc, centroCusto=centros[cc] ?? "SEM CENTRO DE CUSTO";
   const base = `Folha 07/2026 ${e.matricula} - ${e.nome}`;
   const a:LancamentoIntegrado[]=[];
   if(e.remuneracaoRegular) a.push(l({id:`JUL-FOL-M-${e.matricula}-REM`,data:"31/07/2026",origem:"FOLHA MATRIZ 07/2026",debitoCodigo:"4014",creditoCodigo:"1634",historico:`${base} - remuneração regular`,documento:e.matricula,cc,centroCusto,valor:e.remuneracaoRegular,observacao:"Remuneração bruta do período trabalhado; férias são tratadas contra provisão para não duplicar despesa.",fonte:fonteMatriz}));
@@ -98,7 +98,7 @@ const lancamentosMatriz:LancamentoIntegrado[] = folhaMatrizDetalhe.flatMap((e)=>
 });
 
 const lancamentosFilial:LancamentoIntegrado[] = folhaFilialDetalhe.flatMap((e)=>{
-  const cc="502",centroCusto=centros[cc];
+  const cc="502",centroCusto=centros[cc] ?? "SEM CENTRO DE CUSTO";
   const base=`Folha filial 07/2026 ${e.matricula} - ${e.nome}`;
   return [
     l({id:`JUL-FOL-F-${e.matricula}-REM`,data:"31/07/2026",origem:"FOLHA FILIAL 07/2026",debitoCodigo:"4014",creditoCodigo:"1634",historico:`${base} - remuneração`,documento:e.matricula,cc,centroCusto,valor:e.remuneracao,observacao:"Remuneração da filial comprovada pela base individual de INSS e FGTS. Descontos não estatutários/líquido da filial permanecem para conciliação analítica quando houver extrato mensal completo da filial.",fonte:fonteFilial,status:"revisar"}),
@@ -121,7 +121,7 @@ const baseProvisaoMatriz = [
 ];
 
 function provisoesPorCc(cc:string,base:number,aliquotaEncargos:number,prefixo:string,fonte:string):LancamentoIntegrado[] {
-  const centroCusto=centros[cc];
+  const centroCusto=centros[cc] ?? "SEM CENTRO DE CUSTO";
   const decimo=arred(base/12);
   const ferias=arred((base/12)*(4/3));
   const enc13=arred(decimo*aliquotaEncargos);

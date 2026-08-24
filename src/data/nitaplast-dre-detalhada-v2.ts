@@ -14,7 +14,7 @@ export type ComposicaoDre = {
   valorLinha: number;
   lancamentos: number;
   fonte: string;
-  observacao?: string;
+  observacao?: string | undefined;
 };
 
 export type LinhaComparacaoDre = {
@@ -307,7 +307,8 @@ function contem(m: MovimentoResultado, valor: string) {
   return texto(m).includes(valor);
 }
 
-const bucketsOperacionais: Record<string, MovimentoResultado[]> = {
+type BucketOperacional = "adm" | "nplog" | "comerciais" | "producao" | "veiculos" | "barracao" | "imobilizado" | "industrializacao" | "tributarias" | "comercial-sp" | "despesas-nao-mapeadas";
+const bucketsOperacionais: Record<BucketOperacional, MovimentoResultado[]> = {
   adm: [], nplog: [], comerciais: [], producao: [], veiculos: [], barracao: [], imobilizado: [], industrializacao: [], tributarias: [], "comercial-sp": [], "despesas-nao-mapeadas": [],
 };
 
