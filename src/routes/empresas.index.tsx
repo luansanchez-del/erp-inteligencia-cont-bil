@@ -108,7 +108,7 @@ function EmpresasPage() {
         titulo="Empresas"
         descricao="Cadastro base das empresas atendidas. Vínculos de grupo e parâmetros contábeis."
         acoes={
-          <Button size="sm" className="gap-2" asChild><Link to="/importacoes"><Plus className="size-4" /> Nova empresa / implantação</Link></Button>
+          <Button size="sm" className="gap-2" asChild><Link to="/empresas/nova"><Plus className="size-4" /> Nova empresa</Link></Button>
         }
       />
       <DataTable

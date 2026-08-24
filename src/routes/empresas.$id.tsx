@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, CircleAlert } from "lucide-react";
 import { regimeTexto } from "@/lib/empresa";
 import { PageHeader, PageShell } from "@/components/page-header";
@@ -6,17 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { empresas, grupos, integracoes } from "@/data/mock";
+import { grupos, integracoes } from "@/data/mock";
+import { useErp } from "@/context/erp-context";
 
 export const Route = createFileRoute("/empresas/$id")({
-  loader: ({ params }) => {
-    const empresa = empresas.find((e) => e.id === params.id);
-    if (!empresa) throw notFound();
-    return { empresa };
-  },
-  head: ({ loaderData }) => ({
+  head: () => ({
     meta: [
-      { title: loaderData ? `${loaderData.empresa.nomeFantasia} — ERP Contábil` : "Empresa" },
+      { title: "Empresa — ERP Contábil" },
       { name: "description", content: "Detalhe cadastral da empresa no ERP Contábil." },
       { property: "og:title", content: "Detalhe da empresa — ERP Contábil" },
       { property: "og:description", content: "Dados cadastrais, contábeis e vínculos da empresa." },
@@ -35,7 +31,12 @@ function Campo({ rotulo, valor }: { rotulo: string; valor: string }) {
 }
 
 function EmpresaDetalhe() {
-  const { empresa } = Route.useLoaderData();
+  const { id } = Route.useParams();
+  const { empresas } = useErp();
+  const empresa = empresas.find((item) => item.id === id);
+  if (!empresa) {
+    return <PageShell><PageHeader titulo="Empresa não encontrada" descricao="O cadastro solicitado não existe." acoes={<Button variant="outline" size="sm" asChild><Link to="/empresas"><ArrowLeft className="mr-1.5 size-4"/>Voltar</Link></Button>}/></PageShell>;
+  }
   const grupo = grupos.find((g) => g.id === empresa.grupoId);
 
   return (

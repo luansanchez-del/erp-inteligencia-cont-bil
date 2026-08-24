@@ -38,6 +38,7 @@ import { Route as ContabilRazaoRouteImport } from './routes/contabil.razao'
 import { Route as ContabilRazaoAplicacoesRouteImport } from './routes/contabil.razao-aplicacoes'
 import { Route as EmpresasIndexRouteImport } from './routes/empresas.index'
 import { Route as EmpresasIdRouteImport } from './routes/empresas.$id'
+import { Route as EmpresasNovaRouteImport } from './routes/empresas.nova'
 import { Route as RelatoriosBalanceteCentroCustoRouteImport } from './routes/relatorios.balancete-centro-custo'
 import { Route as RelatoriosDiarioRouteImport } from './routes/relatorios.diario'
 import { Route as RelatoriosDreRouteImport } from './routes/relatorios.dre'
@@ -190,6 +191,11 @@ const EmpresasIdRoute = EmpresasIdRouteImport.update({
   path: '/empresas/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EmpresasNovaRoute = EmpresasNovaRouteImport.update({
+  id: '/empresas/nova',
+  path: '/empresas/nova',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RelatoriosBalanceteCentroCustoRoute =
   RelatoriosBalanceteCentroCustoRouteImport.update({
     id: '/balancete-centro-custo',
@@ -241,6 +247,7 @@ export interface FileRoutesByFullPath {
   '/contabil/razao': typeof ContabilRazaoRoute
   '/contabil/razao-aplicacoes': typeof ContabilRazaoAplicacoesRoute
   '/empresas/$id': typeof EmpresasIdRoute
+  '/empresas/nova': typeof EmpresasNovaRoute
   '/relatorios/balancete-centro-custo': typeof RelatoriosBalanceteCentroCustoRoute
   '/relatorios/diario': typeof RelatoriosDiarioRoute
   '/relatorios/dre': typeof RelatoriosDreRoute
@@ -276,6 +283,7 @@ export interface FileRoutesByTo {
   '/contabil/razao': typeof ContabilRazaoRoute
   '/contabil/razao-aplicacoes': typeof ContabilRazaoAplicacoesRoute
   '/empresas/$id': typeof EmpresasIdRoute
+  '/empresas/nova': typeof EmpresasNovaRoute
   '/relatorios/balancete-centro-custo': typeof RelatoriosBalanceteCentroCustoRoute
   '/relatorios/diario': typeof RelatoriosDiarioRoute
   '/relatorios/dre': typeof RelatoriosDreRoute
@@ -312,6 +320,7 @@ export interface FileRoutesById {
   '/contabil/razao': typeof ContabilRazaoRoute
   '/contabil/razao-aplicacoes': typeof ContabilRazaoAplicacoesRoute
   '/empresas/$id': typeof EmpresasIdRoute
+  '/empresas/nova': typeof EmpresasNovaRoute
   '/relatorios/balancete-centro-custo': typeof RelatoriosBalanceteCentroCustoRoute
   '/relatorios/diario': typeof RelatoriosDiarioRoute
   '/relatorios/dre': typeof RelatoriosDreRoute
@@ -349,6 +358,7 @@ export interface FileRouteTypes {
     | '/contabil/razao'
     | '/contabil/razao-aplicacoes'
     | '/empresas/$id'
+    | '/empresas/nova'
     | '/relatorios/balancete-centro-custo'
     | '/relatorios/diario'
     | '/relatorios/dre'
@@ -384,6 +394,7 @@ export interface FileRouteTypes {
     | '/contabil/razao'
     | '/contabil/razao-aplicacoes'
     | '/empresas/$id'
+    | '/empresas/nova'
     | '/relatorios/balancete-centro-custo'
     | '/relatorios/diario'
     | '/relatorios/dre'
@@ -419,6 +430,7 @@ export interface FileRouteTypes {
     | '/contabil/razao'
     | '/contabil/razao-aplicacoes'
     | '/empresas/$id'
+    | '/empresas/nova'
     | '/relatorios/balancete-centro-custo'
     | '/relatorios/diario'
     | '/relatorios/dre'
@@ -455,6 +467,7 @@ export interface RootRouteChildren {
   ContabilRazaoRoute: typeof ContabilRazaoRoute
   ContabilRazaoAplicacoesRoute: typeof ContabilRazaoAplicacoesRoute
   EmpresasIdRoute: typeof EmpresasIdRoute
+  EmpresasNovaRoute: typeof EmpresasNovaRoute
   EmpresasIndexRoute: typeof EmpresasIndexRoute
 }
 
@@ -663,6 +676,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EmpresasIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/empresas/nova': {
+      id: '/empresas/nova'
+      path: '/empresas/nova'
+      fullPath: '/empresas/nova'
+      preLoaderRoute: typeof EmpresasNovaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/relatorios/balancete-centro-custo': {
       id: '/relatorios/balancete-centro-custo'
       path: '/balancete-centro-custo'
@@ -741,6 +761,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContabilRazaoRoute: ContabilRazaoRoute,
   ContabilRazaoAplicacoesRoute: ContabilRazaoAplicacoesRoute,
   EmpresasIdRoute: EmpresasIdRoute,
+  EmpresasNovaRoute: EmpresasNovaRoute,
   EmpresasIndexRoute: EmpresasIndexRoute,
 }
 export const routeTree = rootRouteImport
