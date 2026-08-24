@@ -159,7 +159,7 @@ export interface Usuario {
   ativo: boolean;
 }
 
-export type FormatoImportacao = "TXT" | "CSV" | "XLSX" | "OFX" | "PDF" | "XML" | "API";
+export type FormatoImportacao = "TXT" | "SPED" | "CSV" | "XLSX" | "OFX" | "PDF" | "XML" | "API";
 
 export interface ImportacaoJob {
   id: string;
@@ -173,7 +173,7 @@ export interface ImportacaoJob {
 
 export type FluxoImportacao = "implantacao" | "recorrencia";
 export type CategoriaFonteImportacao =
-  | "plano_contas" | "saldos_abertura" | "saldos_auxiliares"
+  | "ecd" | "plano_contas" | "saldos_abertura" | "saldos_auxiliares"
   | "fiscal_entradas" | "fiscal_saidas" | "bancos" | "folha" | "tributos"
   | "estoque" | "imobilizado" | "aplicacoes" | "outros_documentos"
   | "relatorio_conferencia";
