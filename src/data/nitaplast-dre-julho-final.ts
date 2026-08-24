@@ -211,17 +211,29 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
 
   const resultado=arred(receitaLiquida-custos-despesas+receitasFinanceiras+resultadoAlienacaoImobilizado);
 
-  // Ajuste de conciliação com a DRE apresentada pelo cliente (planilha 07/2026), NÃO lançado
-  // no Razão/Balancete. O CC 503 (Manutenção SP) é Filial e já compõe integralmente
-  // "Despesas Comerciais — Filial SP" (bate com o cliente). A planilha do cliente soma esse
-  // mesmo valor de novo em "Despesas de Produção"/"Despesas com Industrialização" (Matriz),
-  // então o total dele fica R$ 19.225,58 maior. Pendente de confirmação do cliente/Domínio
-  // sobre a origem dessa duplicidade; enquanto isso, expomos o ajuste separado do resultado
-  // contábil real para não distorcer o Balancete (que fecha em cima do Razão, sem este ajuste).
-  const ajusteConciliacaoClienteCC503Producao=18252.55;
-  const ajusteConciliacaoClienteCC503Industrializacao=973.03;
+  // Ajustes de conciliação com a DRE apresentada pelo cliente (planilha 07/2026). NENHUM dos
+  // dois é lançado no Razão/Balancete — o Balancete continua fechando só com o Razão real.
+  //
+  // 1) CC 503 (Manutenção SP) é Filial e já compõe integralmente "Despesas Comerciais —
+  //    Filial SP" (bate com o cliente). A planilha do cliente soma esse mesmo valor de novo em
+  //    "Despesas de Produção"/"Despesas com Industrialização" (Matriz): despesa do cliente
+  //    R$ 19.225,58 maior que a nossa, então o resultado comparável precisa ser R$ 19.225,58
+  //    menor. Pendente de confirmação do cliente/Domínio sobre a origem da duplicidade.
+  //
+  // 2) ICMS/COFINS Matriz: nossa apuração de ICMS "saídas externas" (R$ 230.381,99) não
+  //    segrega as 3 notas de venda do imobilizado (Mini Cooper + Corolla + Transformador,
+  //    R$ 306.900,00, fora da Receita Operacional Bruta) do restante das saídas — o ICMS
+  //    específico dessas notas nunca foi documentado (planilha Composicao_ICMS_Imobilizado
+  //    ainda está "a preencher"). Os créditos de COFINS por CFOP (1201/1202/2201/2911,
+  //    R$ 2.512,44) também não têm segregação Matriz/Filial na fonte (EFD bloco D). Nossa
+  //    dedução de ICMS+COFINS Matriz fica R$ 3.768,38 maior que a do cliente, então o
+  //    resultado comparável precisa ser R$ 3.768,38 maior. Pendente do detalhamento fiscal.
+  const ajusteConciliacaoClienteCC503Producao=-18252.55;
+  const ajusteConciliacaoClienteCC503Industrializacao=-973.03;
   const ajusteConciliacaoClienteCC503=arred(ajusteConciliacaoClienteCC503Producao+ajusteConciliacaoClienteCC503Industrializacao);
-  const resultadoConciliadoClienteJulho=arred(resultado-ajusteConciliacaoClienteCC503);
+  const ajusteConciliacaoClienteIcmsCofinsMatriz=3768.38;
+  const ajusteConciliacaoClienteTotal=arred(ajusteConciliacaoClienteCC503+ajusteConciliacaoClienteIcmsCofinsMatriz);
+  const resultadoConciliadoClienteJulho=arred(resultado+ajusteConciliacaoClienteTotal);
   const despesasCriterioAnterior=arred(despesasOperacionaisCriterioAnterior+despesasFinanceiras);
   const resultadoCriterioAnterior=arred(receitaLiquida-custosCriterioAnterior-despesasCriterioAnterior+receitasFinanceiras+resultadoAlienacaoImobilizado);
   const impactoResultadoReclassificacao=arred(resultado-resultadoCriterioAnterior);
@@ -270,11 +282,18 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
     },
     conferenciaBalancete:balancete.conferencia,
     resultado,
-    ajusteConciliacaoClienteCC503:{
-      producao:ajusteConciliacaoClienteCC503Producao,
-      industrializacao:ajusteConciliacaoClienteCC503Industrializacao,
-      total:ajusteConciliacaoClienteCC503,
-      criterio:"CC 503 (Manutenção SP) é Filial e já compõe integralmente Despesas Comerciais — Filial SP. A DRE do cliente soma o mesmo valor novamente em Despesas de Produção/Industrialização da Matriz. Não lançado no Razão; pendente de confirmação do cliente/Domínio.",
+    ajusteConciliacaoCliente:{
+      cc503:{
+        producao:ajusteConciliacaoClienteCC503Producao,
+        industrializacao:ajusteConciliacaoClienteCC503Industrializacao,
+        total:ajusteConciliacaoClienteCC503,
+        criterio:"CC 503 (Manutenção SP) é Filial e já compõe integralmente Despesas Comerciais — Filial SP. A DRE do cliente soma o mesmo valor novamente em Despesas de Produção/Industrialização da Matriz. Não lançado no Razão; pendente de confirmação do cliente/Domínio.",
+      },
+      icmsCofinsMatriz:{
+        total:ajusteConciliacaoClienteIcmsCofinsMatriz,
+        criterio:"ICMS das 3 notas de venda do imobilizado (fora da Receita Operacional Bruta) não está segregado da apuração de saídas externas, e os créditos de COFINS por CFOP não têm segregação Matriz/Filial na fonte. Não lançado no Razão; pendente do detalhamento fiscal (ICMS por NF do imobilizado e EFD bloco D por estabelecimento).",
+      },
+      total:ajusteConciliacaoClienteTotal,
     },
     resultadoConciliadoClienteJulho,
     status:"fechado_com_pendencias" as const,fechadoEm:"18/08/2026",

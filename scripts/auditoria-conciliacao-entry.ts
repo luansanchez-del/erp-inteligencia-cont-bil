@@ -3,6 +3,6 @@ import { lancamentosIntegradosJulhoFinal } from "../src/data/nitaplast-razao-jul
 const calculo = calcularDreJulhoFinal(lancamentosIntegradosJulhoFinal);
 console.log(JSON.stringify({
   resultado: calculo.dre.resultado,
-  ajuste: calculo.dre.ajusteConciliacaoClienteCC503,
+  ajuste: calculo.dre.ajusteConciliacaoCliente,
   resultadoConciliadoClienteJulho: calculo.dre.resultadoConciliadoClienteJulho,
 }, null, 2));
