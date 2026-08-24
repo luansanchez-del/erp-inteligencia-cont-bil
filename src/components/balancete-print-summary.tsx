@@ -31,13 +31,18 @@ export function BalancetePrintSummary({ linhas }: { linhas: LinhaResumoBalancete
   const compensacaoPassiva = { ...(compensacaoPassivaBase ?? vazio("CONTAS DE COMPENSAÇÃO")), descricao: "CONTAS DE COMPENSAÇÃO" };
   const resultado = (descricao: string, somenteMes: boolean): LinhaResumoBalancete => {
     const saldoAnterior = somenteMes ? 0 : arred(receitas.saldoAnterior + despesas.saldoAnterior);
-    const debitos = arred(receitas.debitos + despesas.debitos);
-    const creditos = arred(receitas.creditos + despesas.creditos);
+    const despesasLiquidas = arred(despesas.debitos - despesas.creditos);
+    const receitasLiquidas = arred(receitas.creditos - receitas.debitos);
+    const debitos = Math.max(0, despesasLiquidas) + Math.max(0, -receitasLiquidas);
+    const creditos = Math.max(0, receitasLiquidas) + Math.max(0, -despesasLiquidas);
     return { tipo: "S", classificacao: "", descricao, saldoAnterior, debitos, creditos, saldoAtual: arred(saldoAnterior + debitos - creditos) };
   };
   const linhasResumo = [ativo, passivo, patrimonio, receitas, despesas, naoOperacional, compensacaoAtiva, compensacaoPassiva];
   const devedoras: LinhaResumoBalancete = { tipo: "S", classificacao: "", descricao: "CONTAS DEVEDORAS", saldoAnterior: arred(analiticas.reduce((s, x) => s + Math.max(0, x.saldoAnterior), 0)), debitos: total("debitos"), creditos: total("creditos"), saldoAtual: arred(analiticas.reduce((s, x) => s + Math.max(0, x.saldoAtual), 0)) };
   const credoras: LinhaResumoBalancete = { tipo: "S", classificacao: "", descricao: "CONTAS CREDORAS", saldoAnterior: -arred(analiticas.reduce((s, x) => s + Math.max(0, -x.saldoAnterior), 0)), debitos: total("debitos"), creditos: total("creditos"), saldoAtual: -arred(analiticas.reduce((s, x) => s + Math.max(0, -x.saldoAtual), 0)) };
+  const resultadoMes = resultado("RESULTADO DO MÊS", true);
+  const resultadoExercicio = resultado("RESULTADO DO EXERCÍCIO", false);
+  if (Math.abs(resultadoExercicio.saldoAtual - arred(resultadoExercicio.saldoAnterior + resultadoMes.saldoAtual)) > 0.01) throw new Error("Resultado anterior + resultado do mês não fecha com o resultado do exercício.");
 
   return <section className="mt-5 hidden break-inside-avoid border border-black p-3 text-black print:block">
     <h2 className="mb-2 text-[10pt] font-bold uppercase">Resumo do Balancete</h2>
@@ -48,7 +53,7 @@ export function BalancetePrintSummary({ linhas }: { linhas: LinhaResumoBalancete
         <tr><td colSpan={5} className="h-2"/></tr>
         {[devedoras, credoras].map((linha) => <tr key={linha.descricao} className="border-b border-black/20"><td className="px-2 py-1 font-semibold">{linha.descricao}</td><Valor valor={linha.saldoAnterior} natureza/><Valor valor={linha.debitos}/><Valor valor={linha.creditos}/><Valor valor={linha.saldoAtual} natureza/></tr>)}
         <tr><td colSpan={5} className="h-2"/></tr>
-        {[resultado("RESULTADO DO MÊS", true), resultado("RESULTADO DO EXERCÍCIO", false)].map((linha) => <tr key={linha.descricao} className="font-bold"><td className="px-2 py-1">{linha.descricao}</td><Valor valor={linha.saldoAnterior} natureza/><Valor valor={linha.debitos}/><Valor valor={linha.creditos}/><Valor valor={linha.saldoAtual} natureza/></tr>)}
+        {[resultadoMes, resultadoExercicio].map((linha) => <tr key={linha.descricao} className="font-bold"><td className="px-2 py-1">{linha.descricao}</td><Valor valor={linha.saldoAnterior} natureza/><Valor valor={linha.debitos}/><Valor valor={linha.creditos}/><Valor valor={linha.saldoAtual} natureza/></tr>)}
       </tbody>
     </table>
   </section>;
