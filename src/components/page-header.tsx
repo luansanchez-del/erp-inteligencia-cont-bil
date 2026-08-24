@@ -146,13 +146,13 @@ export function PageShell({ children }: { children: ReactNode }) {
             @page { size: A4 landscape; margin: 7mm; }
             .erp-report-page[data-report-kind="Balancete"] .erp-route-content table {
               width: 100% !important; min-width: 0 !important; table-layout: fixed !important;
-              border-collapse: collapse !important; font-size: 6.2pt !important; line-height: 1.05 !important;
+              border-collapse: collapse !important; font-size: 5.5pt !important; line-height: 1 !important;
             }
             .erp-report-page[data-report-kind="Balancete"] .erp-route-content thead { display: table-header-group !important; }
             .erp-report-page[data-report-kind="Balancete"] .erp-route-content tr { break-inside: avoid !important; page-break-inside: avoid !important; }
             .erp-report-page[data-report-kind="Balancete"] .erp-route-content th,
             .erp-report-page[data-report-kind="Balancete"] .erp-route-content td {
-              padding: 0.7mm 0.8mm !important; color: #000 !important; background: #fff !important;
+              height: auto !important; padding: 0.32mm 0.6mm !important; color: #000 !important; background: #fff !important;
             }
             .erp-report-page[data-report-kind="Balancete"] .erp-route-content th:nth-child(1),
             .erp-report-page[data-report-kind="Balancete"] .erp-route-content td:nth-child(1) { width: 7% !important; }
@@ -173,6 +173,13 @@ export function PageShell({ children }: { children: ReactNode }) {
             .erp-report-page[data-report-period="2026-07"][data-report-kind="Balancete"] .erp-route-content th:nth-child(11),
             .erp-report-page[data-report-period="2026-07"][data-report-kind="Balancete"] .erp-route-content td:nth-child(11) { display: none !important; }
             .erp-report-page[data-report-kind="Balancete"] .erp-page-header { display: none !important; }
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content { gap: 0 !important; }
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content .rounded-xl,
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content .rounded-lg { border-radius: 0 !important; }
+            .erp-report-page[data-report-period="2026-07"][data-report-kind="Balancete"] .erp-route-content > div > :not(:last-child) { display: none !important; }
+            .erp-report-page[data-report-period="2026-07"][data-report-kind="Balancete"] .erp-route-content > div > :last-child > div:first-child { display: none !important; }
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content [class*="shadow"] { box-shadow: none !important; }
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content .overflow-x-auto { overflow: visible !important; }
           }
         `}</style>
       ) : null}

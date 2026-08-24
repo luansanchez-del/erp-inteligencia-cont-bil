@@ -57,7 +57,7 @@ export function BalanceteDominioCompetencia({ competencia }: { competencia: "202
 
 function ResultadoCompetencia({ resultado }: { resultado: ReturnType<typeof calcularDreJulhoFinal>["dre"] }) {
   return (
-    <Card>
+    <Card className="print:hidden">
       <CardHeader><CardTitle className="text-base">Resultado contábil 07/2026</CardTitle></CardHeader>
       <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
         <Metric label="Receita líquida" value={resultado.receitaLiquida} />
