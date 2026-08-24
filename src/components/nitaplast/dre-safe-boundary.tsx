@@ -17,13 +17,13 @@ type State = {
  * O erro fica visível para revisão e as demais partes da DRE continuam acessíveis.
  */
 export class DreSafeBoundary extends Component<Props, State> {
-  state: State = { erro: null };
+  override state: State = { erro: null };
 
   static getDerivedStateFromError(erro: Error): State {
     return { erro };
   }
 
-  componentDidCatch(erro: Error, info: ErrorInfo) {
+  override componentDidCatch(erro: Error, info: ErrorInfo) {
     console.error(`[DRE] ${this.props.titulo}`, erro, info);
   }
 
@@ -31,7 +31,7 @@ export class DreSafeBoundary extends Component<Props, State> {
     this.setState({ erro: null });
   };
 
-  render() {
+  override render() {
     if (!this.state.erro) return this.props.children;
 
     return (

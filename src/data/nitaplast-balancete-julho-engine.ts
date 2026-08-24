@@ -55,7 +55,7 @@ export const contasPosImplantacao = [
   ["4405", "5.7.01.007.005", "Despesas e adiantamentos de viagem"],
   ["4505", "5.7.05.001.001", "Combustíveis e Lubrificantes"],
 ] as const;
-const contasPosImplantacaoConhecidas = new Set(contasPosImplantacao.map(([conta]) => conta));
+const contasPosImplantacaoConhecidas = new Set<string>(contasPosImplantacao.map(([conta]) => conta as string));
 for (const [conta, classificacao, descricao] of contasPosImplantacao) {
   classificacaoPorConta.set(conta, classificacao);
   descricaoPorConta.set(conta, descricao);
