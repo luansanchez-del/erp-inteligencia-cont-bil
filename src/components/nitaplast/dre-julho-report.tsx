@@ -82,9 +82,9 @@ export function DreJulhoReport() {
     const importacao = matriz.filter((x) => x.conta === "25070");
     const veiculos = matriz.filter((x) => x.classificacao.startsWith("5.7.05") || x.classificacao.startsWith("5.7.01.015"));
     const energia = composicao.filter((x) => x.conta === "3494" && x.estabelecimento === "Matriz");
-    const excluidas = new Set([...industrializacao, ...depreciacao, ...creditosFederais, ...exportacao, ...importacao, ...veiculos, ...energia].map((x) => x.id));
+    const excluidas = new Set([...industrializacao, ...depreciacao, ...creditosFederais, ...exportacao, ...veiculos, ...energia].map((x) => x.id));
     const classificaveis = matriz.filter((x) => !excluidas.has(x.id));
-    const comerciais = classificaveis.filter((x) => ccCom.has(x.cc));
+    const comerciais = classificaveis.filter((x) => ccCom.has(x.cc) || x.conta === "25070");
     const administrativas = classificaveis.filter((x) => ccAdm.has(x.cc));
     const producao = classificaveis.filter((x) => ccProd.has(x.cc) && !comerciais.includes(x));
     const outras = classificaveis.filter((x) => !producao.includes(x) && !comerciais.includes(x) && !administrativas.includes(x));
@@ -149,12 +149,11 @@ export function DreJulhoReport() {
     { id: "desp-producao", descricao: "Despesas Produção — Matriz", valor: -soma(grupos.producao), nivel: 2, tipo: "detalhe" },
     { id: "veiculos", descricao: "Despesas com Veículos — Matriz", valor: -soma(grupos.veiculos), nivel: 2, tipo: "detalhe" },
     { id: "exportacao", descricao: "Despesas com Exportação — Matriz", valor: -soma(grupos.exportacao), nivel: 2, tipo: "detalhe" },
-    { id: "importacao", descricao: "Despesas com Importação — Matriz", valor: -soma(grupos.importacao), nivel: 2, tipo: "detalhe" },
-    { id: "desp-comerciais", descricao: "Despesas Comerciais — Matriz", valor: -soma(grupos.comerciais), nivel: 2, tipo: "detalhe" },
+    { id: "desp-comerciais", descricao: "Despesas Comerciais — Matriz (incluindo Importação)", valor: -soma(grupos.comerciais), nivel: 2, tipo: "detalhe" },
     { id: "desp-adm", descricao: "Despesas Administrativas — Matriz", valor: -soma(grupos.administrativas), nivel: 2, tipo: "detalhe" },
     { id: "depreciacao", descricao: "Depreciação e Amortização — Matriz", valor: -soma(grupos.depreciacao), nivel: 2, tipo: "detalhe" },
     { id: "desp-outras", descricao: "Outras Despesas Operacionais — Matriz", valor: -soma(grupos.outras), nivel: 2, tipo: "detalhe" },
-    { id: "desp-filial", descricao: "Despesas Operacionais — Filial SP", valor: -despesasFilial, nivel: 1, tipo: "detalhe" },
+    { id: "desp-filial", descricao: "Despesas Comerciais — Filial SP", valor: -despesasFilial, nivel: 1, tipo: "detalhe" },
     { id: "desp-fin", descricao: "(-) Despesas Financeiras", valor: -despesasFinanceiras, nivel: 1, tipo: "grupo" },
     ...[...grupos.despesasFinanceiras].sort((a,b)=>a.conta.localeCompare(b.conta)).map<LinhaReport>((item) => ({ id: `fin-d-${item.conta}-${item.cc}-${item.estabelecimento}`, descricao: `${item.conta} · ${item.descricao} — ${item.estabelecimento}`, valor: -item.valor, nivel: 2, tipo: "detalhe" })),
     { id: "rec-fin", descricao: "(+) Receitas Financeiras", valor: dre.receitasFinanceiras, nivel: 1, tipo: "grupo" },
