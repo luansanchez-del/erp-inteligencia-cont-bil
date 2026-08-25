@@ -76,5 +76,5 @@ export function BalancetePrintSummary({ linhas, resultadoContabil }: { linhas: L
 function Assinatura({ nome, detalhe }: { nome?: string | undefined; detalhe: Array<string | undefined> }) { if (!nome) return <div/>; return <div className="border-t pt-1 print:border-black"><div>{nome}</div>{detalhe.filter(Boolean).map((item) => <div key={item}>{item}</div>)}</div>; }
 
 function Valor({ valor, natureza = false }: { valor: number; natureza?: boolean }) { return <td className="px-2 py-1 text-right tabular-nums">{formatar(valor, natureza)}</td>; }
-function formatar(valor: number, natureza = false) { if (Math.abs(valor) < 0.005) return "0,00"; const numero = brl.format(Math.abs(valor)).replace("R$ ", ""); return natureza ? `${numero}${valor < 0 ? "C" : "D"}` : numero; }
+function formatar(valor: number, natureza = false) { if (Math.abs(valor) < 0.005) return "0,00"; const numero = brl.format(Math.abs(valor)).replace("R$ ", ""); return natureza ? `${numero}${valor < 0 ? "C" : "D"}` : numero; }
 import { useErp } from "@/context/erp-context";

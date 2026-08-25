@@ -75,14 +75,7 @@ function ResultadoCompetencia({ resultado }: { resultado: ReturnType<typeof calc
 }
 
 function Metric({ label, value }: { label: string; value: number }) {
-  return (
-    <Card>
-      <CardContent className="pt-5">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="mt-1 text-xl font-semibold tabular-nums">{brl.format(value)}</p>
-      </CardContent>
-    </Card>
-  );
+  return <Card><CardContent className="pt-5"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 text-xl font-semibold tabular-nums">{brl.format(value)}</p></CardContent></Card>;
 }
 
 function Money({ valor, strong = false }: { valor: number; strong?: boolean }) {

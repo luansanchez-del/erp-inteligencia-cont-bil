@@ -134,6 +134,8 @@ for (const linha of linhas) {
   linha.diferenca = arred(linha.calculado - linha.enviado);
 }
 
+const lucroLiqEnviado = enviadosCorretos["lucro-liq"] ?? 0;
+
 export const comparacaoDreDetalhada = linhas;
 
 export const resumoDreDetalhada = {
@@ -142,6 +144,6 @@ export const resumoDreDetalhada = {
   despesasLiquidasCalculadas: despesasLiquidas,
   resultadoOperacionalCalculado: resultadoOperacional,
   resultadoLiquidoCalculado: resultadoLiquido,
-  resultadoLiquidoEnviado: enviadosCorretos["lucro-liq"] ?? 0,
-  diferencaResultado: arred(resultadoLiquido - (enviadosCorretos["lucro-liq"] ?? 0)),
+  resultadoLiquidoEnviado: lucroLiqEnviado,
+  diferencaResultado: arred(resultadoLiquido - lucroLiqEnviado),
 } as const;

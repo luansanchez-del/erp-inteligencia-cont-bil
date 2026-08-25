@@ -51,7 +51,7 @@ export const lancamentosBancariosSegurosJulho: LancamentoIntegrado[] = [
 ];
 
 export const resumoIntegracaoBancariaJulho = {
-  fontesRecebidas: 17,
+  fontesRecebidas: ["17 fontes recebidas"],
   movimentosPatrimoniaisIntegrados: lancamentosBancariosSegurosJulho.length,
   situacao: "extratos recebidos, aplicações e resgates reconciliados; rendimentos e retenções efetivamente documentados contabilizados",
   controles: controlesBancariosJulho,
