@@ -311,7 +311,13 @@ const bucketsOperacionais: Record<string, MovimentoResultado[]> = {
   adm: [], nplog: [], comerciais: [], producao: [], veiculos: [], barracao: [], imobilizado: [], industrializacao: [], tributarias: [], "comercial-sp": [], "despesas-nao-mapeadas": [],
 };
 
-const bucket = (id: string): MovimentoResultado[] => (bucket(id) ??= []);
+const bucket = (id: string): MovimentoResultado[] => {
+  const atual = bucketsOperacionais[id];
+  if (atual) return atual;
+  const novo: MovimentoResultado[] = [];
+  bucketsOperacionais[id] = novo;
+  return novo;
+};
 
 for (const movimento of operacionalAntesCreditos) {
   if (movimento.cc === "502") bucket("comercial-sp").push(movimento);
