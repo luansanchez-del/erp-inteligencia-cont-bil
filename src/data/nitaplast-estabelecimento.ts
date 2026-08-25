@@ -19,6 +19,11 @@ const normalizar = (valor?: string) => (valor ?? "")
   .replace(/[\u0300-\u036f]/g, "")
   .toUpperCase();
 
+/** Centros de custo 501 a 505 representam despesas da Filial SP. */
+export function centroCustoFilialNitaplast(cc?: string) {
+  return /^(501|502|503|504|505)$/.test((cc ?? "").trim());
+}
+
 export function contaDedicadaFilialNitaplast(codigo: string, descricao?: string) {
   const texto = normalizar(descricao);
   return contasFilial.has(codigo)
@@ -40,7 +45,7 @@ export function estabelecimentoLancamentoNitaplast(linha: LancamentoIntegrado): 
 
   const contaFilial = contaDedicadaFilialNitaplast(linha.debitoCodigo, linha.debito)
     || contaDedicadaFilialNitaplast(linha.creditoCodigo, linha.credito);
-  const ccFilial = linha.cc === "501" || linha.cc === "502";
+  const ccFilial = centroCustoFilialNitaplast(linha.cc);
   const naturezaFilial = texto.includes("FILIAL")
     || texto.includes("COMERCIAL SP")
     || texto.includes("COMERCIAL SAO PAULO")
@@ -62,7 +67,7 @@ export function estabelecimentoLancamentoNitaplast(linha: LancamentoIntegrado): 
 export function estabelecimentoResultadoNitaplast(linha: LancamentoIntegrado, codigoConta: string): "Matriz" | "Filial SP" {
   const descricaoLado = codigoConta === linha.debitoCodigo ? linha.debito : linha.credito;
   if (contaDedicadaFilialNitaplast(codigoConta, descricaoLado)) return "Filial SP";
-  if (linha.cc === "501" || linha.cc === "502") return "Filial SP";
+  if (centroCustoFilialNitaplast(linha.cc)) return "Filial SP";
   if (linha.documento?.startsWith("14.03.006")) return "Filial SP";
 
   const texto = normalizar([linha.origem, linha.historico, linha.documento, linha.centroCusto, linha.fonte].join(" "));

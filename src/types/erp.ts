@@ -21,11 +21,13 @@ export interface Empresa {
   municipio?: string;
   uf: string;
   /** Ausente quando ainda não confirmado com o cliente — não presumir. */
-  regime?: RegimeTributario;
+  regime?: RegimeTributario | undefined;
   regimeConfirmado?: boolean;
-  atividade?: string;
+  atividade?: string | undefined;
   tipo: TipoEstabelecimento;
   grupoId?: string;
+  responsavelLegal?: { nome: string; cargo: string; cpf?: string };
+  responsavelContabil?: { nome: string; registro: string; cpf?: string };
   ativa: boolean;
 }
 
@@ -196,7 +198,7 @@ export interface ItemDossieImportacao {
   podeGerarLancamento: boolean;
   status: StatusDossieImportacao;
   criadoEm: string;
-  aprovadoEm?: string;
+  aprovadoEm?: string | undefined;
 }
 
 export interface Integracao {

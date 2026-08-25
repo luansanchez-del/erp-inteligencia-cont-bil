@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { estruturaBalanceteNitaplast, type LinhaEstruturaBalancete } from "@/data/nitaplast-balancete-estrutura";
 import { calcularBalanceteJulho, contasPosImplantacao } from "@/data/nitaplast-balancete-julho-engine";
+import { calcularDreJulhoFinal } from "@/data/nitaplast-dre-julho-final";
 import { saldoAberturaJulhoPorConta } from "@/data/nitaplast-saldos-julho";
 import { lancamentosIntegradosJulhoFinal } from "@/data/nitaplast-razao-julho-final-v2";
 import type { LancamentoIntegrado } from "@/data/nitaplast-razao-base";
@@ -18,17 +19,25 @@ import {
 } from "@/data/nitaplast-estabelecimento";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
 import { BalancetePrintSummary } from "@/components/balancete-print-summary";
+import { saldoAnteriorResultadoJulho2026 } from "@/data/nitaplast-resultado-transportado";
 
 const brl=new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
 const arred=(v:number)=>Math.round(v*100)/100;
 
-type LinhaBalancete=LinhaEstruturaBalancete&{saldoAnterior:number;debitos:number;creditos:number;movimento:number;saldoAtual:number;lancamentos:number;estabelecimento:EscopoContaNitaplast};
+type LinhaBalancete=LinhaEstruturaBalancete&{saldoAnterior:number;debitos:number;creditos:number;movimento:number;saldoAtual:number;lancamentos:number;estabelecimento:EscopoContaNitaplast;grupo:string};
+function grupoClassificacao(classificacao:string):string{
+  if(classificacao.startsWith("1"))return "Ativo";
+  if(classificacao.startsWith("2"))return "Passivo e patrimônio líquido";
+  if(classificacao.startsWith("4"))return "Receitas acumuladas";
+  if(classificacao.startsWith("5"))return "Custos e despesas acumulados";
+  return "Outros";
+}
 const contasEstrutura=new Set(estruturaBalanceteNitaplast.map(x=>x.conta));
 function compararClassificacao(a:LinhaEstruturaBalancete,b:LinhaEstruturaBalancete){
   const pa=a.classificacao.split(".").map(Number);const pb=b.classificacao.split(".").map(Number);
   for(let i=0;i<Math.max(pa.length,pb.length);i++){
     if(i>=pa.length)return -1;if(i>=pb.length)return 1;
-    if(pa[i]!==pb[i])return (pa[i]??0)-(pb[i]??0);
+    if((pa[i]??0)!==(pb[i]??0))return (pa[i]??0)-(pb[i]??0);
   }
   if(a.tipo!==b.tipo)return a.tipo==="S"?-1:1;
   return Number(a.conta)-Number(b.conta);
@@ -64,10 +73,11 @@ function calcularBalancete(base:LancamentoIntegrado[]):LinhaBalancete[]{
     vals.set(x.conta,{saldoAnterior:sa,debitos:arred(m.debitos),creditos:arred(m.creditos),movimento:liq,saldoAtual:arred(sa+liq),lancamentos:m.lancamentos,estabelecimento});
   }
   return estruturaBalanceteCompleta.map(x=>{
-    if(x.tipo==="A")return {...x,...(vals.get(x.conta)??{saldoAnterior:0,debitos:0,creditos:0,movimento:0,saldoAtual:0,lancamentos:0,estabelecimento:escopoContaBalanceteNitaplast(x.conta,x.descricao,[])})};
+    const grupo=grupoClassificacao(x.classificacao);
+    if(x.tipo==="A")return {...x,grupo,...(vals.get(x.conta)??{saldoAnterior:0,debitos:0,creditos:0,movimento:0,saldoAtual:0,lancamentos:0,estabelecimento:escopoContaBalanceteNitaplast(x.conta,x.descricao,[])})};
     const t={saldoAnterior:0,debitos:0,creditos:0,movimento:0,saldoAtual:0,lancamentos:0};const escopos:EscopoContaNitaplast[]=[];
     for(const a of analiticas){if(!descendente(a,x))continue;const v=vals.get(a.conta);if(!v)continue;t.saldoAnterior+=v.saldoAnterior;t.debitos+=v.debitos;t.creditos+=v.creditos;t.movimento+=v.movimento;t.saldoAtual+=v.saldoAtual;t.lancamentos+=v.lancamentos;escopos.push(v.estabelecimento);}
-    return {...x,saldoAnterior:arred(t.saldoAnterior),debitos:arred(t.debitos),creditos:arred(t.creditos),movimento:arred(t.movimento),saldoAtual:arred(t.saldoAtual),lancamentos:t.lancamentos,estabelecimento:combinarEscopos(escopos)};
+    return {...x,grupo,saldoAnterior:arred(t.saldoAnterior),debitos:arred(t.debitos),creditos:arred(t.creditos),movimento:arred(t.movimento),saldoAtual:arred(t.saldoAtual),lancamentos:t.lancamentos,estabelecimento:combinarEscopos(escopos)};
   });
 }
 
@@ -90,6 +100,7 @@ export function BalanceteJulhoAjustavel(){
   const {razao,reclassificacoes}=useRazaoJulhoAjustado();
   const motor=useMemo(()=>calcularBalanceteJulho(razao),[razao]);
   const balancete=useMemo(()=>calcularBalancete(razao),[razao]);
+  const dre=useMemo(()=>calcularDreJulhoFinal(razao).dre,[razao]);
 
   // A tela do Balancete não pode divergir do mesmo motor consumido pela DRE.
   const divergencias=useMemo(()=>{
@@ -123,7 +134,8 @@ export function BalanceteJulhoAjustavel(){
     <Card className={fechado?"border-emerald-500/40 bg-emerald-50/40":"border-amber-500/50 bg-amber-50/40"}><CardContent className="pt-5 text-sm"><strong>Conferência contábil: {fechado?"FECHADO":"REVISAR"}.</strong> Débitos − Créditos: <strong>{brl.format(conferencia.diferencaDebitosCreditos)}</strong> · soma do movimento das contas analíticas: <strong>{brl.format(conferencia.somaMovimentosAnaliticos)}</strong> · soma assinada do saldo final analítico: <strong>{brl.format(conferencia.somaSaldoAtualAnalitico)}</strong>. Para conferir se o Balancete zera, some somente as linhas <strong>A (analíticas)</strong> com seus sinais; não some linhas sintéticas + analíticas, pois isso duplica os mesmos saldos.{conferencia.contasRazaoSemEstrutura.length>0?<span className="block mt-2 font-semibold text-amber-800">Contas do Razão ausentes na estrutura do Balancete: {conferencia.contasRazaoSemEstrutura.join(", ")}</span>:null}</CardContent></Card>
     <Card><CardHeader><div className="flex flex-wrap items-center justify-between gap-3"><CardTitle className="text-base">Balancete 07/2026</CardTitle><div className="relative w-full sm:w-96"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground"/><Input className="pl-9" value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar conta, estabelecimento ou descrição"/></div></div></CardHeader><CardContent>
       <div className="mb-4 flex flex-wrap gap-2"><Button size="sm" variant={grupo==="todos"?"default":"outline"} onClick={()=>setGrupo("todos")}>Todos</Button><Button size="sm" variant={grupo==="Ativo"?"default":"outline"} onClick={()=>setGrupo("Ativo")}>Ativo</Button><Button size="sm" variant={grupo==="Passivo e patrimônio líquido"?"default":"outline"} onClick={()=>setGrupo("Passivo e patrimônio líquido")}>Passivo e PL</Button><Button size="sm" variant={grupo==="Receitas acumuladas"?"default":"outline"} onClick={()=>setGrupo("Receitas acumuladas")}>Receitas</Button><Button size="sm" variant={grupo==="Custos e despesas acumulados"?"default":"outline"} onClick={()=>setGrupo("Custos e despesas acumulados")}>Custos e despesas</Button><Button size="sm" variant={soMov?"default":"outline"} onClick={()=>setSoMov(v=>!v)}>Somente com movimento</Button><Button size="sm" variant={zeradas?"default":"outline"} onClick={()=>setZeradas(v=>!v)}>Exibir zeradas</Button><select value={estab} onChange={e=>setEstab(e.target.value)} className="h-9 rounded-md border bg-background px-3 text-sm"><option value="todos">Todos os estabelecimentos</option><option value="Matriz">Matriz</option><option value="Filial SP">Filial SP</option><option value="Matriz + Filial SP">Matriz + Filial SP</option></select></div>
-      <div className="overflow-x-auto"><table className="w-full min-w-[1500px] text-sm"><thead><tr className="border-b bg-muted text-left text-xs"><th className="p-2">Conta</th><th className="p-2">S/A</th><th className="p-2">Classificação</th><th className="p-2">Descrição</th><th className="p-2">Estabelecimento</th><th className="p-2 text-right">Saldo anterior</th><th className="p-2 text-right">Débito</th><th className="p-2 text-right">Crédito</th><th className="p-2 text-right">Movimento</th><th className="p-2 text-right">Saldo atual</th><th className="p-2">Detalhe</th></tr></thead><tbody>{linhas.map(x=><tr key={`${x.tipo}-${x.conta}-${x.classificacao}`} className={`border-b ${x.tipo==="S"?"bg-muted/40 font-semibold":""}`}><td className="p-2 font-mono">{x.conta}</td><td className="p-2">{x.tipo}</td><td className="p-2 font-mono text-xs">{x.classificacao}</td><td className="p-2">{x.descricao}</td><td className="p-2 font-medium">{x.estabelecimento}</td><Money value={x.saldoAnterior}/><Money value={x.debitos}/><Money value={x.creditos}/><Money value={x.movimento}/><Money value={x.saldoAtual} strong/><td className="p-2">{x.tipo==="A"?<Button size="sm" variant="outline" onClick={()=>window.location.assign(`/contabil/razao?conta=${encodeURIComponent(x.conta)}`)}>Abrir Razão</Button>:"—"}</td></tr>)}</tbody></table><BalancetePrintSummary linhas={balancete} resultadoContabil={{ saldoAnterior: arred(motor.saldosAnaliticos.filter(x=>/^(4|5)(\\.|$)/.test(x.classificacao)).reduce((s,x)=>s+x.saldoAnterior,0)), movimentoMes: arred(motor.saldosAnaliticos.filter(x=>/^(4|5)(\\.|$)/.test(x.classificacao)).reduce((s,x)=>s+x.movimento,0)) }}/></div>
+      <div className="overflow-x-auto print:hidden"><table className="w-full min-w-[1500px] text-sm"><thead><tr className="border-b bg-muted text-left text-xs"><th className="p-2">Conta</th><th className="p-2">S/A</th><th className="p-2">Classificação</th><th className="p-2">Descrição</th><th className="p-2">Estabelecimento</th><th className="p-2 text-right">Saldo anterior</th><th className="p-2 text-right">Débito</th><th className="p-2 text-right">Crédito</th><th className="p-2 text-right">Movimento</th><th className="p-2 text-right">Saldo atual</th><th className="p-2">Detalhe</th></tr></thead><tbody>{linhas.map(x=><tr key={`${x.tipo}-${x.conta}-${x.classificacao}`} className={`border-b ${x.tipo==="S"?"bg-muted/40 font-semibold":""}`}><td className="p-2 font-mono">{x.conta}</td><td className="p-2">{x.tipo}</td><td className="p-2 font-mono text-xs">{x.classificacao}</td><td className="p-2">{x.descricao}</td><td className="p-2 font-medium">{x.estabelecimento}</td><Money value={x.saldoAnterior}/><Money value={x.debitos}/><Money value={x.creditos}/><Money value={x.movimento}/><Money value={x.saldoAtual} strong/><td className="p-2">{x.tipo==="A"?<Button size="sm" variant="outline" onClick={()=>window.location.assign(`/contabil/razao?conta=${encodeURIComponent(x.conta)}`)}>Abrir Razão</Button>:"—"}</td></tr>)}</tbody></table></div>
+      <BalancetePrintSummary linhas={balancete} resultadoContabil={{ saldoAnterior: saldoAnteriorResultadoJulho2026, movimentoMes: arred(-dre.resultado) }}/>
     </CardContent></Card>
   </div>;
 }

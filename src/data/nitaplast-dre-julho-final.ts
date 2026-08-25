@@ -164,12 +164,13 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   const estoqueInicialFilial=saldo("25138")?.saldoAnterior??0;
   const comprasParaRevendaAberturaFilial=saldo("25139")?.saldoAnterior??0;
   const fechamentoComprasFilial=base.find(x=>x.id==="JUL-CPV-F-COMP")?.valor??0;
+  const ajusteExtemporaneoComprasFilial=base.find(x=>x.id==="JUL-AJ-FIL-COMP-JUN")?.valor??0;
   const comprasLiquidasJulhoFilial=arred(fechamentoComprasFilial);
   const estoqueFinalFilial=saldo("25138")?.saldoAtual??0;
   const saldoFinalComprasFilial=saldo("25139")?.saldoAtual??0;
-  if(Math.abs(arred(saldoFinalComprasFilial-comprasParaRevendaAberturaFilial))>0.01)throw new Error(`Movimento de julho da conta 25139 não foi encerrado sem consumir o saldo anterior: ${saldoFinalComprasFilial.toFixed(2)}.`);
+  if(Math.abs(arred(saldoFinalComprasFilial-(comprasParaRevendaAberturaFilial-ajusteExtemporaneoComprasFilial)))>0.01)throw new Error(`Saldo remanescente da conta 25139 não conciliou após a correção extemporânea: ${saldoFinalComprasFilial.toFixed(2)}.`);
   if(Math.abs(arred(estoqueInicialMatriz+comprasLiquidasMatriz-estoqueFinalMatriz)-cpvMatriz)>0.01)throw new Error("Memória do CPV Matriz não concilia com o Razão.");
-  if(Math.abs(arred(estoqueInicialFilial+comprasLiquidasJulhoFilial-estoqueFinalFilial)-cpvFilial)>0.01)throw new Error("Memória do CPV Filial não concilia com o Razão.");
+  if(Math.abs(arred(estoqueInicialFilial+comprasLiquidasJulhoFilial+ajusteExtemporaneoComprasFilial-estoqueFinalFilial)-cpvFilial)>0.01)throw new Error("Memória do CPV Filial não concilia com o Razão.");
 
   const despesasOperacionaisItensCriterioAnterior=composicao.filter(ehDespesaOperacionalDreJulhoCriterioAnterior);
   const despesasOperacionaisCriterioAnterior=arred(despesasOperacionaisItensCriterioAnterior.reduce((s,x)=>s+x.valor,0));
@@ -208,6 +209,12 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   const energiaDebitosMatriz=arred(energiaEletricaItens.reduce((s,x)=>s+x.debitos,0));
   const energiaCreditosMatriz=arred(energiaEletricaItens.reduce((s,x)=>s+x.creditos,0));
 
+  // Resultado de julho/2026 já inclui o lançamento de versão decidido pelo contador em
+  // 24/08/2026 (ver lancamentosVersaoJulho em nitaplast-razao-julho-final-v2.ts): R$ 19.225,58
+  // de despesa (CC 503 replicado na Matriz) menos R$ 3.768,38 de ICMS/COFINS (reduzidos ao
+  // valor da DRE do cliente, mesmo já conferidos contra o Domínio). Fecha em R$ 234.732,08,
+  // igual à DRE enviada ao cliente. O lançamento de versão tem status "revisar" no Razão e
+  // estorno programado para 08/2026 — não é permanente.
   const resultado=arred(receitaLiquida-custos-despesas+receitasFinanceiras+resultadoAlienacaoImobilizado);
   const despesasCriterioAnterior=arred(despesasOperacionaisCriterioAnterior+despesasFinanceiras);
   const resultadoCriterioAnterior=arred(receitaLiquida-custosCriterioAnterior-despesasCriterioAnterior+receitasFinanceiras+resultadoAlienacaoImobilizado);
@@ -236,7 +243,7 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
     custosReconhecidos:custos,custosMatriz,custosFilial,cpvMatriz,cpvFilial,fechamentoEstoqueMatriz,fechamentoEstoqueFilial,outrosCustosMatriz,outrosCustosFilial,
     memoriaCpv:{
       matriz:{estoqueInicial:estoqueInicialMatriz,comprasLiquidas:comprasLiquidasMatriz,estoqueFinal:estoqueFinalMatriz,industrializacaoLiquida:industrializacaoLiquidaMatriz,total:cpvMatriz},
-      filial:{estoqueInicial:estoqueInicialFilial,comprasParaRevendaAbertura:comprasParaRevendaAberturaFilial,comprasLiquidasJulho:comprasLiquidasJulhoFilial,estoqueFinal:estoqueFinalFilial,saldoFinalComprasParaRevenda:saldoFinalComprasFilial,total:cpvFilial},
+      filial:{estoqueInicial:estoqueInicialFilial,comprasParaRevendaAbertura:comprasParaRevendaAberturaFilial,ajusteExtemporaneoComprasJunho:ajusteExtemporaneoComprasFilial,comprasLiquidasJulho:comprasLiquidasJulhoFilial,estoqueFinal:estoqueFinalFilial,saldoFinalComprasParaRevenda:saldoFinalComprasFilial,total:cpvFilial},
     },
     despesasReconhecidas:despesas,despesasOperacionais,despesasOperacionaisMatriz,despesasOperacionaisFilial,creditosFederais,
     despesasFinanceiras,despesasFinanceirasMatriz,despesasFinanceirasFilial,

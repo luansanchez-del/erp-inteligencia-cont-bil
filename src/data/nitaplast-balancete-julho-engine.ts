@@ -43,9 +43,6 @@ for (const conta of saldosImplantacao) {
   if (!classificacaoPorConta.has(conta.conta)) classificacaoPorConta.set(conta.conta, conta.classificacao);
   if (!descricaoPorConta.has(conta.conta)) descricaoPorConta.set(conta.conta, conta.descricao);
 }
-classificacaoPorConta.set("4760", "5.9.01.003.002");
-descricaoPorConta.set("4760", "Custo Vendas do Ativo Imobilizado");
-
 // Contas que nasceram depois da implantação de 31/05 e possuem vínculo
 // documentado com o plano Domínio. Elas integram o Balancete/DRE com os saldos
 // e movimentos existentes, sem criar conta de encaixe.
@@ -54,8 +51,9 @@ export const contasPosImplantacao = [
   ["1734", "2.1.03.001.001", "Obrigação cambial em fornecedores"],
   ["4405", "5.7.01.007.005", "Despesas e adiantamentos de viagem"],
   ["4505", "5.7.05.001.001", "Combustíveis e Lubrificantes"],
+  ["4760", "5.9.01.003.002", "Custo Vendas do Ativo Imobilizado"],
 ] as const;
-const contasPosImplantacaoConhecidas = new Set<string>(contasPosImplantacao.map(([conta]) => conta as string));
+const contasPosImplantacaoConhecidas = new Set<string>(contasPosImplantacao.map(([conta]) => conta));
 for (const [conta, classificacao, descricao] of contasPosImplantacao) {
   classificacaoPorConta.set(conta, classificacao);
   descricaoPorConta.set(conta, descricao);

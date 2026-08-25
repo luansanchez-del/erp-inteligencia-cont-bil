@@ -220,6 +220,66 @@ const lancamentosAuditoriaJulho: LancamentoIntegrado[] = [
 ];
 
 
+// Lançamento de versão 07/2026 — decisão do contador em 24/08/2026: o fechamento oficial de
+// julho é R$ 234.732,08 (igual à DRE enviada ao cliente). O Razão real (sem este lançamento)
+// dá R$ 250.189,28. A diferença de R$ 15.457,20 é reconhecida aqui como lançamento manual,
+// com estorno programado para 08/2026 pelo próprio contador (não é lançamento definitivo).
+// Contrapartida única: 1496 - Fornecedores Diversos, por decisão do contador.
+//
+// Componente 1 (R$ 19.225,58): reproduz na Matriz o mesmo valor do CC 503 (Manutenção SP,
+// Filial) já reconhecido em Despesas Comerciais — Filial SP, para bater com a forma como o
+// cliente somou "Despesas de Produção"/"Despesas com Industrialização".
+// Componente 2 (R$ 3.768,38): reduz ICMS/COFINS Matriz para o valor da DRE do cliente, mesmo
+// com o Razão já conferido contra o Domínio (contas 2827 e 2830 batiam exatamente antes deste
+// lançamento — a diferença é da planilha do cliente, não de documentação nossa).
+export const lancamentosVersaoJulho: LancamentoIntegrado[] = [
+  {
+    id: "JUL-VERSAO-CC503-INDL", data: "31/07/2026", origem: "LANÇAMENTO DE VERSÃO 07/2026",
+    debitoCodigo: "25937", debito: nomeConta("25937"), creditoCodigo: "1496", credito: nomeConta("1496"),
+    historico: "Lançamento de versão — reflete na Matriz o CC 503 (industrialização) já reconhecido na Filial",
+    documento: "LANÇAMENTO DE VERSÃO 07/2026", cc: "102", centroCusto: "PRODUÇÃO", valor: 973.03,
+    status: "revisar",
+    observacao: "Decisão do contador em 24/08/2026: fecha julho em R$ 234.732,08. Estorno programado para o lançamento de versão de 08/2026 — não lançar de novo em agosto sem reverter este primeiro.",
+    rastreio: "sugerido", fonte: "Decisão do contador — lançamento manual, sem documento fiscal próprio",
+  },
+  {
+    id: "JUL-VERSAO-CC503-SERV", data: "31/07/2026", origem: "LANÇAMENTO DE VERSÃO 07/2026",
+    debitoCodigo: "25938", debito: nomeConta("25938"), creditoCodigo: "1496", credito: nomeConta("1496"),
+    historico: "Lançamento de versão — reflete na Matriz o CC 503 (serviços de terceiros PJ) já reconhecido na Filial",
+    documento: "LANÇAMENTO DE VERSÃO 07/2026", cc: "102", centroCusto: "PRODUÇÃO", valor: 700.00,
+    status: "revisar",
+    observacao: "Decisão do contador em 24/08/2026: fecha julho em R$ 234.732,08. Estorno programado para o lançamento de versão de 08/2026 — não lançar de novo em agosto sem reverter este primeiro.",
+    rastreio: "sugerido", fonte: "Decisão do contador — lançamento manual, sem documento fiscal próprio",
+  },
+  {
+    id: "JUL-VERSAO-CC503-MAT", data: "31/07/2026", origem: "LANÇAMENTO DE VERSÃO 07/2026",
+    debitoCodigo: "3244", debito: nomeConta("3244"), creditoCodigo: "1496", credito: nomeConta("1496"),
+    historico: "Lançamento de versão — reflete na Matriz o CC 503 (materiais auxiliares e de consumo) já reconhecido na Filial",
+    documento: "LANÇAMENTO DE VERSÃO 07/2026", cc: "102", centroCusto: "PRODUÇÃO", valor: 17552.55,
+    status: "revisar",
+    observacao: "Decisão do contador em 24/08/2026: fecha julho em R$ 234.732,08. Estorno programado para o lançamento de versão de 08/2026 — não lançar de novo em agosto sem reverter este primeiro.",
+    rastreio: "sugerido", fonte: "Decisão do contador — lançamento manual, sem documento fiscal próprio",
+  },
+  {
+    id: "JUL-VERSAO-ICMS", data: "31/07/2026", origem: "LANÇAMENTO DE VERSÃO 07/2026",
+    debitoCodigo: "1496", debito: nomeConta("1496"), creditoCodigo: "2827", credito: nomeConta("2827"),
+    historico: "Lançamento de versão — reduz ICMS Matriz ao valor da DRE do cliente (Razão já conferido contra o Domínio)",
+    documento: "LANÇAMENTO DE VERSÃO 07/2026", cc: "0", centroCusto: "SEM CENTRO DE CUSTO", valor: 3417.75,
+    status: "revisar",
+    observacao: "Decisão do contador em 24/08/2026: fecha julho em R$ 234.732,08. Estorno programado para o lançamento de versão de 08/2026 — não lançar de novo em agosto sem reverter este primeiro.",
+    rastreio: "sugerido", fonte: "Decisão do contador — lançamento manual, sem documento fiscal próprio",
+  },
+  {
+    id: "JUL-VERSAO-COFINS", data: "31/07/2026", origem: "LANÇAMENTO DE VERSÃO 07/2026",
+    debitoCodigo: "1496", debito: nomeConta("1496"), creditoCodigo: "2830", credito: nomeConta("2830"),
+    historico: "Lançamento de versão — reduz COFINS Matriz ao valor da DRE do cliente (Razão já conferido contra o Domínio)",
+    documento: "LANÇAMENTO DE VERSÃO 07/2026", cc: "0", centroCusto: "SEM CENTRO DE CUSTO", valor: 350.63,
+    status: "revisar",
+    observacao: "Decisão do contador em 24/08/2026: fecha julho em R$ 234.732,08. Estorno programado para o lançamento de versão de 08/2026 — não lançar de novo em agosto sem reverter este primeiro.",
+    rastreio: "sugerido", fonte: "Decisão do contador — lançamento manual, sem documento fiscal próprio",
+  },
+];
+
 const pendenciasBancariasValorAjustado = arred(
   lancamentosBaseCorrigidos
     .filter((x) => x.origem.startsWith("MOVIMENTAÇÃO BANCÁRIA") && x.status === "revisar")
@@ -231,6 +291,7 @@ export const lancamentosIntegradosJulhoFinal: LancamentoIntegrado[] = [
   ...lancamentosAuditoriaJulho,
   ...lancamentosProvisoesJulhoReais,
   ...lancamentosFinanceirosJulho,
+  ...lancamentosVersaoJulho,
 ];
 
 export const totalDebitosJulhoFinal = arred(lancamentosIntegradosJulhoFinal.reduce((s, x) => s + x.valor, 0));

@@ -27,6 +27,7 @@ export function grupoCentroCustoNitaplast(cc:string) {
   if(/^2\d{2}$/.test(cc)) return "Comercial";
   if(/^3\d{2}$/.test(cc)) return "Administrativo";
   if(/^4\d{2}$/.test(cc)) return "Veículos";
+  if(/^(501|502|503|504|505)$/.test(cc)) return "Despesas Comercial SP";
   if(/^5\d{2}$/.test(cc)) return "Nita SP";
   if(/^6\d{2}$/.test(cc)) return "Barracão";
   if(/^9\d{2}$/.test(cc)) return "Financeiro";
