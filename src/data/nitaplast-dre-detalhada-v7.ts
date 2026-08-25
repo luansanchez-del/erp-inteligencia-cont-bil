@@ -129,10 +129,12 @@ const enviadosCorretos: Record<string, number> = {
 
 for (const linha of linhas) {
   if (Object.prototype.hasOwnProperty.call(enviadosCorretos, linha.id)) {
-    linha.enviado = enviadosCorretos[linha.id];
+    linha.enviado = enviadosCorretos[linha.id] ?? linha.enviado;
   }
   linha.diferenca = arred(linha.calculado - linha.enviado);
 }
+
+const lucroLiqEnviado = enviadosCorretos["lucro-liq"] ?? 0;
 
 export const comparacaoDreDetalhada = linhas;
 
@@ -142,6 +144,6 @@ export const resumoDreDetalhada = {
   despesasLiquidasCalculadas: despesasLiquidas,
   resultadoOperacionalCalculado: resultadoOperacional,
   resultadoLiquidoCalculado: resultadoLiquido,
-  resultadoLiquidoEnviado: enviadosCorretos["lucro-liq"],
-  diferencaResultado: arred(resultadoLiquido - enviadosCorretos["lucro-liq"]),
+  resultadoLiquidoEnviado: lucroLiqEnviado,
+  diferencaResultado: arred(resultadoLiquido - lucroLiqEnviado),
 } as const;

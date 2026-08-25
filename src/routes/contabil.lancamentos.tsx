@@ -313,7 +313,7 @@ function Lancamentos() {
   );
 }
 
-function Campo({ label, value, onChange, placeholder, detalhe }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; detalhe?: string }) {
+function Campo({ label, value, onChange, placeholder, detalhe }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; detalhe?: string | undefined }) {
   return <div><label className="mb-1 block text-xs font-medium">{label}</label><Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />{detalhe ? <p className="mt-1 text-[11px] text-muted-foreground">{detalhe}</p> : null}</div>;
 }
 

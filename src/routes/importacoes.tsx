@@ -63,21 +63,25 @@ function ImportacoesPage() {
     setMensagem(`${adicionados} arquivo(s) registrado(s)${duplicados ? ` · ${duplicados} duplicado(s) bloqueado(s)` : ""}. Nenhum lançamento foi criado.`);
     setProcessando(false); if (inputRef.current) inputRef.current.value = "";
   }
+  function omitirAprovacao(item: ItemDossieImportacao & { aprovadoEm?: string | undefined }): ItemDossieImportacao {
+    const { aprovadoEm: _ignorado, ...resto } = item;
+    return resto as ItemDossieImportacao;
+  }
   function aprovar(id: string) { persistir(itens.map((item) => item.id === id && item.status === "aguardando_conferencia" ? { ...item, status: "aprovado", aprovadoEm: new Date().toISOString() } : item)); }
-  function reabrir(id: string) { persistir(itens.map((item) => item.id === id && item.status === "aprovado" ? { ...item, status: "aguardando_conferencia", aprovadoEm: undefined } : item)); }
+  function reabrir(id: string) { persistir(itens.map((item) => item.id === id && item.status === "aprovado" ? omitirAprovacao({ ...item, status: "aguardando_conferencia" }) : item)); }
   function alterarCategoria(id: string, proxima: CategoriaFonteImportacao) {
     persistir(itens.map((item) => {
       if (item.id !== id) return item;
       const definicao = categorias[item.fluxo].find((opcao) => opcao.valor === proxima);
       if (!definicao) return item;
-      return { ...item, categoria: proxima, finalidade: definicao.finalidade ?? "fonte", podeGerarLancamento: definicao.finalidade !== "conferencia" && proxima !== "plano_contas", status: "aguardando_conferencia", aprovadoEm: undefined };
+      return omitirAprovacao({ ...item, categoria: proxima, finalidade: definicao.finalidade ?? "fonte", podeGerarLancamento: definicao.finalidade !== "conferencia" && proxima !== "plano_contas", status: "aguardando_conferencia", aprovadoEm: undefined });
     }));
   }
   function alterarFluxo(id: string, proximo: FluxoImportacao) {
     persistir(itens.map((item) => {
       if (item.id !== id || item.status === "duplicado") return item;
       const primeiraCategoria = categorias[proximo][0]!;
-      return { ...item, fluxo: proximo, categoria: primeiraCategoria.valor, finalidade: primeiraCategoria.finalidade ?? "fonte", podeGerarLancamento: primeiraCategoria.finalidade !== "conferencia" && primeiraCategoria.valor !== "plano_contas", status: "aguardando_conferencia", aprovadoEm: undefined };
+      return omitirAprovacao({ ...item, fluxo: proximo, categoria: primeiraCategoria.valor, finalidade: primeiraCategoria.finalidade ?? "fonte", podeGerarLancamento: primeiraCategoria.finalidade !== "conferencia" && primeiraCategoria.valor !== "plano_contas", status: "aguardando_conferencia", aprovadoEm: undefined });
     }));
   }
   function descartar(id: string) { persistir(itens.filter((item) => item.id !== id)); }
