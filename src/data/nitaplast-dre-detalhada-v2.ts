@@ -128,7 +128,7 @@ function compor(movimentos: MovimentoResultado[], multiplicador = 1, observacao?
       valorLinha: 0,
       lancamentos: 0,
       fonte: `${movimento.origem} · ${movimento.fonte}`,
-      observacao,
+      ...(observacao === undefined ? {} : { observacao }),
     };
     atual.debitos += movimento.debito;
     atual.creditos += movimento.credito;
