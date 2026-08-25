@@ -279,8 +279,35 @@ export function DreJulhoCompleta() {
     exportarExcel({ arquivo: "Nitaplast_DRE_Report_072026.xlsx", aba: "DRE 07-2026", titulo: "NITAPLAST IND E COM DE PLÁSTICOS INDUSTRIAIS LTDA — DEMONSTRAÇÃO DO RESULTADO DO EXERCÍCIO", subtitulo: "Período 01/07/2026 a 31/07/2026 · Razão → Balancete → DRE · Matriz e Filial SP segregadas · vendas fiscais de imobilizado R$ 306.900,00 · Mini, Corolla e Transformador contabilizados", colunas: [{ cabecalho: "Descrição", largura: 86 }, { cabecalho: "Valor", largura: 18, tipo: "numero" }, { cabecalho: "% Receita", largura: 14, tipo: "percentual" }], linhas: linhasExcel });
   }
 
+  function exportarPropostaQuestor() {
+    const proposta = razaoAjustado.filter((lancamento) => lancamento.origem === "LANÇAMENTO DE VERSÃO 07/2026");
+    if (!proposta.length) throw new Error("Nenhum lançamento proposto foi localizado para julho/2026.");
+    exportarExcel({
+      arquivo: "PROPOSTA_Lancamentos_Questor_Nitaplast_072026.xlsx",
+      aba: "PROPOSTA",
+      titulo: "PROPOSTA DE LANÇAMENTOS CONTÁBEIS — NÃO IMPORTAR SEM VALIDAÇÃO",
+      subtitulo: "Nitaplast · competência 07/2026 · partidas sem contabilização automática no Razão",
+      colunas: [
+        { cabecalho: "Data", largura: 13 }, { cabecalho: "Status", largura: 28 },
+        { cabecalho: "Conta débito", largura: 15 }, { cabecalho: "Descrição débito", largura: 42 },
+        { cabecalho: "Conta crédito", largura: 15 }, { cabecalho: "Descrição crédito", largura: 42 },
+        { cabecalho: "Valor", largura: 18, tipo: "numero" }, { cabecalho: "CC", largura: 12 },
+        { cabecalho: "Centro de custo", largura: 24 }, { cabecalho: "Histórico", largura: 80 },
+        { cabecalho: "Documento", largura: 32 }, { cabecalho: "Observação", largura: 90 },
+      ],
+      linhas: proposta.map((lancamento) => [
+        lancamento.data, "PROPOSTA — AGUARDANDO VALIDAÇÃO",
+        lancamento.debitoCodigo, lancamento.debito.replace(/^\d+\s*-\s*/, ""),
+        lancamento.creditoCodigo, lancamento.credito.replace(/^\d+\s*-\s*/, ""),
+        lancamento.valor, lancamento.cc, lancamento.centroCusto, lancamento.historico,
+        lancamento.documento,
+        `${lancamento.observacao} Não importar no Questor sem aprovação expressa do contador.`,
+      ]),
+    });
+  }
+
   return <div className="grid gap-5">
-    <div className="flex flex-wrap items-start justify-between gap-3 border-b pb-4"><div><h1 className="text-xl font-semibold tracking-tight">DRE calculada - Nitaplast 07/2026</h1><p className="mt-1 text-sm text-muted-foreground">Razão → Balancete → DRE · Matriz e Filial SP sempre identificadas.</p></div><div className="flex flex-wrap gap-2"><Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Consolidado Matriz + Filial</Badge>{ajustesManuais > 0 ? <Badge variant="outline">{ajustesManuais} ajuste(s) manual(is)</Badge> : null}{reclassificacoes.length > 0 ? <Badge variant="outline">{reclassificacoes.length} reclassificação(ões)</Badge> : null}<Button variant="outline" size="sm" className="gap-2" onClick={exportarDreExcel}><FileSpreadsheet className="size-4" />Exportar Excel</Button><Button variant="outline" size="sm" onClick={alternarTudo}>{tudo ? "Recolher toda DRE" : "Expandir toda DRE"}</Button></div></div>
+    <div className="flex flex-wrap items-start justify-between gap-3 border-b pb-4"><div><h1 className="text-xl font-semibold tracking-tight">DRE calculada - Nitaplast 07/2026</h1><p className="mt-1 text-sm text-muted-foreground">Razão → Balancete → DRE · Matriz e Filial SP sempre identificadas.</p></div><div className="flex flex-wrap gap-2"><Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Consolidado Matriz + Filial</Badge>{ajustesManuais > 0 ? <Badge variant="outline">{ajustesManuais} ajuste(s) manual(is)</Badge> : null}{reclassificacoes.length > 0 ? <Badge variant="outline">{reclassificacoes.length} reclassificação(ões)</Badge> : null}<Button variant="outline" size="sm" className="gap-2" onClick={exportarDreExcel}><FileSpreadsheet className="size-4" />Exportar Excel</Button><Button variant="outline" size="sm" className="gap-2" onClick={exportarPropostaQuestor}><FileSpreadsheet className="size-4" />Proposta Questor</Button><Button variant="outline" size="sm" onClick={alternarTudo}>{tudo ? "Recolher toda DRE" : "Expandir toda DRE"}</Button></div></div>
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"><Resumo label="Receita Operacional Bruta" value={receitaBrutaApresentacao}/><Resumo label="CPV Matriz" value={1_574_313.04}/><Resumo label="CPV Filial SP" value={177_301.11}/><Resumo label="Resultado não operacional" value={103_621.85} success/><Resumo label="Lucro líquido" value={resultadoApresentacao} success/></div>
     <Card className="border-blue-500/30 bg-blue-500/5"><CardContent className="pt-6"><div className="flex gap-3"><CircleAlert className="mt-0.5 size-5 text-blue-700"/><div><p className="font-semibold">Energia elétrica de julho validada</p><p className="mt-1 text-sm text-muted-foreground">Conta 3494: débitos {brl.format(dre.energiaDebitosMatriz)} menos crédito ICMS de {brl.format(dre.energiaCreditosMatriz)} = <strong>{brl.format(dre.energiaEletricaMatriz)}</strong> de movimento líquido em julho. Valor próximo de R$ 83 mil é saldo acumulado/final, não despesa da competência.</p></div></div></CardContent></Card>
     <Card className="border-amber-500/40 bg-amber-500/5"><CardContent className="pt-6"><div className="flex gap-3"><CircleAlert className="mt-0.5 size-5 text-amber-700"/><div><p className="font-semibold">ICMS de transferência da Filial fora da DRE</p><p className="mt-1 text-sm text-muted-foreground">{brl.format(dre.icmsFilialTransferenciasInternas)} permanece identificado no Razão como transferência interna e não reduz receita de vendas. A conta patrimonial definitiva ainda está em revisão.</p></div></div></CardContent></Card>
