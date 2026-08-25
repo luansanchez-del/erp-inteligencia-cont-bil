@@ -311,7 +311,7 @@ const bucketsOperacionais: Record<string, MovimentoResultado[]> = {
   adm: [], nplog: [], comerciais: [], producao: [], veiculos: [], barracao: [], imobilizado: [], industrializacao: [], tributarias: [], "comercial-sp": [], "despesas-nao-mapeadas": [],
 };
 
-const bucket = (id: string): MovimentoResultado[] => (bucketsOperacionais[id] ??= []);
+const bucket = (id: string): MovimentoResultado[] => (bucket(id) ??= []);
 
 for (const movimento of operacionalAntesCreditos) {
   if (movimento.cc === "502") bucket("comercial-sp").push(movimento);
@@ -390,13 +390,13 @@ const linhasOperacionais: LinhaComparacaoDre[] = [
     id,
     nivel: 1,
     tipo: "detalhe",
-    calculado: -somaEfeito(bucketsOperacionais[id]),
-    composicao: compor(bucketsOperacionais[id], -1),
+    calculado: -somaEfeito(bucket(id)),
+    composicao: compor(bucket(id), -1),
     criterio: id === "industrializacao"
       ? "Industrialização identificada pela conta 25937/natureza documental. Créditos PIS/COFINS são mostrados abaixo, não escondidos dentro da despesa."
       : `Contas e centros de custo do Balancete classificados na linha ${id}; créditos PIS/COFINS são apresentados separadamente.`,
   })),
-  linha({ id: "despesas-nao-mapeadas", descricao: "Despesas operacionais sem linha correspondente", nivel: 1, tipo: "diagnostico", calculado: -somaEfeito(bucketsOperacionais["despesas-nao-mapeadas"]), enviadoValor: 0, composicao: compor(bucketsOperacionais["despesas-nao-mapeadas"], -1), criterio: "Movimentos 5.3/5.7 que ainda não têm linha segura no formato da DRE enviada." }),
+  linha({ id: "despesas-nao-mapeadas", descricao: "Despesas operacionais sem linha correspondente", nivel: 1, tipo: "diagnostico", calculado: -somaEfeito(bucket("despesas-nao-mapeadas")), enviadoValor: 0, composicao: compor(bucket("despesas-nao-mapeadas"), -1), criterio: "Movimentos 5.3/5.7 que ainda não têm linha segura no formato da DRE enviada." }),
   linha({ id: "fin-liq", nivel: 1, tipo: "detalhe", calculado: arred(despesasFinCalc - receitasFinCalc), composicao: compor([...despesasFinanceiras, ...receitasFinanceiras], -1), criterio: "Despesas financeiras menos receitas financeiras do Balancete." }),
   linha({ id: "fin-desp", nivel: 2, tipo: "detalhe", calculado: despesasFinCalc, composicao: compor(despesasFinanceiras, -1), criterio: "Contas 5.8 — despesas financeiras, incluindo JCP quando contabilizado em conta financeira." }),
   linha({ id: "fin-rec", nivel: 2, tipo: "detalhe", calculado: -receitasFinCalc, composicao: compor(receitasFinanceiras, -1), criterio: "Receitas financeiras do Balancete apresentadas como redutoras das despesas financeiras." }),
