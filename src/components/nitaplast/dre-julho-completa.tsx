@@ -306,8 +306,43 @@ export function DreJulhoCompleta() {
     });
   }
 
+  function exportarLancamentosResultado() {
+    const contasResultado = new Set([
+      "2606", "2655", "25943", "2827", "25054", "2832", "2826", "25055", "2829", "2830",
+      ...composicao.map((item) => item.conta),
+    ]);
+    const lancamentosResultado = razaoAjustado.filter((lancamento) =>
+      contasResultado.has(lancamento.debitoCodigo) || contasResultado.has(lancamento.creditoCodigo),
+    );
+    if (!lancamentosResultado.length) throw new Error("Nenhum lançamento do resultado foi localizado para julho/2026.");
+
+    exportarExcel({
+      arquivo: "Lancamentos_Composicao_Resultado_Nitaplast_072026.xlsx",
+      aba: "Lançamentos Resultado",
+      titulo: "LANÇAMENTOS QUE COMPÕEM O RESULTADO — NITAPLAST 07/2026",
+      subtitulo: `Razão → Balancete → DRE · ${lancamentosResultado.length} partidas · resultado apresentado R$ ${resultadoApresentacao.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+      colunas: [
+        { cabecalho: "ID", largura: 28 }, { cabecalho: "Data", largura: 13 },
+        { cabecalho: "Origem", largura: 40 }, { cabecalho: "Conta débito", largura: 15 },
+        { cabecalho: "Descrição débito", largura: 42 }, { cabecalho: "Conta crédito", largura: 15 },
+        { cabecalho: "Descrição crédito", largura: 42 }, { cabecalho: "Valor", largura: 18, tipo: "numero" },
+        { cabecalho: "CC", largura: 12 }, { cabecalho: "Centro de custo", largura: 24 },
+        { cabecalho: "Histórico", largura: 80 }, { cabecalho: "Documento", largura: 35 },
+        { cabecalho: "Status", largura: 16 }, { cabecalho: "Rastreio", largura: 16 },
+        { cabecalho: "Fonte", largura: 70 }, { cabecalho: "Observação", largura: 90 },
+      ],
+      linhas: lancamentosResultado.map((lancamento) => [
+        lancamento.id, lancamento.data, lancamento.origem,
+        lancamento.debitoCodigo, lancamento.debito.replace(/^\d+\s*-\s*/, ""),
+        lancamento.creditoCodigo, lancamento.credito.replace(/^\d+\s*-\s*/, ""),
+        lancamento.valor, lancamento.cc, lancamento.centroCusto, lancamento.historico,
+        lancamento.documento, lancamento.status, lancamento.rastreio, lancamento.fonte, lancamento.observacao,
+      ]),
+    });
+  }
+
   return <div className="grid gap-5">
-    <div className="flex flex-wrap items-start justify-between gap-3 border-b pb-4"><div><h1 className="text-xl font-semibold tracking-tight">DRE calculada - Nitaplast 07/2026</h1><p className="mt-1 text-sm text-muted-foreground">Razão → Balancete → DRE · Matriz e Filial SP sempre identificadas.</p></div><div className="flex flex-wrap gap-2"><Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Consolidado Matriz + Filial</Badge>{ajustesManuais > 0 ? <Badge variant="outline">{ajustesManuais} ajuste(s) manual(is)</Badge> : null}{reclassificacoes.length > 0 ? <Badge variant="outline">{reclassificacoes.length} reclassificação(ões)</Badge> : null}<Button variant="outline" size="sm" className="gap-2" onClick={exportarDreExcel}><FileSpreadsheet className="size-4" />Exportar Excel</Button><Button variant="outline" size="sm" className="gap-2" onClick={exportarPropostaQuestor}><FileSpreadsheet className="size-4" />Proposta Questor</Button><Button variant="outline" size="sm" onClick={alternarTudo}>{tudo ? "Recolher toda DRE" : "Expandir toda DRE"}</Button></div></div>
+    <div className="flex flex-wrap items-start justify-between gap-3 border-b pb-4"><div><h1 className="text-xl font-semibold tracking-tight">DRE calculada - Nitaplast 07/2026</h1><p className="mt-1 text-sm text-muted-foreground">Razão → Balancete → DRE · Matriz e Filial SP sempre identificadas.</p></div><div className="flex flex-wrap gap-2"><Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Consolidado Matriz + Filial</Badge>{ajustesManuais > 0 ? <Badge variant="outline">{ajustesManuais} ajuste(s) manual(is)</Badge> : null}{reclassificacoes.length > 0 ? <Badge variant="outline">{reclassificacoes.length} reclassificação(ões)</Badge> : null}<Button variant="outline" size="sm" className="gap-2" onClick={exportarDreExcel}><FileSpreadsheet className="size-4" />Exportar Excel</Button><Button variant="outline" size="sm" className="gap-2" onClick={exportarLancamentosResultado}><FileSpreadsheet className="size-4" />Lançamentos do resultado</Button><Button variant="outline" size="sm" className="gap-2" onClick={exportarPropostaQuestor}><FileSpreadsheet className="size-4" />Proposta Questor</Button><Button variant="outline" size="sm" onClick={alternarTudo}>{tudo ? "Recolher toda DRE" : "Expandir toda DRE"}</Button></div></div>
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"><Resumo label="Receita Operacional Bruta" value={receitaBrutaApresentacao}/><Resumo label="CPV Matriz" value={1_574_313.04}/><Resumo label="CPV Filial SP" value={177_301.11}/><Resumo label="Resultado não operacional" value={103_621.85} success/><Resumo label="Lucro líquido" value={resultadoApresentacao} success/></div>
     <Card className="border-blue-500/30 bg-blue-500/5"><CardContent className="pt-6"><div className="flex gap-3"><CircleAlert className="mt-0.5 size-5 text-blue-700"/><div><p className="font-semibold">Energia elétrica de julho validada</p><p className="mt-1 text-sm text-muted-foreground">Conta 3494: débitos {brl.format(dre.energiaDebitosMatriz)} menos crédito ICMS de {brl.format(dre.energiaCreditosMatriz)} = <strong>{brl.format(dre.energiaEletricaMatriz)}</strong> de movimento líquido em julho. Valor próximo de R$ 83 mil é saldo acumulado/final, não despesa da competência.</p></div></div></CardContent></Card>
     <Card className="border-amber-500/40 bg-amber-500/5"><CardContent className="pt-6"><div className="flex gap-3"><CircleAlert className="mt-0.5 size-5 text-amber-700"/><div><p className="font-semibold">ICMS de transferência da Filial fora da DRE</p><p className="mt-1 text-sm text-muted-foreground">{brl.format(dre.icmsFilialTransferenciasInternas)} permanece identificado no Razão como transferência interna e não reduz receita de vendas. A conta patrimonial definitiva ainda está em revisão.</p></div></div></CardContent></Card>
