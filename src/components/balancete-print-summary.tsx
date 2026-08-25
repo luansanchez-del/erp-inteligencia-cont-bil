@@ -51,10 +51,10 @@ export function BalancetePrintSummary({ linhas, resultadoContabil }: { linhas: L
   const resultadoExercicio = linhaResultado("RESULTADO DO EXERCÍCIO", true);
   if (Math.abs(resultadoExercicio.saldoAtual - arred(resultadoExercicio.saldoAnterior + resultadoMes.saldoAtual)) > 0.01) throw new Error("Resultado anterior + resultado do mês não fecha com o resultado do exercício.");
 
-  return <section className="mt-5 rounded-lg border bg-card p-4 text-card-foreground print:break-before-page print:break-inside-avoid print:rounded-none print:border-0 print:bg-transparent print:p-0 print:text-black">
+  return <section className="erp-resumo-balancete mt-5 rounded-lg border bg-card p-4 text-card-foreground print:break-before-page print:break-inside-avoid print:rounded-none print:border-0 print:bg-transparent print:p-0 print:text-black">
     <h2 className="mb-3 text-center text-sm font-bold uppercase print:text-[10pt]">Resumo do Balancete</h2>
     <div className="overflow-x-auto">
-      <table className="w-full min-w-160 table-fixed border-collapse text-xs print:min-w-0 print:text-[8pt]">
+      <table className="erp-resumo-balancete-table w-full min-w-160 table-fixed border-collapse text-xs print:min-w-0 print:text-[8pt]">
         <colgroup><col className="w-[36%]"/><col className="w-[16%]"/><col className="w-[16%]"/><col className="w-[16%]"/><col className="w-[16%]"/></colgroup>
         <thead><tr className="border-y print:border-black"><th className="px-2 py-1 text-left">Grupo</th><th className="px-2 py-1 text-right">Saldo anterior</th><th className="px-2 py-1 text-right">Débitos</th><th className="px-2 py-1 text-right">Créditos</th><th className="px-2 py-1 text-right">Saldo atual</th></tr></thead>
         <tbody>

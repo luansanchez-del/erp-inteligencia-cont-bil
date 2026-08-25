@@ -195,6 +195,34 @@ export function PageShell({ children }: { children: ReactNode }) {
               margin-top: 2mm !important; border-bottom: 0.6px solid #000 !important; padding-bottom: 1mm !important;
               text-align: center !important; font-size: 8pt !important; font-weight: 700 !important;
             }
+
+            /*
+             * O Resumo do Balancete (erp-resumo-balancete) tem sua própria tabela de 5
+             * colunas (Grupo/Saldo anterior/Débitos/Créditos/Saldo atual) e não deve herdar
+             * o recorte de colunas acima, feito sob medida para a tabela analítica de 11
+             * colunas. Estas regras, mais específicas, blindam a tabela do resumo.
+             */
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content .erp-resumo-balancete-table {
+              table-layout: fixed !important; font-size: 8pt !important; line-height: 1.3 !important;
+            }
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content .erp-resumo-balancete-table th,
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content .erp-resumo-balancete-table td {
+              padding: 1mm 1.5mm !important;
+            }
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content .erp-resumo-balancete-table th:nth-child(n),
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content .erp-resumo-balancete-table td:nth-child(n) {
+              display: table-cell !important; font-size: 8pt !important; white-space: normal !important;
+            }
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content .erp-resumo-balancete-table th:nth-child(1) { width: 36% !important; }
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content .erp-resumo-balancete-table th:nth-child(2),
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content .erp-resumo-balancete-table th:nth-child(3),
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content .erp-resumo-balancete-table th:nth-child(4),
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content .erp-resumo-balancete-table th:nth-child(5) {
+              width: 16% !important;
+            }
+            .erp-report-page[data-report-kind="Balancete"] .erp-route-content .erp-resumo-balancete-table thead th::after {
+              content: none !important;
+            }
           }
         `}</style>
       ) : null}
