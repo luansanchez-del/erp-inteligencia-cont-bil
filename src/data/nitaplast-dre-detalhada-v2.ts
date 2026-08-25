@@ -311,18 +311,20 @@ const bucketsOperacionais: Record<string, MovimentoResultado[]> = {
   adm: [], nplog: [], comerciais: [], producao: [], veiculos: [], barracao: [], imobilizado: [], industrializacao: [], tributarias: [], "comercial-sp": [], "despesas-nao-mapeadas": [],
 };
 
+const bucket = (id: string): MovimentoResultado[] => (bucketsOperacionais[id] ??= []);
+
 for (const movimento of operacionalAntesCreditos) {
-  if (movimento.cc === "502") bucketsOperacionais["comercial-sp"].push(movimento);
-  else if (movimento.documento.startsWith("11.02.003") || contem(movimento, "NPLOG")) bucketsOperacionais.nplog.push(movimento);
-  else if (movimento.classificacao.startsWith("5.7.05") || movimento.classificacao.startsWith("5.7.01.015")) bucketsOperacionais.veiculos.push(movimento);
-  else if (movimento.classificacao.startsWith("5.7.01.009") || movimento.classificacao.startsWith("5.7.03.007")) bucketsOperacionais.barracao.push(movimento);
-  else if (movimento.classificacao.startsWith("5.7.01.011")) bucketsOperacionais.imobilizado.push(movimento);
-  else if (movimento.classificacao.startsWith("5.7.09")) bucketsOperacionais.tributarias.push(movimento);
-  else if (movimento.codigo === "25937" || contem(movimento, "INDUSTRIALIZA")) bucketsOperacionais.industrializacao.push(movimento);
-  else if (ccProducao.has(movimento.cc)) bucketsOperacionais.producao.push(movimento);
-  else if (ccComercial.has(movimento.cc)) bucketsOperacionais.comerciais.push(movimento);
-  else if (ccAdministrativo.has(movimento.cc) || movimento.classificacao.startsWith("5.7.03")) bucketsOperacionais.adm.push(movimento);
-  else bucketsOperacionais["despesas-nao-mapeadas"].push(movimento);
+  if (movimento.cc === "502") bucket("comercial-sp").push(movimento);
+  else if (movimento.documento.startsWith("11.02.003") || contem(movimento, "NPLOG")) bucket("nplog").push(movimento);
+  else if (movimento.classificacao.startsWith("5.7.05") || movimento.classificacao.startsWith("5.7.01.015")) bucket("veiculos").push(movimento);
+  else if (movimento.classificacao.startsWith("5.7.01.009") || movimento.classificacao.startsWith("5.7.03.007")) bucket("barracao").push(movimento);
+  else if (movimento.classificacao.startsWith("5.7.01.011")) bucket("imobilizado").push(movimento);
+  else if (movimento.classificacao.startsWith("5.7.09")) bucket("tributarias").push(movimento);
+  else if (movimento.codigo === "25937" || contem(movimento, "INDUSTRIALIZA")) bucket("industrializacao").push(movimento);
+  else if (ccProducao.has(movimento.cc)) bucket("producao").push(movimento);
+  else if (ccComercial.has(movimento.cc)) bucket("comerciais").push(movimento);
+  else if (ccAdministrativo.has(movimento.cc) || movimento.classificacao.startsWith("5.7.03")) bucket("adm").push(movimento);
+  else bucket("despesas-nao-mapeadas").push(movimento);
 }
 
 const despesasOpAntesCreditosCalc = -somaEfeito(operacionalAntesCreditos);
