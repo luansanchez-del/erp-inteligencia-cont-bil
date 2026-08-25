@@ -9,7 +9,7 @@ import { useErp } from "@/context/erp-context";
 import type { RegimeTributario, TipoEstabelecimento } from "@/types/erp";
 
 export const Route = createFileRoute("/empresas/nova")({
-  validateSearch: (search: Record<string, unknown>) => ({ retorno: search.retorno === "/importacoes" ? "/importacoes" as const : undefined }),
+  validateSearch: (search: Record<string, unknown>) => ({ retorno: search["retorno"] === "/importacoes" ? "/importacoes" as const : undefined }),
   head: () => ({ meta: [{ title: "Nova empresa — ERP Contábil" }] }),
   component: NovaEmpresaPage,
 });
@@ -35,7 +35,7 @@ function NovaEmpresaPage() {
     if (!codigo.trim() || !razaoSocial.trim() || !nomeFantasia.trim() || !municipio.trim() || uf.trim().length !== 2) return setErro("Preencha código, razão social, nome fantasia, município e UF.");
     if (documento.length !== 14) return setErro("Informe um CNPJ com 14 dígitos.");
     if (empresas.some((empresa) => empresa.cnpj.replace(/\D/g, "") === documento)) return setErro("Já existe uma empresa cadastrada com este CNPJ.");
-    const criada = registrarEmpresa({ codigo: codigo.trim(), razaoSocial: razaoSocial.trim(), nomeFantasia: nomeFantasia.trim(), cnpj: documento, municipio: municipio.trim(), uf: uf.trim().toUpperCase(), tipo, atividade: atividade.trim() || undefined, regime: regime || undefined, regimeConfirmado: Boolean(regime) });
+    const criada = registrarEmpresa({ codigo: codigo.trim(), razaoSocial: razaoSocial.trim(), nomeFantasia: nomeFantasia.trim(), cnpj: documento, municipio: municipio.trim(), uf: uf.trim().toUpperCase(), tipo, ...(atividade.trim() ? { atividade: atividade.trim() } : {}), ...(regime ? { regime } : {}), regimeConfirmado: Boolean(regime) });
     setEmpresaId(criada.id);
     void navigate({ to: retorno ?? "/empresas" });
   }

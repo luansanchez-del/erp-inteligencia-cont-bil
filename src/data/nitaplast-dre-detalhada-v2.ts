@@ -128,7 +128,7 @@ function compor(movimentos: MovimentoResultado[], multiplicador = 1, observacao?
       valorLinha: 0,
       lancamentos: 0,
       fonte: `${movimento.origem} · ${movimento.fonte}`,
-      observacao,
+      ...(observacao === undefined ? {} : { observacao }),
     };
     atual.debitos += movimento.debito;
     atual.creditos += movimento.credito;
@@ -311,18 +311,26 @@ const bucketsOperacionais: Record<string, MovimentoResultado[]> = {
   adm: [], nplog: [], comerciais: [], producao: [], veiculos: [], barracao: [], imobilizado: [], industrializacao: [], tributarias: [], "comercial-sp": [], "despesas-nao-mapeadas": [],
 };
 
+const bucket = (id: string): MovimentoResultado[] => {
+  const atual = bucketsOperacionais[id];
+  if (atual) return atual;
+  const novo: MovimentoResultado[] = [];
+  bucketsOperacionais[id] = novo;
+  return novo;
+};
+
 for (const movimento of operacionalAntesCreditos) {
-  if (movimento.cc === "502") bucketsOperacionais["comercial-sp"].push(movimento);
-  else if (movimento.documento.startsWith("11.02.003") || contem(movimento, "NPLOG")) bucketsOperacionais.nplog.push(movimento);
-  else if (movimento.classificacao.startsWith("5.7.05") || movimento.classificacao.startsWith("5.7.01.015")) bucketsOperacionais.veiculos.push(movimento);
-  else if (movimento.classificacao.startsWith("5.7.01.009") || movimento.classificacao.startsWith("5.7.03.007")) bucketsOperacionais.barracao.push(movimento);
-  else if (movimento.classificacao.startsWith("5.7.01.011")) bucketsOperacionais.imobilizado.push(movimento);
-  else if (movimento.classificacao.startsWith("5.7.09")) bucketsOperacionais.tributarias.push(movimento);
-  else if (movimento.codigo === "25937" || contem(movimento, "INDUSTRIALIZA")) bucketsOperacionais.industrializacao.push(movimento);
-  else if (ccProducao.has(movimento.cc)) bucketsOperacionais.producao.push(movimento);
-  else if (ccComercial.has(movimento.cc)) bucketsOperacionais.comerciais.push(movimento);
-  else if (ccAdministrativo.has(movimento.cc) || movimento.classificacao.startsWith("5.7.03")) bucketsOperacionais.adm.push(movimento);
-  else bucketsOperacionais["despesas-nao-mapeadas"].push(movimento);
+  if (movimento.cc === "502") bucket("comercial-sp").push(movimento);
+  else if (movimento.documento.startsWith("11.02.003") || contem(movimento, "NPLOG")) bucket("nplog").push(movimento);
+  else if (movimento.classificacao.startsWith("5.7.05") || movimento.classificacao.startsWith("5.7.01.015")) bucket("veiculos").push(movimento);
+  else if (movimento.classificacao.startsWith("5.7.01.009") || movimento.classificacao.startsWith("5.7.03.007")) bucket("barracao").push(movimento);
+  else if (movimento.classificacao.startsWith("5.7.01.011")) bucket("imobilizado").push(movimento);
+  else if (movimento.classificacao.startsWith("5.7.09")) bucket("tributarias").push(movimento);
+  else if (movimento.codigo === "25937" || contem(movimento, "INDUSTRIALIZA")) bucket("industrializacao").push(movimento);
+  else if (ccProducao.has(movimento.cc)) bucket("producao").push(movimento);
+  else if (ccComercial.has(movimento.cc)) bucket("comerciais").push(movimento);
+  else if (ccAdministrativo.has(movimento.cc) || movimento.classificacao.startsWith("5.7.03")) bucket("adm").push(movimento);
+  else bucket("despesas-nao-mapeadas").push(movimento);
 }
 
 const despesasOpAntesCreditosCalc = -somaEfeito(operacionalAntesCreditos);
@@ -388,13 +396,13 @@ const linhasOperacionais: LinhaComparacaoDre[] = [
     id,
     nivel: 1,
     tipo: "detalhe",
-    calculado: -somaEfeito(bucketsOperacionais[id]),
-    composicao: compor(bucketsOperacionais[id], -1),
+    calculado: -somaEfeito(bucket(id)),
+    composicao: compor(bucket(id), -1),
     criterio: id === "industrializacao"
       ? "Industrialização identificada pela conta 25937/natureza documental. Créditos PIS/COFINS são mostrados abaixo, não escondidos dentro da despesa."
       : `Contas e centros de custo do Balancete classificados na linha ${id}; créditos PIS/COFINS são apresentados separadamente.`,
   })),
-  linha({ id: "despesas-nao-mapeadas", descricao: "Despesas operacionais sem linha correspondente", nivel: 1, tipo: "diagnostico", calculado: -somaEfeito(bucketsOperacionais["despesas-nao-mapeadas"]), enviadoValor: 0, composicao: compor(bucketsOperacionais["despesas-nao-mapeadas"], -1), criterio: "Movimentos 5.3/5.7 que ainda não têm linha segura no formato da DRE enviada." }),
+  linha({ id: "despesas-nao-mapeadas", descricao: "Despesas operacionais sem linha correspondente", nivel: 1, tipo: "diagnostico", calculado: -somaEfeito(bucket("despesas-nao-mapeadas")), enviadoValor: 0, composicao: compor(bucket("despesas-nao-mapeadas"), -1), criterio: "Movimentos 5.3/5.7 que ainda não têm linha segura no formato da DRE enviada." }),
   linha({ id: "fin-liq", nivel: 1, tipo: "detalhe", calculado: arred(despesasFinCalc - receitasFinCalc), composicao: compor([...despesasFinanceiras, ...receitasFinanceiras], -1), criterio: "Despesas financeiras menos receitas financeiras do Balancete." }),
   linha({ id: "fin-desp", nivel: 2, tipo: "detalhe", calculado: despesasFinCalc, composicao: compor(despesasFinanceiras, -1), criterio: "Contas 5.8 — despesas financeiras, incluindo JCP quando contabilizado em conta financeira." }),
   linha({ id: "fin-rec", nivel: 2, tipo: "detalhe", calculado: -receitasFinCalc, composicao: compor(receitasFinanceiras, -1), criterio: "Receitas financeiras do Balancete apresentadas como redutoras das despesas financeiras." }),
