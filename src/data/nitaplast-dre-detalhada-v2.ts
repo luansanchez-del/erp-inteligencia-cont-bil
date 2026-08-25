@@ -312,7 +312,7 @@ const bucketsOperacionais: Record<BucketOperacional, MovimentoResultado[]> = {
   adm: [], nplog: [], comerciais: [], producao: [], veiculos: [], barracao: [], imobilizado: [], industrializacao: [], tributarias: [], "comercial-sp": [], "despesas-nao-mapeadas": [],
 };
 
-const bucket = (id: string): MovimentoResultado[] => {
+const bucket = (id: BucketOperacional): MovimentoResultado[] => {
   const atual = bucketsOperacionais[id];
   if (atual) return atual;
   const novo: MovimentoResultado[] = [];
