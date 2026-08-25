@@ -51,27 +51,29 @@ export function BalancetePrintSummary({ linhas, resultadoContabil }: { linhas: L
   const resultadoExercicio = linhaResultado("RESULTADO DO EXERCÍCIO", true);
   if (Math.abs(resultadoExercicio.saldoAtual - arred(resultadoExercicio.saldoAnterior + resultadoMes.saldoAtual)) > 0.01) throw new Error("Resultado anterior + resultado do mês não fecha com o resultado do exercício.");
 
-  return <section className="mt-5 hidden break-before-page break-inside-avoid text-black print:block">
-    <h2 className="mb-3 text-center text-[10pt] font-bold uppercase">Resumo do Balancete</h2>
-    <table className="w-full table-fixed border-collapse text-[8pt]">
-      <colgroup><col className="w-[36%]"/><col className="w-[16%]"/><col className="w-[16%]"/><col className="w-[16%]"/><col className="w-[16%]"/></colgroup>
-      <thead><tr className="border-y border-black"><th className="px-2 py-1 text-left">Grupo</th><th className="px-2 py-1 text-right">Saldo anterior</th><th className="px-2 py-1 text-right">Débitos</th><th className="px-2 py-1 text-right">Créditos</th><th className="px-2 py-1 text-right">Saldo atual</th></tr></thead>
-      <tbody>
-        {linhasResumo.map((linha, indice) => <tr key={`${linha.descricao}-${indice}`} className="border-b border-black/20"><td className="px-2 py-1 font-semibold">{linha.descricao}</td><Valor valor={linha.saldoAnterior} natureza/><Valor valor={linha.debitos}/><Valor valor={linha.creditos}/><Valor valor={linha.saldoAtual} natureza/></tr>)}
-        <tr><td colSpan={5} className="h-2"/></tr>
-        {[devedoras, credoras].map((linha) => <tr key={linha.descricao} className="border-b border-black/20"><td className="px-2 py-1 font-semibold">{linha.descricao}</td><Valor valor={linha.saldoAnterior} natureza/><Valor valor={linha.debitos}/><Valor valor={linha.creditos}/><Valor valor={linha.saldoAtual} natureza/></tr>)}
-        <tr><td colSpan={5} className="h-2"/></tr>
-        {[resultadoMes, resultadoExercicio].map((linha) => <tr key={linha.descricao} className="font-bold"><td className="px-2 py-1">{linha.descricao}</td><Valor valor={linha.saldoAnterior} natureza/><Valor valor={linha.debitos}/><Valor valor={linha.creditos}/><Valor valor={linha.saldoAtual} natureza/></tr>)}
-      </tbody>
-    </table>
-    {(empresa.responsavelLegal || empresa.responsavelContabil) ? <div className="mt-12 grid grid-cols-2 gap-20 text-[7pt]">
+  return <section className="mt-5 rounded-lg border bg-card p-4 text-card-foreground print:break-before-page print:break-inside-avoid print:rounded-none print:border-0 print:bg-transparent print:p-0 print:text-black">
+    <h2 className="mb-3 text-center text-sm font-bold uppercase print:text-[10pt]">Resumo do Balancete</h2>
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-160 table-fixed border-collapse text-xs print:min-w-0 print:text-[8pt]">
+        <colgroup><col className="w-[36%]"/><col className="w-[16%]"/><col className="w-[16%]"/><col className="w-[16%]"/><col className="w-[16%]"/></colgroup>
+        <thead><tr className="border-y print:border-black"><th className="px-2 py-1 text-left">Grupo</th><th className="px-2 py-1 text-right">Saldo anterior</th><th className="px-2 py-1 text-right">Débitos</th><th className="px-2 py-1 text-right">Créditos</th><th className="px-2 py-1 text-right">Saldo atual</th></tr></thead>
+        <tbody>
+          {linhasResumo.map((linha, indice) => <tr key={`${linha.descricao}-${indice}`} className="border-b border-border/60 print:border-black/20"><td className="px-2 py-1 font-semibold">{linha.descricao}</td><Valor valor={linha.saldoAnterior} natureza/><Valor valor={linha.debitos}/><Valor valor={linha.creditos}/><Valor valor={linha.saldoAtual} natureza/></tr>)}
+          <tr><td colSpan={5} className="h-2"/></tr>
+          {[devedoras, credoras].map((linha) => <tr key={linha.descricao} className="border-b border-border/60 print:border-black/20"><td className="px-2 py-1 font-semibold">{linha.descricao}</td><Valor valor={linha.saldoAnterior} natureza/><Valor valor={linha.debitos}/><Valor valor={linha.creditos}/><Valor valor={linha.saldoAtual} natureza/></tr>)}
+          <tr><td colSpan={5} className="h-2"/></tr>
+          {[resultadoMes, resultadoExercicio].map((linha) => <tr key={linha.descricao} className="font-bold"><td className="px-2 py-1">{linha.descricao}</td><Valor valor={linha.saldoAnterior} natureza/><Valor valor={linha.debitos}/><Valor valor={linha.creditos}/><Valor valor={linha.saldoAtual} natureza/></tr>)}
+        </tbody>
+      </table>
+    </div>
+    {(empresa.responsavelLegal || empresa.responsavelContabil) ? <div className="mt-12 grid grid-cols-1 gap-8 text-xs sm:grid-cols-2 sm:gap-20 print:grid-cols-2 print:gap-20 print:text-[7pt]">
       <Assinatura nome={empresa.responsavelLegal?.nome} detalhe={[empresa.responsavelLegal?.cargo, empresa.responsavelLegal?.cpf ? `CPF: ${empresa.responsavelLegal.cpf}` : undefined]}/>
       <Assinatura nome={empresa.responsavelContabil?.nome} detalhe={[empresa.responsavelContabil?.registro, empresa.responsavelContabil?.cpf ? `CPF: ${empresa.responsavelContabil.cpf}` : undefined]}/>
     </div> : null}
   </section>;
 }
 
-function Assinatura({ nome, detalhe }: { nome?: string | undefined; detalhe: Array<string | undefined> }) { if (!nome) return <div/>; return <div className="border-t border-black pt-1"><div>{nome}</div>{detalhe.filter(Boolean).map((item) => <div key={item}>{item}</div>)}</div>; }
+function Assinatura({ nome, detalhe }: { nome?: string | undefined; detalhe: Array<string | undefined> }) { if (!nome) return <div/>; return <div className="border-t pt-1 print:border-black"><div>{nome}</div>{detalhe.filter(Boolean).map((item) => <div key={item}>{item}</div>)}</div>; }
 
 function Valor({ valor, natureza = false }: { valor: number; natureza?: boolean }) { return <td className="px-2 py-1 text-right tabular-nums">{formatar(valor, natureza)}</td>; }
 function formatar(valor: number, natureza = false) { if (Math.abs(valor) < 0.005) return "0,00"; const numero = brl.format(Math.abs(valor)).replace("R$ ", ""); return natureza ? `${numero}${valor < 0 ? "C" : "D"}` : numero; }
