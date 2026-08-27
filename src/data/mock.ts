@@ -1,4 +1,4 @@
-import type { Empresa, GrupoEmpresa, Funcao, Usuario, Integracao } from "@/types/erp";
+import type { Empresa, GrupoEmpresa, Funcao, Usuario, Integracao, StatusCompetencia } from "@/types/erp";
 
 export const grupos: GrupoEmpresa[] = [
   {
@@ -43,13 +43,10 @@ export const empresas: Empresa[] = [
   },
 ];
 
-export const competenciasDisponiveis = [
-  { id: "2026-07", label: "07/2026", status: "em_fechamento" as const },
-  { id: "2026-06", label: "06/2026", status: "fechada" as const },
-  { id: "2026-05", label: "05/2026", status: "fechada" as const },
-  { id: "2026-01", label: "01/2026", status: "aberta" as const },
-  { id: "2025-12", label: "12/2025", status: "em_fechamento" as const },
-  { id: "2025-11", label: "11/2025", status: "fechada" as const },
+export const competenciasDisponiveis: { id: string; label: string; status: StatusCompetencia }[] = [
+  { id: "2026-07", label: "07/2026", status: "em_fechamento" },
+  { id: "2026-06", label: "06/2026", status: "fechada" },
+  { id: "2026-05", label: "05/2026", status: "fechada" },
 ];
 
 export const funcoes: Funcao[] = [
@@ -74,9 +71,7 @@ export const funcoes: Funcao[] = [
 ];
 
 export const usuarios: Usuario[] = [
-  { id: "u1", nome: "Luan Sanchez", email: "luan@escritorio.com.br", funcaoId: "f1", ativo: true },
-  { id: "u2", nome: "Ana Ribeiro", email: "ana@escritorio.com.br", funcaoId: "f2", ativo: true },
-  { id: "u3", nome: "Carlos Dias", email: "carlos@escritorio.com.br", funcaoId: "f3", ativo: true },
+  { id: "u1", nome: "Luan Sanchez", email: "luan.sanchez@grouplegacy.com.br", funcaoId: "f1", ativo: true },
 ];
 
 export const integracoes: Integracao[] = [
