@@ -14,13 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      funcoes: {
+        Row: {
+          created_at: string
+          descricao: string
+          id: string
+          nome: string
+          permissoes: Json
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          nome: string
+          permissoes?: Json
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          nome?: string
+          permissoes?: Json
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          email: string
+          funcao_id: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          email: string
+          funcao_id?: string | null
+          id: string
+          nome: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          email?: string
+          funcao_id?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_funcao_id_fkey"
+            columns: ["funcao_id"]
+            isOneToOne: false
+            referencedRelation: "funcoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      tem_permissao: {
+        Args: { p_acao: string; p_modulo: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
