@@ -175,7 +175,7 @@ function AuthSplash() {
 }
 
 function AuthenticatedApp() {
-  const { session, loading, justSignedIn, acknowledgeSignIn } = useAuth();
+  const { session, loading, justSignedIn, acknowledgeSignIn, perfilCarregando } = useAuth();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const router = useRouter();
 
@@ -189,7 +189,7 @@ function AuthenticatedApp() {
   }, [loading, session, pathname, router]);
 
   if (pathname === "/login") return <Outlet />;
-  if (loading || !session) return <AuthSplash />;
+  if (loading || !session || perfilCarregando) return <AuthSplash />;
   if (justSignedIn) return <SelecionarEmpresa onConfirmar={acknowledgeSignIn} />;
   return <ErpApplication />;
 }

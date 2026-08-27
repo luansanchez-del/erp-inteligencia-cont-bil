@@ -1,4 +1,4 @@
-import type { Empresa, GrupoEmpresa, Funcao, Usuario, Integracao, StatusCompetencia } from "@/types/erp";
+import type { Empresa, GrupoEmpresa, Integracao, StatusCompetencia } from "@/types/erp";
 
 export const grupos: GrupoEmpresa[] = [
   {
@@ -47,31 +47,6 @@ export const competenciasDisponiveis: { id: string; label: string; status: Statu
   { id: "2026-07", label: "07/2026", status: "em_fechamento" },
   { id: "2026-06", label: "06/2026", status: "fechada" },
   { id: "2026-05", label: "05/2026", status: "fechada" },
-];
-
-export const funcoes: Funcao[] = [
-  {
-    id: "f1",
-    nome: "Administrador",
-    descricao: "Acesso total a todos os módulos",
-    permissoes: [],
-  },
-  {
-    id: "f2",
-    nome: "Contador",
-    descricao: "Escrituração, relatórios e fechamento",
-    permissoes: [],
-  },
-  {
-    id: "f3",
-    nome: "Consulta",
-    descricao: "Somente leitura de relatórios",
-    permissoes: [],
-  },
-];
-
-export const usuarios: Usuario[] = [
-  { id: "u1", nome: "Luan Sanchez", email: "luan.sanchez@grouplegacy.com.br", funcaoId: "f1", ativo: true },
 ];
 
 export const integracoes: Integracao[] = [

@@ -14,7 +14,67 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      // Mantido manualmente em sincronia com supabase/migrations/20260827120000_usuarios_funcoes.sql
+      // até que o schema real seja gerado por `supabase gen types` (sem CLI configurado neste projeto).
+      funcoes: {
+        Row: {
+          id: string
+          nome: string
+          descricao: string
+          permissoes: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          nome: string
+          descricao?: string
+          permissoes?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          nome?: string
+          descricao?: string
+          permissoes?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          id: string
+          nome: string
+          email: string
+          funcao_id: string | null
+          ativo: boolean
+          created_at: string
+        }
+        Insert: {
+          id: string
+          nome: string
+          email: string
+          funcao_id?: string | null
+          ativo?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          nome?: string
+          email?: string
+          funcao_id?: string | null
+          ativo?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_funcao_id_fkey"
+            columns: ["funcao_id"]
+            isOneToOne: false
+            referencedRelation: "funcoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
