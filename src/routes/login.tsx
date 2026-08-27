@@ -8,7 +8,7 @@ import { useAuth } from "@/context/auth-context";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
-    meta: [{ title: "Entrar — ERP Contábil" }],
+    meta: [{ title: "Entrar" }],
   }),
   component: LoginPage,
 });

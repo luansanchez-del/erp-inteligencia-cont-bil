@@ -16,7 +16,7 @@ import { exportarExcel } from "@/lib/exportar-excel";
 export const Route = createFileRoute("/relatorios/balancete-centro-custo")({
   head: () => ({
     meta: [
-      { title: "Balancete por Centro de Custo — Nitaplast — ERP Contábil" },
+      { title: "Balancete por Centro de Custo — Nitaplast" },
       { name: "description", content: "Balancete de junho de 2026 aberto por centro de custo a partir do Razão fechado." },
     ],
   }),

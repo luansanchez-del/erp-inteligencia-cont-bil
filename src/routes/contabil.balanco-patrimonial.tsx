@@ -4,7 +4,7 @@ import { RelatorioShell } from "@/components/relatorio-shell";
 export const Route = createFileRoute("/contabil/balanco-patrimonial")({
   head: () => ({
     meta: [
-      { title: "Balanço Patrimonial — ERP Contábil" },
+      { title: "Balanço Patrimonial" },
       { name: "description", content: "Posição patrimonial consolidada da competência." },
       { property: "og:title", content: "Balanço Patrimonial — ERP Contábil" },
       { property: "og:description", content: "Posição patrimonial consolidada da competência." },

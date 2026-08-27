@@ -15,7 +15,7 @@ import {
 export const Route = createFileRoute("/contabil/conciliacao")({
   head: () => ({
     meta: [
-      { title: "Conciliação — ERP Contábil" },
+      { title: "Conciliação" },
       { name: "description", content: "Conciliação bancária documental por competência." },
       { property: "og:title", content: "Conciliação — ERP Contábil" },
       { property: "og:description", content: "Conciliação bancária documental por competência." },

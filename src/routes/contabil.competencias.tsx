@@ -8,7 +8,7 @@ import { useErp } from "@/context/erp-context";
 export const Route = createFileRoute("/contabil/competencias")({
   head: () => ({
     meta: [
-      { title: "Competências — ERP Contábil" },
+      { title: "Competências" },
       { name: "description", content: "Períodos contábeis por empresa, com controle de abertura e fechamento." },
       { property: "og:title", content: "Competências — ERP Contábil" },
       { property: "og:description", content: "Períodos contábeis por empresa, com controle de abertura e fechamento." },

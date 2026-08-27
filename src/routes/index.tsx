@@ -17,7 +17,7 @@ import { empresas } from "@/data/mock";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dashboard — ERP Contábil" },
+      { title: "Dashboard" },
       {
         name: "description",
         content: "Visão geral da empresa e da competência selecionadas no ERP Contábil.",

@@ -4,7 +4,7 @@ import { ModuloFuturo } from "@/components/modulo-futuro";
 export const Route = createFileRoute("/obrigacoes")({
   head: () => ({
     meta: [
-      { title: "Obrigações Acessórias — ERP Contábil" },
+      { title: "Obrigações Acessórias" },
       { name: "description", content: "Calendário e controle de entregas obrigatórias — previsto para etapa futura." },
       { property: "og:title", content: "Obrigações Acessórias — ERP Contábil" },
       { property: "og:description", content: "Calendário e controle de entregas obrigatórias — previsto para etapa futura." },

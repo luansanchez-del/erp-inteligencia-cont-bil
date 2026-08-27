@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 export const Route = createFileRoute("/contabil/encerramento")({
   head: () => ({
     meta: [
-      { title: "Encerramento — ERP Contábil" },
+      { title: "Encerramento" },
       {
         name: "description",
         content: "Encerramento do exercício contábil: apuração, transferência e abertura seguinte.",

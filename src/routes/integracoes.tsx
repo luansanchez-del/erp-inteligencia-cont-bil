@@ -9,7 +9,7 @@ import { integracoes } from "@/data/mock";
 export const Route = createFileRoute("/integracoes")({
   head: () => ({
     meta: [
-      { title: "Integrações — ERP Contábil" },
+      { title: "Integrações" },
       {
         name: "description",
         content: "Catálogo de conectores previstos, incluindo o conector Questor.",
