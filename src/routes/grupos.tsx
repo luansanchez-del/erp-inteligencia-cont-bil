@@ -9,7 +9,7 @@ import type { GrupoEmpresa } from "@/types/erp";
 export const Route = createFileRoute("/grupos")({
   head: () => ({
     meta: [
-      { title: "Grupos de Empresas — ERP Contábil" },
+      { title: "Grupos de Empresas" },
       { name: "description", content: "Agrupamento de empresas para gestão contábil consolidada." },
       { property: "og:title", content: "Grupos de Empresas — ERP Contábil" },
       { property: "og:description", content: "Agrupamento de empresas do ERP Contábil." },

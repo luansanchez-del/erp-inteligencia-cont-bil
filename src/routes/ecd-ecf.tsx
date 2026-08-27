@@ -4,7 +4,7 @@ import { ModuloFuturo } from "@/components/modulo-futuro";
 export const Route = createFileRoute("/ecd-ecf")({
   head: () => ({
     meta: [
-      { title: "ECD / ECF — ERP Contábil" },
+      { title: "ECD / ECF" },
       { name: "description", content: "Geração e validação dos arquivos digitais do SPED contábil e fiscal — previsto para etapa futura." },
       { property: "og:title", content: "ECD / ECF — ERP Contábil" },
       { property: "og:description", content: "Geração e validação dos arquivos digitais do SPED contábil e fiscal — previsto para etapa futura." },

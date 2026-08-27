@@ -10,7 +10,7 @@ import type { RegimeTributario, TipoEstabelecimento } from "@/types/erp";
 
 export const Route = createFileRoute("/empresas/nova")({
   validateSearch: (search: Record<string, unknown>) => ({ retorno: search["retorno"] === "/importacoes" ? "/importacoes" as const : undefined }),
-  head: () => ({ meta: [{ title: "Nova empresa — ERP Contábil" }] }),
+  head: () => ({ meta: [{ title: "Nova empresa" }] }),
   component: NovaEmpresaPage,
 });
 

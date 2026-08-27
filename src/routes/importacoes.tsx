@@ -10,7 +10,7 @@ import { useErp } from "@/context/erp-context";
 import { calcularHashArquivo, carregarDossieImportacao, salvarDossieImportacao } from "@/lib/dossie-importacao";
 import type { CategoriaFonteImportacao, FluxoImportacao, FormatoImportacao, ItemDossieImportacao } from "@/types/erp";
 
-export const Route = createFileRoute("/importacoes")({ head: () => ({ meta: [{ title: "Dossiê de Importação — ERP Contábil" }] }), component: ImportacoesPage });
+export const Route = createFileRoute("/importacoes")({ head: () => ({ meta: [{ title: "Dossiê de Importação" }] }), component: ImportacoesPage });
 
 const categorias: Record<FluxoImportacao, { valor: CategoriaFonteImportacao; label: string; finalidade?: "conferencia" }[]> = {
   implantacao: [

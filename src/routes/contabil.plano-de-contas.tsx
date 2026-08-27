@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/contabil/plano-de-contas")({
   head: () => ({
     meta: [
-      { title: "Plano de Contas — ERP Contábil" },
+      { title: "Plano de Contas" },
       { name: "description", content: "Estrutura hierárquica de contas contábeis da empresa selecionada." },
       { property: "og:title", content: "Plano de Contas — ERP Contábil" },
       { property: "og:description", content: "Estrutura hierárquica de contas contábeis da empresa selecionada." },

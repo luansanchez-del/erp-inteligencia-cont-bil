@@ -12,7 +12,7 @@ import { useErp } from "@/context/erp-context";
 export const Route = createFileRoute("/empresas/$id")({
   head: () => ({
     meta: [
-      { title: "Empresa — ERP Contábil" },
+      { title: "Empresa" },
       { name: "description", content: "Detalhe cadastral da empresa no ERP Contábil." },
       { property: "og:title", content: "Detalhe da empresa — ERP Contábil" },
       { property: "og:description", content: "Dados cadastrais, contábeis e vínculos da empresa." },

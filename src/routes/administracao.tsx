@@ -12,7 +12,7 @@ import type { Usuario } from "@/types/erp";
 export const Route = createFileRoute("/administracao")({
   head: () => ({
     meta: [
-      { title: "Administração — ERP Contábil" },
+      { title: "Administração" },
       {
         name: "description",
         content: "Usuários, funções e matriz de permissões por módulo do ERP Contábil.",

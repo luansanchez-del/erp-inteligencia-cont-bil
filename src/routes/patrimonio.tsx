@@ -13,7 +13,7 @@ import { inventarioImobilizadoImplantacaoMaio, resumoInventarioImobilizadoImplan
 export const Route = createFileRoute("/patrimonio")({
   head: () => ({
     meta: [
-      { title: "Imobilizado — ERP Contábil" },
+      { title: "Imobilizado" },
       { name: "description", content: "Controle do imobilizado e cálculo contábil de depreciação." },
       { property: "og:title", content: "Imobilizado — ERP Contábil" },
       { property: "og:description", content: "Controle do imobilizado e cálculo contábil de depreciação." },

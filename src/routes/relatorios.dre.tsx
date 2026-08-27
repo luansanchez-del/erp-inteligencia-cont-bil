@@ -17,7 +17,7 @@ import { exportarExcel } from "@/lib/exportar-excel";
 export const Route = createFileRoute("/relatorios/dre")({
   head: () => ({
     meta: [
-      { title: "DRE Report — Nitaplast — ERP Contábil" },
+      { title: "DRE Report — Nitaplast" },
       { name: "description", content: "Demonstração do Resultado calculada exclusivamente pelo Razão e Balancete." },
     ],
   }),

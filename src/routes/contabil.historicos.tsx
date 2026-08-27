@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/contabil/historicos")({
   head: () => ({
     meta: [
-      { title: "Históricos Contábeis — ERP Contábil" },
+      { title: "Históricos Contábeis" },
       { name: "description", content: "Histórico padrão utilizado na escrituração de lançamentos." },
       { property: "og:title", content: "Históricos Contábeis — ERP Contábil" },
       { property: "og:description", content: "Histórico padrão utilizado na escrituração de lançamentos." },

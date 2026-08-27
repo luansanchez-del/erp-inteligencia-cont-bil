@@ -7,7 +7,7 @@ import { useErp } from "@/context/erp-context";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 
 export const Route = createFileRoute("/contabil/fechamento-assistido")({
-  head: () => ({ meta: [{ title: "Nitaplast - Fechamento Assistido" }, { name: "description", content: "Fechamento contábil assistido da Nitaplast por competência." }] }),
+  head: () => ({ meta: [{ title: "Fechamento Assistido — Nitaplast" }, { name: "description", content: "Fechamento contábil assistido da Nitaplast por competência." }] }),
   component: FechamentoAssistidoPage,
 });
 

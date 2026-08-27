@@ -55,6 +55,7 @@ export const navGroups: NavGroup[] = [
       { label: "Validação Diário", to: "/contabil/diario" },
       { label: "Validação Balancete", to: "/contabil/balancete" },
       { label: "Validação DRE", to: "/contabil/dre" },
+      { label: "LALUR — IRPJ/CSLL", to: "/contabil/lalur" },
       { label: "Validação Balanço Patrimonial", to: "/contabil/balanco-patrimonial" },
     ],
   },

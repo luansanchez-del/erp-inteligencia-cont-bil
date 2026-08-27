@@ -12,7 +12,7 @@ import type { Empresa } from "@/types/erp";
 export const Route = createFileRoute("/empresas/")({
   head: () => ({
     meta: [
-      { title: "Empresas — ERP Contábil" },
+      { title: "Empresas" },
       { name: "description", content: "Cadastro de empresas atendidas pelo escritório contábil." },
       { property: "og:title", content: "Empresas — ERP Contábil" },
       { property: "og:description", content: "Cadastro de empresas do ERP Contábil." },

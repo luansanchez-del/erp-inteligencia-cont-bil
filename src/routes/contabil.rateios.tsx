@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/contabil/rateios")({
   head: () => ({
     meta: [
-      { title: "Rateios — ERP Contábil" },
+      { title: "Rateios" },
       { name: "description", content: "Regras de distribuição de valores entre centros de custo." },
       { property: "og:title", content: "Rateios — ERP Contábil" },
       { property: "og:description", content: "Regras de distribuição de valores entre centros de custo." },

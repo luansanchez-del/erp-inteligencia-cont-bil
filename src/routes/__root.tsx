@@ -92,7 +92,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { name: "theme-color", content: "#232b57" },
-      { title: "ERP Contábil — Inteligência Contábil" },
+      { title: "ERP Contábil" },
       {
         name: "description",
         content:
