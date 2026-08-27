@@ -27,6 +27,16 @@ const rotasSensiveisCompetencia = [
   "/relatorios/dre",
 ];
 
+// Rotas cujo conteúdo hoje é hardcoded para a Nitaplast e não podem herdar esses
+// números quando outra empresa está selecionada. Superset de rotasSensiveisCompetencia:
+// inclui rotas com visão própria (sem o fallback "sem visão própria de julho").
+const rotasSensiveisEmpresa = [
+  ...rotasSensiveisCompetencia,
+  "/contabil/fechamento-assistido",
+  "/contabil/conciliacao",
+  "/patrimonio",
+];
+
 const rotasRelatorioImpressao = [
   "/contabil/balancete",
   "/contabil/razao",
@@ -54,6 +64,7 @@ export function PageShell({ children }: { children: ReactNode }) {
   const { empresa, competencia } = useErp();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const sensivel = rotasSensiveisCompetencia.some((rota) => pathname === rota || pathname.startsWith(`${rota}/`));
+  const sensivelEmpresa = rotasSensiveisEmpresa.some((rota) => pathname === rota || pathname.startsWith(`${rota}/`));
   const relatorioImprimivel = rotasRelatorioImpressao.some((rota) => pathname === rota || pathname.startsWith(`${rota}/`));
   const dreJulhoImpressao = relatorioImprimivel
     && competencia.id === "2026-07"
@@ -61,34 +72,54 @@ export function PageShell({ children }: { children: ReactNode }) {
 
   let conteudo: ReactNode = children;
 
-  if (competencia.id === "2026-07") {
-    const tela = telaContabilJulho(pathname);
-    if (tela) conteudo = tela;
-  }
+  // Todo o motor contábil hoje é hardcoded para a Nitaplast. Empresas cadastradas
+  // fora desse grupo (ex.: cadastros de teste para validar implantação) não podem
+  // herdar os números reais da Nitaplast nas rotas sensíveis a competência.
+  const empresaComDadosCarregados = empresa.grupoId === "g-nitaplast";
 
-  const balanceteDominioMaioCarregado = competencia.id === "2026-05" && pathname === "/contabil/balancete";
-
-  if (sensivel && competencia.id !== "2026-06" && competencia.id !== "2026-07" && !balanceteDominioMaioCarregado) {
+  if (sensivelEmpresa && !empresaComDadosCarregados) {
     conteudo = (
       <>
         <PageHeader
-          titulo={`${nomeModulo(pathname)} — ${competencia.label}`}
-          descricao="A competência selecionada ainda não possui escrituração contábil carregada. Nenhum dado de outra competência é reutilizado como fallback."
-          acoes={<StatusPill label="Sem base carregada" />}
+          titulo={`${nomeModulo(pathname)} — ${empresa.nomeFantasia}`}
+          descricao="Esta empresa ainda não possui escrituração contábil carregada no ERP. Nenhum dado de outra empresa (Nitaplast) é reutilizado como fallback."
+          acoes={<StatusPill label="Sem dados desta empresa" />}
         />
         <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-          A competência selecionada ainda não possui base contábil carregada.
+          Importe os documentos e o balancete de abertura desta empresa para começar a escrituração.
         </div>
       </>
     );
-  } else if (sensivel && competencia.id === "2026-07" && !telaContabilJulho(pathname)) {
-    conteudo = (
-      <PageHeader
-        titulo={`${nomeModulo(pathname)} — 07/2026`}
-        descricao="Esta rota auxiliar ainda não possui visão própria de julho; os livros principais já estão disponíveis em Balancete, Razão, Diário, DRE e Lançamentos."
-        acoes={<StatusPill label="Em fechamento" />}
-      />
-    );
+  } else {
+    if (competencia.id === "2026-07") {
+      const tela = telaContabilJulho(pathname);
+      if (tela) conteudo = tela;
+    }
+
+    const balanceteDominioMaioCarregado = competencia.id === "2026-05" && pathname === "/contabil/balancete";
+
+    if (sensivel && competencia.id !== "2026-06" && competencia.id !== "2026-07" && !balanceteDominioMaioCarregado) {
+      conteudo = (
+        <>
+          <PageHeader
+            titulo={`${nomeModulo(pathname)} — ${competencia.label}`}
+            descricao="A competência selecionada ainda não possui escrituração contábil carregada. Nenhum dado de outra competência é reutilizado como fallback."
+            acoes={<StatusPill label="Sem base carregada" />}
+          />
+          <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+            A competência selecionada ainda não possui base contábil carregada.
+          </div>
+        </>
+      );
+    } else if (sensivel && competencia.id === "2026-07" && !telaContabilJulho(pathname)) {
+      conteudo = (
+        <PageHeader
+          titulo={`${nomeModulo(pathname)} — 07/2026`}
+          descricao="Esta rota auxiliar ainda não possui visão própria de julho; os livros principais já estão disponíveis em Balancete, Razão, Diário, DRE e Lançamentos."
+          acoes={<StatusPill label="Em fechamento" />}
+        />
+      );
+    }
   }
 
   return (
@@ -361,6 +392,8 @@ function nomeModulo(pathname: string) {
   if (pathname.includes("lancamentos")) return "Lançamentos Contábeis";
   if (pathname.includes("lotes")) return "Lotes";
   if (pathname.includes("encerramento")) return "Encerramento";
+  if (pathname.includes("patrimonio")) return "Imobilizado";
+  if (pathname.includes("fechamento-assistido")) return "Fechamento Assistido";
   return "Fechamento";
 }
 
