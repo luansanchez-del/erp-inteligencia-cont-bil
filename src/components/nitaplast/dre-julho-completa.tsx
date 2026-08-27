@@ -26,9 +26,10 @@ type LinhaApresentacao = { descricao: string; valor: number | null; percentual?:
 
 const receitaBrutaApresentacao = 4_138_549.72;
 // Inclui a provisão de custo de R$ 100.000,00 solicitada pelo cliente em 27/08/2026
-// (débito 25948 / crédito 25255, competência 07/2026). Conferida contra dre.resultado
-// em tempo de execução no componente — ver checagem logo após o cálculo de `dre`.
-const resultadoApresentacao = 134_732.08;
+// (débito 25948 / crédito 25255, competência 07/2026) e a variação cambial de julho.
+// Conferida contra dre.resultado em tempo de execução no componente — ver checagem
+// logo após o cálculo de `dre`.
+const resultadoApresentacao = 128_172.33;
 const linhasApresentacao: LinhaApresentacao[] = [
   { descricao: "(+) Receita Operacional Bruta", valor: receitaBrutaApresentacao, percentual: "100,00%", destaque: true },
   { descricao: "Receita Venda Produção Matriz", valor: 3_443_785.35, nivel: 1 },
@@ -53,7 +54,7 @@ const linhasApresentacao: LinhaApresentacao[] = [
   { descricao: "(-) CPV Filial", valor: 177_301.11, nivel: 1 },
   { descricao: "(-) CMV Filial", valor: 0, nivel: 1 },
   { descricao: "(=) Lucro bruto", valor: 1_568_244.40, percentual: "37,89%", destaque: true },
-  { descricao: "(-) Despesas operacionais", valor: 1_537_134.17, percentual: "37,14%", destaque: true },
+  { descricao: "(-) Despesas operacionais", valor: 1_543_693.92, percentual: "37,30%", destaque: true },
   { descricao: "Despesas Administrativas", valor: 175_861.49, percentual: "4,25%", nivel: 1 },
   { descricao: "Despesas com Serviço - NPLog", valor: 135_289.01, percentual: "3,27%", nivel: 1 },
   { descricao: "Despesas Comerciais", valor: 406_412.20, percentual: "9,82%", nivel: 1 },
@@ -65,17 +66,17 @@ const linhasApresentacao: LinhaApresentacao[] = [
   { descricao: "Despesas comerciais SP", valor: 58_910.56, percentual: "1,42%", nivel: 1 },
   { descricao: "Provisão de Custo — Solicitação do Cliente 07/2026", valor: 100_000.00, percentual: "2,42%", nivel: 1 },
   { descricao: "Subtotal das despesas operacionais antes do resultado financeiro", valor: 1_429_333.42, destaque: true },
-  { descricao: "Despesas Financeiras", valor: 143_700.96, percentual: "3,47%", nivel: 1 },
-  { descricao: "(-) Receitas Financeiras", valor: 35_900.21, percentual: "0,87%", nivel: 1 },
-  { descricao: "Despesas Financeiras Líquidas", valor: 107_800.75, destaque: true },
+  { descricao: "Despesas Financeiras", valor: 152_077.49, percentual: "3,67%", nivel: 1 },
+  { descricao: "(-) Receitas Financeiras", valor: 37_716.99, percentual: "0,91%", nivel: 1 },
+  { descricao: "Despesas Financeiras Líquidas", valor: 114_360.50, destaque: true },
   { descricao: "(-) PIS não cumulativo sobre despesas", valor: 0, percentual: "0,00%", nivel: 1 },
   { descricao: "(-) COFINS não cumulativo sobre despesas", valor: 0, percentual: "0,00%", nivel: 1 },
-  { descricao: "Total das despesas operacionais", valor: 1_537_134.17, destaque: true },
-  { descricao: "(=) Resultado Operacional", valor: 31_110.23, percentual: "0,75%", destaque: true },
+  { descricao: "Total das despesas operacionais", valor: 1_543_693.92, destaque: true },
+  { descricao: "(=) Resultado Operacional", valor: 24_550.48, percentual: "0,59%", destaque: true },
   { descricao: "Resultado não operacional", valor: 103_621.85, destaque: true },
   { descricao: "Receita de Alienação de Imobilizado", valor: 306_900, percentual: "7,42%", nivel: 1 },
   { descricao: "Custo na Baixa/Alienação de Imobilizado", valor: 203_278.15, percentual: "4,91%", nivel: 1 },
-  { descricao: "(=) Lucro líquido", valor: resultadoApresentacao, percentual: "3,26%", destaque: true },
+  { descricao: "(=) Lucro líquido", valor: resultadoApresentacao, percentual: "3,10%", destaque: true },
 ];
 
 const ccProd = new Set(["101", "102", "103", "104", "105", "106", "107", "108", "109", "110", "111", "503", "10014", "10032", "10057", "10060", "19999"]);
