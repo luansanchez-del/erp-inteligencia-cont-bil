@@ -12,10 +12,8 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
-import { AppSidebar } from "@/components/app-sidebar";
-import { Topbar } from "@/components/topbar";
+import { AppMenuBar, AppStatusBar } from "@/components/app-menu-bar";
 import { PageShell } from "@/components/page-header";
 import {
   BalanceteJulhoAjustavel,
@@ -128,7 +126,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className="dark">
       <head>
         <HeadContent />
       </head>
@@ -185,21 +183,17 @@ function ErpApplication() {
   const renderKey = `${empresa.id}:${competencia.id}`;
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background print:block print:min-h-0 print:bg-white">
-        <div className="print:hidden">
-          <AppSidebar />
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col print:block print:w-full">
-          <div className="print:hidden">
-            <Topbar />
-          </div>
-          <main key={renderKey} className="min-w-0 flex-1 print:w-full print:min-w-0">
-            {/* Ao trocar empresa/competência, remonta a visão. Julho usa sua própria camada contábil ajustável; junho permanece congelado nas rotas existentes. */}
-            <ConteudoCompetencia />
-          </main>
-        </div>
+    <div className="flex min-h-screen w-full flex-col bg-background print:block print:min-h-0 print:bg-white">
+      <div className="print:hidden">
+        <AppMenuBar />
       </div>
-    </SidebarProvider>
+      <main key={renderKey} className="min-w-0 flex-1 print:w-full print:min-w-0">
+        {/* Ao trocar empresa/competência, remonta a visão. Julho usa sua própria camada contábil ajustável; junho permanece congelado nas rotas existentes. */}
+        <ConteudoCompetencia />
+      </main>
+      <div className="print:hidden">
+        <AppStatusBar />
+      </div>
+    </div>
   );
 }
