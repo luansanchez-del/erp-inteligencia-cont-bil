@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Search,
   User,
+  LogOut,
   BookOpen,
   CalendarCheck,
   Scale,
@@ -15,6 +16,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -30,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { navGroups, type NavGroup } from "@/config/navigation";
 import { useCan, useFuncaoAtual } from "@/lib/permissions";
 import { useErp } from "@/context/erp-context";
+import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 
 const statusLabel: Record<string, string> = {
@@ -123,6 +127,7 @@ function MenuFuturos({ futuros }: { futuros: NavGroup[] }) {
 
 export function AppMenuBar() {
   const { empresa, empresas, competencia, competencias, setEmpresaId, setCompetenciaId } = useErp();
+  const { user, signOut } = useAuth();
   const funcao = useFuncaoAtual();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
@@ -149,9 +154,21 @@ export function AppMenuBar() {
               {empresa.nomeFantasia} · {empresa.codigo}
             </p>
           </div>
-          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-muted">
-            <User className="size-4" />
-          </span>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="grid size-8 shrink-0 place-items-center rounded-full bg-muted outline-none transition-colors hover:bg-accent data-[state=open]:bg-accent">
+              <User className="size-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[220px]">
+              <DropdownMenuLabel className="truncate font-normal text-muted-foreground">
+                {user?.email ?? "—"}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => void signOut()}>
+                <LogOut className="size-4" />
+                Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

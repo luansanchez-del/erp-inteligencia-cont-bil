@@ -23,6 +23,7 @@ import {
 } from "@/components/nitaplast/contabil-julho-ajustavel";
 import { DreJulhoCompleta } from "@/components/nitaplast/dre-julho-completa";
 import { ErpProvider, useErp } from "@/context/erp-context";
+import { AuthProvider, useAuth } from "@/context/auth-context";
 
 function NotFoundComponent() {
   return (
@@ -143,14 +144,43 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ErpProvider>
-        <ErpApplication />
-      </ErpProvider>
+      <AuthProvider>
+        <ErpProvider>
+          <AuthenticatedApp />
+        </ErpProvider>
+      </AuthProvider>
       <div className="print:hidden">
         <Toaster />
       </div>
     </QueryClientProvider>
   );
+}
+
+function AuthSplash() {
+  return (
+    <div className="grid min-h-screen place-items-center bg-background">
+      <img src="/branding/group-legacy-icon.png" alt="" className="size-8 animate-pulse opacity-70" />
+    </div>
+  );
+}
+
+function AuthenticatedApp() {
+  const { session, loading } = useAuth();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!session && pathname !== "/login") {
+      router.navigate({ to: "/login" });
+    } else if (session && pathname === "/login") {
+      router.navigate({ to: "/" });
+    }
+  }, [loading, session, pathname, router]);
+
+  if (pathname === "/login") return <Outlet />;
+  if (loading || !session) return <AuthSplash />;
+  return <ErpApplication />;
 }
 
 function ConteudoCompetencia() {
