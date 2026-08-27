@@ -133,9 +133,11 @@ export function AppMenuBar() {
     <header className="sticky top-0 z-30 border-b bg-card">
       <div className="flex items-center justify-between gap-3 border-b bg-muted/30 px-3 py-1.5">
         <Link to="/" className="flex min-w-0 items-center gap-2">
-          <span className="grid size-7 shrink-0 place-items-center rounded bg-primary text-xs font-bold text-primary-foreground">
-            C
-          </span>
+          <img
+            src="/branding/group-legacy-icon.png"
+            alt="Group Legacy"
+            className="size-7 shrink-0 object-contain"
+          />
           <span className="truncate text-sm font-semibold tracking-tight">
             ERP Contábil <span className="font-normal text-muted-foreground">— Inteligência Contábil</span>
           </span>
