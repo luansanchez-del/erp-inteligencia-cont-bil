@@ -1,8 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
   Search,
   User,
   LogOut,
+  Sun,
+  Moon,
   BookOpen,
   CalendarCheck,
   Scale,
@@ -41,6 +44,28 @@ const statusLabel: Record<string, string> = {
   em_fechamento: "Em fechamento",
   fechada: "Fechada",
 };
+
+function useThemeToggle() {
+  const [dark, setDark] = useState(false);
+  const [pronto, setPronto] = useState(false);
+
+  useEffect(() => {
+    setDark(document.documentElement.classList.contains("dark"));
+    setPronto(true);
+  }, []);
+
+  useEffect(() => {
+    if (!pronto) return;
+    document.documentElement.classList.toggle("dark", dark);
+    try {
+      localStorage.setItem("erp-tema", dark ? "dark" : "light");
+    } catch {
+      /* ignora */
+    }
+  }, [dark, pronto]);
+
+  return { dark, alternar: () => setDark((d) => !d) };
+}
 
 const atalhosToolbar: { label: string; to: string; icon: LucideIcon }[] = [
   { label: "Lançamentos", to: "/contabil/lancamentos", icon: BookOpen },
@@ -128,6 +153,7 @@ function MenuFuturos({ futuros }: { futuros: NavGroup[] }) {
 export function AppMenuBar() {
   const { empresa, empresas, competencia, competencias, setEmpresaId, setCompetenciaId } = useErp();
   const { user, signOut } = useAuth();
+  const { dark, alternar: alternarTema } = useThemeToggle();
   const funcao = useFuncaoAtual();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
@@ -154,6 +180,14 @@ export function AppMenuBar() {
               {empresa.nomeFantasia} · {empresa.codigo}
             </p>
           </div>
+          <button
+            type="button"
+            onClick={alternarTema}
+            aria-label={dark ? "Usar tema claro" : "Usar tema escuro"}
+            className="grid size-8 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+          </button>
           <DropdownMenu>
             <DropdownMenuTrigger className="grid size-8 shrink-0 place-items-center rounded-full bg-muted outline-none transition-colors hover:bg-accent data-[state=open]:bg-accent">
               <User className="size-4" />
