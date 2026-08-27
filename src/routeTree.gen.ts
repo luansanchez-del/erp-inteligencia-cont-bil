@@ -16,6 +16,7 @@ import { Route as FiscalRouteImport } from './routes/fiscal'
 import { Route as GruposRouteImport } from './routes/grupos'
 import { Route as ImportacoesRouteImport } from './routes/importacoes'
 import { Route as IntegracoesRouteImport } from './routes/integracoes'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as ObrigacoesRouteImport } from './routes/obrigacoes'
 import { Route as PatrimonioRouteImport } from './routes/patrimonio'
 import { Route as RelatoriosRouteImport } from './routes/relatorios'
@@ -77,6 +78,11 @@ const ImportacoesRoute = ImportacoesRouteImport.update({
 const IntegracoesRoute = IntegracoesRouteImport.update({
   id: '/integracoes',
   path: '/integracoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ObrigacoesRoute = ObrigacoesRouteImport.update({
@@ -226,6 +232,7 @@ export interface FileRoutesByFullPath {
   '/grupos': typeof GruposRoute
   '/importacoes': typeof ImportacoesRoute
   '/integracoes': typeof IntegracoesRoute
+  '/login': typeof LoginRoute
   '/obrigacoes': typeof ObrigacoesRoute
   '/patrimonio': typeof PatrimonioRoute
   '/relatorios': typeof RelatoriosRouteWithChildren
@@ -262,6 +269,7 @@ export interface FileRoutesByTo {
   '/grupos': typeof GruposRoute
   '/importacoes': typeof ImportacoesRoute
   '/integracoes': typeof IntegracoesRoute
+  '/login': typeof LoginRoute
   '/obrigacoes': typeof ObrigacoesRoute
   '/patrimonio': typeof PatrimonioRoute
   '/relatorios': typeof RelatoriosRouteWithChildren
@@ -299,6 +307,7 @@ export interface FileRoutesById {
   '/grupos': typeof GruposRoute
   '/importacoes': typeof ImportacoesRoute
   '/integracoes': typeof IntegracoesRoute
+  '/login': typeof LoginRoute
   '/obrigacoes': typeof ObrigacoesRoute
   '/patrimonio': typeof PatrimonioRoute
   '/relatorios': typeof RelatoriosRouteWithChildren
@@ -337,6 +346,7 @@ export interface FileRouteTypes {
     | '/grupos'
     | '/importacoes'
     | '/integracoes'
+    | '/login'
     | '/obrigacoes'
     | '/patrimonio'
     | '/relatorios'
@@ -373,6 +383,7 @@ export interface FileRouteTypes {
     | '/grupos'
     | '/importacoes'
     | '/integracoes'
+    | '/login'
     | '/obrigacoes'
     | '/patrimonio'
     | '/relatorios'
@@ -409,6 +420,7 @@ export interface FileRouteTypes {
     | '/grupos'
     | '/importacoes'
     | '/integracoes'
+    | '/login'
     | '/obrigacoes'
     | '/patrimonio'
     | '/relatorios'
@@ -446,6 +458,7 @@ export interface RootRouteChildren {
   GruposRoute: typeof GruposRoute
   ImportacoesRoute: typeof ImportacoesRoute
   IntegracoesRoute: typeof IntegracoesRoute
+  LoginRoute: typeof LoginRoute
   ObrigacoesRoute: typeof ObrigacoesRoute
   PatrimonioRoute: typeof PatrimonioRoute
   RelatoriosRoute: typeof RelatoriosRouteWithChildren
@@ -520,6 +533,13 @@ declare module '@tanstack/react-router' {
       path: '/integracoes'
       fullPath: '/integracoes'
       preLoaderRoute: typeof IntegracoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/obrigacoes': {
@@ -740,6 +760,7 @@ const rootRouteChildren: RootRouteChildren = {
   GruposRoute: GruposRoute,
   ImportacoesRoute: ImportacoesRoute,
   IntegracoesRoute: IntegracoesRoute,
+  LoginRoute: LoginRoute,
   ObrigacoesRoute: ObrigacoesRoute,
   PatrimonioRoute: PatrimonioRoute,
   RelatoriosRoute: RelatoriosRouteWithChildren,

@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ContaCombobox } from "@/components/conta-combobox";
 import { gerarCsvLoteContabilJunho, montarLoteContabilJunho } from "@/data/nitaplast-lote-final-junho";
-import { saldosImplantacao } from "@/data/nitaplast-implantacao";
 import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
 import { useAjustesLancamentos, type DadosLancamentoManual } from "@/hooks/use-ajustes-lancamentos";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
@@ -31,8 +31,6 @@ type FormLancamento = {
   valor: string;
   motivo: string;
 };
-
-const planoPorConta = new Map(saldosImplantacao.map((linha) => [linha.conta, linha.descricao]));
 
 const formInicial: FormLancamento = {
   data: "30/06/2026",
@@ -199,8 +197,12 @@ function Lancamentos() {
           <CardContent className="grid gap-4">
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               <Campo label="Data" value={form.data} onChange={(value) => setForm((atual) => ({ ...atual, data: value }))} placeholder="30/06/2026" />
-              <Campo label="Conta débito" value={form.debitoCodigo} onChange={(value) => setForm((atual) => ({ ...atual, debitoCodigo: value }))} detalhe={planoPorConta.get(form.debitoCodigo)} placeholder="Ex.: 25107" />
-              <Campo label="Conta crédito" value={form.creditoCodigo} onChange={(value) => setForm((atual) => ({ ...atual, creditoCodigo: value }))} detalhe={planoPorConta.get(form.creditoCodigo)} placeholder="Ex.: 25253" />
+              <label className="grid gap-1 text-xs font-medium">Conta débito
+                <ContaCombobox value={form.debitoCodigo} onChange={(codigo) => setForm((atual) => ({ ...atual, debitoCodigo: codigo }))} />
+              </label>
+              <label className="grid gap-1 text-xs font-medium">Conta crédito
+                <ContaCombobox value={form.creditoCodigo} onChange={(codigo) => setForm((atual) => ({ ...atual, creditoCodigo: codigo }))} />
+              </label>
               <Campo label="Valor" value={form.valor} onChange={(value) => setForm((atual) => ({ ...atual, valor: value }))} placeholder="0,00" />
               <label className="grid gap-1 text-xs font-medium">Centro de custo
                 <select className="h-9 rounded-md border bg-background px-3 text-sm" value={form.cc} onChange={(e) => { const centro=centros.find((c)=>c.codigo===e.target.value); setForm((atual)=>({...atual,cc:e.target.value,centroCusto:centro?.descricao??"SEM CENTRO DE CUSTO"})); }}>

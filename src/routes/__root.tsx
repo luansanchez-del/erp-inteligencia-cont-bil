@@ -12,10 +12,8 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
-import { AppSidebar } from "@/components/app-sidebar";
-import { Topbar } from "@/components/topbar";
+import { AppMenuBar, AppStatusBar } from "@/components/app-menu-bar";
 import { PageShell } from "@/components/page-header";
 import {
   BalanceteJulhoAjustavel,
@@ -25,6 +23,8 @@ import {
 } from "@/components/nitaplast/contabil-julho-ajustavel";
 import { DreJulhoCompleta } from "@/components/nitaplast/dre-julho-completa";
 import { ErpProvider, useErp } from "@/context/erp-context";
+import { AuthProvider, useAuth } from "@/context/auth-context";
+import { SelecionarEmpresa } from "@/components/selecionar-empresa";
 
 function NotFoundComponent() {
   return (
@@ -91,6 +91,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "theme-color", content: "#232b57" },
       { title: "ERP Contábil — Inteligência Contábil" },
       {
         name: "description",
@@ -117,7 +118,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/branding/favicon.png", type: "image/png" },
+      { rel: "apple-touch-icon", href: "/branding/favicon.png" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
     ],
   }),
   shellComponent: RootShell,
@@ -130,6 +133,12 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR">
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{if(localStorage.getItem('erp-tema')==='dark')document.documentElement.classList.add('dark')}catch(e){}",
+          }}
+        />
         <HeadContent />
       </head>
       <body>
@@ -145,14 +154,44 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ErpProvider>
-        <ErpApplication />
-      </ErpProvider>
+      <AuthProvider>
+        <ErpProvider>
+          <AuthenticatedApp />
+        </ErpProvider>
+      </AuthProvider>
       <div className="print:hidden">
         <Toaster />
       </div>
     </QueryClientProvider>
   );
+}
+
+function AuthSplash() {
+  return (
+    <div className="grid min-h-screen place-items-center bg-background">
+      <img src="/branding/group-legacy-icon.png" alt="" className="size-8 animate-pulse opacity-70" />
+    </div>
+  );
+}
+
+function AuthenticatedApp() {
+  const { session, loading, justSignedIn, acknowledgeSignIn } = useAuth();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!session && pathname !== "/login") {
+      router.navigate({ to: "/login" });
+    } else if (session && pathname === "/login") {
+      router.navigate({ to: "/" });
+    }
+  }, [loading, session, pathname, router]);
+
+  if (pathname === "/login") return <Outlet />;
+  if (loading || !session) return <AuthSplash />;
+  if (justSignedIn) return <SelecionarEmpresa onConfirmar={acknowledgeSignIn} />;
+  return <ErpApplication />;
 }
 
 function ConteudoCompetencia() {
@@ -185,21 +224,17 @@ function ErpApplication() {
   const renderKey = `${empresa.id}:${competencia.id}`;
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background print:block print:min-h-0 print:bg-white">
-        <div className="print:hidden">
-          <AppSidebar />
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col print:block print:w-full">
-          <div className="print:hidden">
-            <Topbar />
-          </div>
-          <main key={renderKey} className="min-w-0 flex-1 print:w-full print:min-w-0">
-            {/* Ao trocar empresa/competência, remonta a visão. Julho usa sua própria camada contábil ajustável; junho permanece congelado nas rotas existentes. */}
-            <ConteudoCompetencia />
-          </main>
-        </div>
+    <div className="flex min-h-screen w-full flex-col bg-background print:block print:min-h-0 print:bg-white">
+      <div className="print:hidden">
+        <AppMenuBar />
       </div>
-    </SidebarProvider>
+      <main key={renderKey} className="min-w-0 flex-1 print:w-full print:min-w-0">
+        {/* Ao trocar empresa/competência, remonta a visão. Julho usa sua própria camada contábil ajustável; junho permanece congelado nas rotas existentes. */}
+        <ConteudoCompetencia />
+      </main>
+      <div className="print:hidden">
+        <AppStatusBar />
+      </div>
+    </div>
   );
 }
