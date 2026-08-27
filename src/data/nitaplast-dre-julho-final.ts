@@ -178,6 +178,7 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
   const despesasOperacionais=arred(despesasOperacionaisItens.reduce((s,x)=>s+x.valor,0));
   const despesasOperacionaisMatriz=arred(despesasOperacionaisItens.filter(x=>x.estabelecimento==="Matriz").reduce((s,x)=>s+x.valor,0));
   const despesasOperacionaisFilial=arred(despesasOperacionaisItens.filter(x=>x.estabelecimento==="Filial SP").reduce((s,x)=>s+x.valor,0));
+  const provisaoCustoCliente=arred(despesasOperacionaisItens.filter(x=>x.conta==="25948").reduce((s,x)=>s+x.valor,0));
   const creditosFederais=arred(composicao.filter(x=>contasCreditoFederalJulho.has(x.conta)).reduce((s,x)=>s+x.valor,0));
   if(Math.abs(arred(despesasOperacionaisMatriz+despesasOperacionaisFilial)-despesasOperacionais)>0.01)throw new Error("Despesas operacionais Matriz + Filial não conciliam com o Balancete.");
 
@@ -245,7 +246,7 @@ export function calcularDreJulhoFinal(base: LancamentoIntegrado[]) {
       matriz:{estoqueInicial:estoqueInicialMatriz,comprasLiquidas:comprasLiquidasMatriz,estoqueFinal:estoqueFinalMatriz,industrializacaoLiquida:industrializacaoLiquidaMatriz,total:cpvMatriz},
       filial:{estoqueInicial:estoqueInicialFilial,comprasParaRevendaAbertura:comprasParaRevendaAberturaFilial,ajusteExtemporaneoComprasJunho:ajusteExtemporaneoComprasFilial,comprasLiquidasJulho:comprasLiquidasJulhoFilial,estoqueFinal:estoqueFinalFilial,saldoFinalComprasParaRevenda:saldoFinalComprasFilial,total:cpvFilial},
     },
-    despesasReconhecidas:despesas,despesasOperacionais,despesasOperacionaisMatriz,despesasOperacionaisFilial,creditosFederais,
+    despesasReconhecidas:despesas,despesasOperacionais,despesasOperacionaisMatriz,despesasOperacionaisFilial,provisaoCustoCliente,creditosFederais,
     despesasFinanceiras,despesasFinanceirasMatriz,despesasFinanceirasFilial,
     receitasFinanceiras,receitasFinanceirasMatriz,receitasFinanceirasFilial,receitasFinanceirasPorConta,
     jurosAtivos,variacaoCambialAtiva,receitaAplicacoes,jcp,variacaoCambialPassiva,

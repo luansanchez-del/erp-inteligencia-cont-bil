@@ -8,6 +8,41 @@ const despesas = filial.filter(ehDespesaOperacionalDreJulho);
 const creditos = filial.filter((item) => ["25946", "25947"].includes(item.conta));
 const soma = (itens: typeof filial) => Math.round(itens.reduce((total, item) => total + item.valor, 0) * 100) / 100;
 const arred = (valor: number) => Math.round(valor * 100) / 100;
+// Ponte documental dos relatórios RVE520 recebidos em 27/08/2026.
+// Os PDFs foram emitidos com "SEM DESP.ACESSORIAS+FRETE+SEGURO". Por isso,
+// esses valores precisam ser reincorporados para comparar a base comercial
+// com a receita bruta fiscal contabilizada. Alienações ficam fora da receita
+// operacional e são demonstradas separadamente na DRE.
+const ponteFaturamentoDre = {
+  matriz: {
+    vendasProdutosPdf: 3723226.76,
+    alienacaoImobilizado: 306900,
+    ipiVendas: 163767.46,
+    icmsStVendas: 1024.72,
+    freteSeguroDespesasAcessorias: 36037.92,
+    devolucoesProdutosPdf: 34101.29,
+    ipiDevolucoes: 2349.42,
+    receitaBrutaEsperada: 3617156.86,
+    devolucoesEsperadas: 36450.71,
+  },
+  filial: {
+    vendasProdutosPdf: 488870.69,
+    alienacaoImobilizado: 0,
+    ipiVendas: 32002.17,
+    icmsStVendas: 0,
+    freteSeguroDespesasAcessorias: 520,
+    devolucoesProdutosPdf: 1868.47,
+    ipiDevolucoes: 88.04,
+    receitaBrutaEsperada: 521392.86,
+    devolucoesEsperadas: 1956.51,
+  },
+} as const;
+const totalPonte = (item: (typeof ponteFaturamentoDre)[keyof typeof ponteFaturamentoDre]) => arred(
+  item.vendasProdutosPdf - item.alienacaoImobilizado + item.ipiVendas + item.icmsStVendas + item.freteSeguroDespesasAcessorias,
+);
+const devolucoesPonte = (item: (typeof ponteFaturamentoDre)[keyof typeof ponteFaturamentoDre]) => arred(
+  item.devolucoesProdutosPdf + item.ipiDevolucoes,
+);
 const receitaBrutaFilial = arred(["2606", "2655"].reduce((receita, conta) => receita - lancamentosIntegradosJulhoFinal.reduce((total, linha) => {
   if (estabelecimentoResultadoNitaplast(linha, conta) !== "Filial SP") return total;
   return total + (linha.debitoCodigo === conta ? linha.valor : 0) - (linha.creditoCodigo === conta ? linha.valor : 0);
@@ -32,6 +67,13 @@ const foraDosGrupos = calculo.composicao.filter((item) =>
   !["25943", "2827", "25054", "2826", "25055", "2829", "2830", "2832", "4760"].includes(item.conta),
 );
 
+if (totalPonte(ponteFaturamentoDre.matriz) !== ponteFaturamentoDre.matriz.receitaBrutaEsperada) throw new Error("Ponte do faturamento da Matriz não fecha.");
+if (totalPonte(ponteFaturamentoDre.filial) !== ponteFaturamentoDre.filial.receitaBrutaEsperada) throw new Error("Ponte do faturamento da Filial não fecha.");
+if (devolucoesPonte(ponteFaturamentoDre.matriz) !== ponteFaturamentoDre.matriz.devolucoesEsperadas) throw new Error("Ponte das devoluções da Matriz não fecha.");
+if (devolucoesPonte(ponteFaturamentoDre.filial) !== ponteFaturamentoDre.filial.devolucoesEsperadas) throw new Error("Ponte das devoluções da Filial não fecha.");
+if (arred(ponteFaturamentoDre.matriz.receitaBrutaEsperada + ponteFaturamentoDre.filial.receitaBrutaEsperada) !== calculo.dre.receitaBruta) throw new Error("Faturamento conciliado não fecha com a receita bruta da DRE.");
+if (arred(ponteFaturamentoDre.matriz.devolucoesEsperadas + ponteFaturamentoDre.filial.devolucoesEsperadas) !== calculo.dre.devolucoes) throw new Error("Devoluções conciliadas não fecham com a DRE.");
+
 console.log(JSON.stringify({
   receitaProducao: calculo.dre.receitaProducao,
   receitaRevenda: calculo.dre.receitaRevenda,
@@ -48,6 +90,7 @@ console.log(JSON.stringify({
   cpvFilial: calculo.dre.cpvFilial,
   cpvMatriz: calculo.dre.cpvMatriz,
   cpvTotal: calculo.dre.custosReconhecidos,
+  provisaoCustoCliente: calculo.dre.provisaoCustoCliente,
   despesasComerciaisFilialBrutas: soma(despesas),
   creditosFederaisFilial: soma(creditos),
   despesasComerciaisFilialLiquidas: soma(despesas) + soma(creditos),
@@ -64,6 +107,13 @@ console.log(JSON.stringify({
   resultadoAlienacao: calculo.dre.resultadoAlienacaoImobilizado,
   resultadoFilial,
   receitaBrutaConsolidada: calculo.dre.receitaBruta,
+  ponteFaturamentoDre: {
+    ...ponteFaturamentoDre,
+    receitaBrutaConciliada: arred(totalPonte(ponteFaturamentoDre.matriz) + totalPonte(ponteFaturamentoDre.filial)),
+    devolucoesConciliadas: arred(devolucoesPonte(ponteFaturamentoDre.matriz) + devolucoesPonte(ponteFaturamentoDre.filial)),
+    diferencaReceita: arred(totalPonte(ponteFaturamentoDre.matriz) + totalPonte(ponteFaturamentoDre.filial) - calculo.dre.receitaBruta),
+    diferencaDevolucoes: arred(devolucoesPonte(ponteFaturamentoDre.matriz) + devolucoesPonte(ponteFaturamentoDre.filial) - calculo.dre.devolucoes),
+  },
   receitaLiquidaConsolidada: calculo.dre.receitaLiquida,
   resultadoConsolidado: calculo.dre.resultado,
   candidatosDiferenca,
