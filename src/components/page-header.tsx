@@ -10,6 +10,7 @@ import { RazaoJulhoLivro } from "@/components/nitaplast/razao-julho-livro";
 import { DreJulhoCompleta } from "@/components/nitaplast/dre-julho-completa";
 import { FechamentoNitaplastJulho } from "@/components/nitaplast/fechamento-julho";
 import { FechamentoBancarioJulho } from "@/components/nitaplast/fechamento-bancario-julho";
+import { LalurJulho } from "@/components/nitaplast/lalur-julho";
 
 const DreJulhoReport = lazy(() => import("@/components/nitaplast/dre-julho-report").then((modulo) => ({ default: modulo.DreJulhoReport })));
 
@@ -18,6 +19,7 @@ const rotasSensiveisCompetencia = [
   "/contabil/razao",
   "/contabil/diario",
   "/contabil/dre",
+  "/contabil/lalur",
   "/contabil/fechamento",
   "/contabil/lancamentos",
   "/contabil/lotes",
@@ -377,6 +379,7 @@ function telaContabilJulho(pathname: string) {
   if (pathname === "/contabil/razao" || pathname === "/relatorios/razao") return <RazaoJulhoLivro />;
   if (pathname === "/contabil/diario" || pathname === "/relatorios/diario") return <DiarioJulhoAjustavel />;
   if (pathname === "/contabil/dre") return <DreJulhoCompleta />;
+  if (pathname === "/contabil/lalur") return <LalurJulho />;
   if (pathname === "/relatorios/dre") return <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Carregando DRE Report 07/2026...</div>}><DreJulhoReport /></Suspense>;
   if (pathname === "/contabil/lancamentos") return <LancamentosJulhoAjustavel />;
   if (pathname === "/contabil/fechamento") return <><FechamentoBancarioJulho /><FechamentoNitaplastJulho /></>;
@@ -387,6 +390,7 @@ function nomeModulo(pathname: string) {
   if (pathname.includes("balancete")) return "Balancete";
   if (pathname.includes("razao")) return "Razão";
   if (pathname.includes("diario")) return "Diário";
+  if (pathname.includes("lalur")) return "LALUR";
   if (pathname.includes("dre")) return "Demonstração do Resultado do Exercício";
   if (pathname.includes("conciliacao")) return "Conciliação";
   if (pathname.includes("lancamentos")) return "Lançamentos Contábeis";

@@ -8,10 +8,13 @@ import {
   calcularApuracaoIrpjCsllJulho,
   contaIrrfAplicacoesFinanceirasNitaplast,
 } from "@/data/nitaplast-irpj-csll-julho";
-import type { calcularDreJulhoFinal } from "@/data/nitaplast-dre-julho-final";
+import { calcularDreJulhoFinal } from "@/data/nitaplast-dre-julho-final";
+import { calcularBalanceteJulho } from "@/data/nitaplast-balancete-julho-engine";
+import { lancamentosIntegradosJulhoFinal } from "@/data/nitaplast-razao-julho-final-v2";
 import { saldosImplantacao } from "@/data/nitaplast-implantacao";
 import { useLalurAjustes, type ImpostoLalur, type TipoAjusteLalur } from "@/hooks/use-lalur-ajustes";
 import { useAjustesLancamentos } from "@/hooks/use-ajustes-lancamentos";
+import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const COMPETENCIA = "2026-07";
@@ -25,15 +28,13 @@ const nomeConta = (codigo: string) =>
 
 const rotuloImposto: Record<ImpostoLalur, string> = { irpj: "IRPJ", csll: "CSLL", ambos: "IRPJ e CSLL" };
 
-type DreJulhoFinal = ReturnType<typeof calcularDreJulhoFinal>["dre"];
+export function LalurJulho() {
+  const { aplicar } = useReclassificacoesInteligentes(COMPETENCIA);
+  const razaoAjustado = useMemo(() => aplicar(lancamentosIntegradosJulhoFinal), [aplicar]);
+  const dre = useMemo(() => calcularDreJulhoFinal(razaoAjustado).dre, [razaoAjustado]);
+  const balanceteJulho = useMemo(() => calcularBalanceteJulho(razaoAjustado), [razaoAjustado]);
+  const irrfAplicacoesFinanceiras = balanceteJulho.movimentoPorConta.get(contaIrrfAplicacoesFinanceirasNitaplast)?.debitos ?? 0;
 
-export function LalurJulho({
-  dre,
-  irrfAplicacoesFinanceiras,
-}: {
-  dre: DreJulhoFinal;
-  irrfAplicacoesFinanceiras: number;
-}) {
   const { ajustes, adicionar, remover, totais } = useLalurAjustes(COMPETENCIA);
   const { ajustes: lancamentos, registrarNovo } = useAjustesLancamentos(COMPETENCIA);
 

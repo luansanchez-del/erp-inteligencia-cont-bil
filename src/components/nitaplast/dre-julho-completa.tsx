@@ -12,9 +12,6 @@ import {
   type ComposicaoResultadoJulho,
 } from "@/data/nitaplast-dre-julho-final";
 import { estabelecimentoResultadoNitaplast } from "@/data/nitaplast-estabelecimento";
-import { calcularBalanceteJulho } from "@/data/nitaplast-balancete-julho-engine";
-import { contaIrrfAplicacoesFinanceirasNitaplast } from "@/data/nitaplast-irpj-csll-julho";
-import { LalurJulho } from "@/components/nitaplast/lalur-julho";
 import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
 import { lancamentosIntegradosJulhoFinal } from "@/data/nitaplast-razao-julho-final-v2";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
@@ -96,8 +93,6 @@ export function DreJulhoCompleta() {
   const calculo = useMemo(() => calcularDreJulhoFinal(razaoAjustado), [razaoAjustado]);
   const dre = calculo.dre;
   const composicao = calculo.composicao;
-  const balanceteJulho = useMemo(() => calcularBalanceteJulho(razaoAjustado), [razaoAjustado]);
-  const irrfAplicacoesFinanceiras = balanceteJulho.movimentoPorConta.get(contaIrrfAplicacoesFinanceirasNitaplast)?.debitos ?? 0;
   const [abertas, setAbertas] = useState<Set<string>>(new Set(["receita", "deducoes", "custos", "despesas", "fin-d", "fin-r", "alienacao"]));
 
   const creditoPorEstabelecimento = (conta: string, estabelecimento: Estab) => arred(-razaoAjustado.reduce((s, l) => {
@@ -351,7 +346,6 @@ export function DreJulhoCompleta() {
     <Card className="border-amber-500/40 bg-amber-500/5"><CardContent className="pt-6"><div className="flex gap-3"><CircleAlert className="mt-0.5 size-5 text-amber-700"/><div><p className="font-semibold">ICMS de transferência da Filial fora da DRE</p><p className="mt-1 text-sm text-muted-foreground">{brl.format(dre.icmsFilialTransferenciasInternas)} permanece identificado no Razão como transferência interna e não reduz receita de vendas. A conta patrimonial definitiva ainda está em revisão.</p></div></div></CardContent></Card>
     <Card className="border-blue-500/30 bg-blue-500/5"><CardContent className="pt-6"><p className="font-medium">Regra única aplicada</p><p className="mt-1 text-sm text-muted-foreground">Razão → Balancete → DRE. Centro de custo e estabelecimento abrem a gestão; não criam fato contábil.</p></CardContent></Card>
     <Card className="border-amber-500/40 bg-amber-50/40"><CardHeader><CardTitle className="text-base">Memória temporária IRPJ/CSLL — composição do CPV</CardTitle><CardDescription>Relatório explicativo para conferência com a apuração de maio. Não cria lançamento e não altera o resultado contábil.</CardDescription></CardHeader><CardContent><div className="overflow-x-auto"><table className="w-full text-sm"><tbody>{memoriaCpvIrpjCsll.map(([descricao, valor], index) => <tr key={descricao} className={`border-b last:border-0 ${index === memoriaCpvIrpjCsll.length - 1 ? "font-bold" : ""}`}><td className="py-2">{descricao}</td><td className="py-2 text-right tabular-nums">{brl.format(valor)}</td></tr>)}</tbody></table></div><p className="mt-3 text-xs text-muted-foreground">Fórmula: estoque inicial + compras líquidas − estoque final, seguida da variação dos demais estoques e dos custos diretos de produção. O saldo final permanece no estoque patrimonial.</p></CardContent></Card>
-    <LalurJulho dre={dre} irrfAplicacoesFinanceiras={irrfAplicacoesFinanceiras} />
     <Card><CardHeader><div className="flex flex-wrap items-start justify-between gap-3"><div><CardTitle className="text-base">Composição da DRE — 07/2026</CardTitle><CardDescription>Apresentação consolidada da Matriz e Filial SP.</CardDescription></div><Badge variant="outline">07/2026</Badge></div></CardHeader><CardContent className="overflow-x-auto"><table className="w-full min-w-[900px] text-sm"><thead><tr className="border-b bg-muted text-left text-xs"><th className="p-2">Composição DRE</th><th className="p-2 text-right">Valor</th><th className="p-2 text-right">% Receita</th></tr></thead><tbody>{linhasApresentacao.map((linha, index) => <tr key={`${linha.descricao}-${index}`} className={`border-b ${linha.destaque ? "border-y-2 bg-slate-100/70 font-semibold" : ""}`}><td className="p-2" style={{ paddingLeft: 8 + (linha.nivel ?? 0) * 22 }}>{linha.descricao}</td><td className="p-2 text-right tabular-nums">{linha.valor === null ? "" : brl.format(linha.valor)}</td><td className="p-2 text-right tabular-nums">{linha.percentual ?? ""}</td></tr>)}</tbody></table></CardContent></Card>
     <Card className="border-amber-400/50 bg-amber-50/40"><CardContent className="pt-5"><div className="flex gap-3"><CircleAlert className="mt-0.5 size-5 text-amber-700"/><div><p className="font-semibold">Pendências de rastreabilidade</p><p className="mt-1 text-sm text-muted-foreground">Nenhum valor é criado ou rateado por aproximação. Os fretes 11.90.001 já identificados permanecem contabilizados e marcados para revisão documental. Mini, Corolla e Transformador estão reconhecidos pelo valor contábil documentado. Contratos de câmbio sem vínculo com o fato contábil de origem permanecem pendentes de conciliação.</p></div></div></CardContent></Card>
   </div>;
