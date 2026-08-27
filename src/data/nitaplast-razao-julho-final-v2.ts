@@ -280,6 +280,34 @@ export const lancamentosVersaoJulho: LancamentoIntegrado[] = [
   },
 ];
 
+/**
+ * Provisão contábil de custo solicitada pelo cliente para a competência 07/2026.
+ *
+ * Não é plug de fechamento: a partida fica identificada separadamente no Razão,
+ * no resultado e na trilha de auditoria, sem alterar o CPV. Deve ser revertida ou baixada contra o documento
+ * definitivo quando o custo provisionado for conhecido.
+ */
+export const lancamentosProvisaoCustoClienteJulho: LancamentoIntegrado[] = [
+  {
+    id: "JUL-PROV-CUSTO-CLIENTE-100K",
+    data: "31/07/2026",
+    origem: "PROVISÃO DE CUSTO SOLICITADA PELO CLIENTE 07/2026",
+    debitoCodigo: "25948",
+    debito: "25948 - Despesa com Provisão de Custos",
+    creditoCodigo: "25255",
+    credito: "25255 - Provisão de Custos a Pagar",
+    historico: "PROVISÃO DE CUSTO DA COMPETÊNCIA 07/2026 CONFORME SOLICITAÇÃO DO CLIENTE",
+    documento: "SOLICITAÇÃO DO CLIENTE — PROVISÃO DE CUSTO 07/2026",
+    cc: "102",
+    centroCusto: "ADMINISTRATIVO",
+    valor: 100000,
+    status: "revisar",
+    observacao: "Estimativa contábil solicitada pelo cliente. Manter destacada do fechamento de estoque e reverter ou baixar contra o documento definitivo, sem duplicar o custo quando ele for reconhecido.",
+    rastreio: "sugerido",
+    fonte: "Solicitação expressa do cliente em 27/08/2026",
+  },
+];
+
 const pendenciasBancariasValorAjustado = arred(
   lancamentosBaseCorrigidos
     .filter((x) => x.origem.startsWith("MOVIMENTAÇÃO BANCÁRIA") && x.status === "revisar")
@@ -292,6 +320,7 @@ export const lancamentosIntegradosJulhoFinal: LancamentoIntegrado[] = [
   ...lancamentosProvisoesJulhoReais,
   ...lancamentosFinanceirosJulho,
   ...lancamentosVersaoJulho,
+  ...lancamentosProvisaoCustoClienteJulho,
 ];
 
 export const totalDebitosJulhoFinal = arred(lancamentosIntegradosJulhoFinal.reduce((s, x) => s + x.valor, 0));

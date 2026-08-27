@@ -55,14 +55,14 @@ export const lancamentosJcpJulho: LancamentoIntegrado[] = [
   },
 ];
 
-// NF 93556 / JHS: a conciliação contábil reconhece R$ 295.699,18 na obrigação.
+// NF 93556 / JHS: a composição do cliente reconhece R$ 288.835,30 na obrigação.
 // Contrato 617226937 liquidou USD 55.900,00 por R$ 285.313,60 em 27/07.
-// Diferença realizada favorável: R$ 10.385,58.
+// Diferença realizada favorável informada pelo cliente: R$ 3.521,70.
 export const cambioJhs93556 = {
   documento: "NF 93556 / INV JXGX20260328624 / contrato 617226937",
-  valorContabilObrigacao: 295699.18,
+  valorContabilObrigacao: 288835.30,
   valorLiquidado: 285313.60,
-  variacaoAtiva: 10385.58,
+  variacaoAtiva: 3521.70,
   taxaContrato: 5.104,
 } as const;
 
@@ -74,8 +74,8 @@ export const cambioJhs93556 = {
 export const cambioJhs93077 = {
   documento: "OC 16094 / NF 93077 / DUIMP 26BR0000771074-8 / INV JXGX20260326616 / contrato 610005759",
   valorContabilObrigacao: 288975.05,
-  valorLiquidado: 291295.51,
-  variacaoPassiva: 2320.46,
+  valorLiquidado: 291295.50,
+  variacaoPassiva: 2320.45,
   taxaReconhecimento: 5.1695,
   taxaContrato: 5.2110108,
 } as const;
@@ -92,16 +92,19 @@ export const adiantamentoZhenjiang03Nita26 = {
   contaAdiantamento: "290",
 } as const;
 
-// FERMAQ / DP 92249-003: posição documental do título = R$ 62.189,73.
-// Contrato 617257802 recebeu USD 12.430,39 por R$ 63.084,23 em 27/07.
-// O recebimento bancário já integra o Razão pelo lote agregado do Bradesco;
-// aqui entra apenas a reclassificação do excesso baixado de Duplicatas para VCA.
+// FERMAQ / NF 92249: variação desfavorável informada pelo cliente.
 export const cambioFermaq92249 = {
   documento: "DP 92249/003 / contrato 617257802",
-  valorContabilDireito: 62189.73,
+  valorContabilDireito: 62054.99,
   valorRecebido: 63084.23,
-  variacaoAtiva: 894.50,
+  variacaoPassiva: 1029.24,
   taxaContrato: 5.075,
+} as const;
+
+const variacoesCambioClienteJulho = {
+  envalior92779: 7347.30,
+  jhs93461: 3555.24,
+  plasticentro91183: 6019.92,
 } as const;
 
 export const lancamentosCambioJulho: LancamentoIntegrado[] = [
@@ -196,30 +199,81 @@ export const lancamentosCambioJulho: LancamentoIntegrado[] = [
     fonte: "Conciliação entradas 07/2026 + contrato de câmbio 617226937",
   },
   {
-    id: "JUL-CAMBIO-FERMAQ-92249-VCA",
+    id: "JUL-CAMBIO-ENVALIOR-92779-VCP",
+    data: "07/07/2026",
+    origem: "CONTRATO DE CÂMBIO 610926788",
+    debitoCodigo: "25109",
+    debito: nomeConta("25109"),
+    creditoCodigo: "1496",
+    credito: nomeConta("1496"),
+    historico: "VARIAÇÃO CAMBIAL PASSIVA REF. NF 92779 - ENVALIOR - CONTRATO 610926788",
+    documento: "NF 92779 / fatura 901189655 / contrato 610926788",
+    cc: "902",
+    centroCusto: "DESPESAS FINANCEIRAS",
+    valor: variacoesCambioClienteJulho.envalior92779,
+    status: "validado",
+    observacao: "Variação cambial de R$ 7.347,30 conforme composição de fechamento fornecida pelo cliente.",
+    rastreio: "documento",
+    fonte: "Composição de variações cambiais de julho/2026 fornecida pelo cliente em 27/08/2026",
+  },
+  {
+    id: "JUL-CAMBIO-JHS-93461-VCA",
+    data: "15/07/2026",
+    origem: "CONTRATO DE CÂMBIO 613498289",
+    debitoCodigo: "1496",
+    debito: nomeConta("1496"),
+    creditoCodigo: "25096",
+    credito: nomeConta("25096"),
+    historico: "VARIAÇÃO CAMBIAL ATIVA REF. NF 93461 - JHS - CONTRATO 613498289",
+    documento: "NF 93461 / fatura JXGX20260325623 / contrato 613498289",
+    cc: "901",
+    centroCusto: "RECEITAS FINANCEIRAS",
+    valor: variacoesCambioClienteJulho.jhs93461,
+    status: "validado",
+    observacao: "Variação cambial de R$ 3.555,24 conforme composição de fechamento fornecida pelo cliente.",
+    rastreio: "documento",
+    fonte: "Composição de variações cambiais de julho/2026 fornecida pelo cliente em 27/08/2026",
+  },
+  {
+    id: "JUL-CAMBIO-PLASTICENTRO-91183-VCA",
     data: "27/07/2026",
-    origem: "CONTRATO DE CÂMBIO 617257802",
+    origem: "CONTRATO DE CÂMBIO 617262643",
     debitoCodigo: "25111",
     debito: nomeConta("25111"),
     creditoCodigo: "25096",
     credito: nomeConta("25096"),
-    historico: "VARIAÇÃO CAMBIAL REF. RECEBIMENTO EXPORTAÇÃO - DP 92249/003 - FERMAQ - TX CÂMBIO 5,0750",
-    documento: "DP 92249/003 / contrato 617257802",
+    historico: "VARIAÇÃO CAMBIAL ATIVA REF. RECEBIMENTO EXPORTAÇÃO - NF 91183 - PLASTICENTRO",
+    documento: "NF 91183 / contrato 617262643",
     cc: "901",
     centroCusto: "RECEITAS FINANCEIRAS",
-    valor: cambioFermaq92249.variacaoAtiva,
+    valor: variacoesCambioClienteJulho.plasticentro91183,
     status: "validado",
-    observacao: `O recebimento de R$ ${cambioFermaq92249.valorRecebido.toFixed(2)} já está no lote bancário D Banco / C Duplicatas. Esta partida devolve R$ ${cambioFermaq92249.variacaoAtiva.toFixed(2)} para Duplicatas e reconhece a VCA, deixando a baixa líquida do título em R$ ${cambioFermaq92249.valorContabilDireito.toFixed(2)}.`,
+    observacao: "Variação cambial de R$ 6.019,92 conforme composição de fechamento fornecida pelo cliente.",
+    rastreio: "documento",
+    fonte: "Composição de variações cambiais de julho/2026 fornecida pelo cliente em 27/08/2026",
+  },
+  {
+    id: "JUL-CAMBIO-FERMAQ-92249-VCP",
+    data: "27/07/2026",
+    origem: "CONTRATO DE CÂMBIO 617257802",
+    debitoCodigo: "25109",
+    debito: nomeConta("25109"),
+    creditoCodigo: "25111",
+    credito: nomeConta("25111"),
+    historico: "VARIAÇÃO CAMBIAL PASSIVA REF. RECEBIMENTO EXPORTAÇÃO - NF 92249 - FERMAQ",
+    documento: "DP 92249/003 / contrato 617257802",
+    cc: "901",
+    centroCusto: "DESPESAS FINANCEIRAS",
+    valor: cambioFermaq92249.variacaoPassiva,
+    status: "validado",
+    observacao: "Variação cambial passiva de R$ 1.029,24 conforme composição de fechamento fornecida pelo cliente.",
     rastreio: "documento",
     fonte: "Faturados até 31-07-2026.pdf + contrato de câmbio 617257802 + movimentação bancária Bradesco 07/2026",
   },
 ];
 
 export const contratosCambioJulhoPendentes = [
-  { contrato: "610926788", data: "07/07/2026", beneficiario: "ENVALIOR", usd: 43200.00, brl: 223749.06, referencia: "901189655", motivo: "Falta vínculo documental inequívoco entre a fatura do contrato e o valor contábil remanescente da obrigação que veio de maio/junho." },
   { contrato: "611879451", data: "10/07/2026", beneficiario: "GREATLAND VALVE", usd: 55863.94, brl: 287550.64, referencia: "GTL-PI-260401A/B", motivo: "A NF 92535 teve liquidações parciais anteriores; é necessário abrir o principal remanescente da fatura A/B antes de calcular nova variação." },
-  { contrato: "613498289", data: "15/07/2026", beneficiario: "JHS INTERNATIONAL", usd: 55900.00, brl: 285816.70, referencia: "JXGX20260328623", motivo: "A conciliação mostra R$ 366.137,21 na NF 93461, mas ainda falta documento que ligue expressamente essa NF à INV JXGX20260328623. Não reconhecer R$ 80.320,51 apenas por inferência." },
-  { contrato: "617262643", data: "27/07/2026", beneficiario: "PLASTICENTRO", usd: 47588.30, brl: 241510.62, referencia: "EXPORTAÇÃO", motivo: "Há vários títulos da PLASTICENTRO em aberto; falta identificar quais duplicatas compõem exatamente o recebimento do contrato para medir a variação sem escolher títulos por aproximação." },
 ] as const;
 
 // Importações documentalmente identificadas para as quais ainda não foi localizado
@@ -230,8 +284,8 @@ export const importacoesSemContratoCambioJulho = [
   { fornecedor: "BASF SE", oc: "16009/16010", nf: "93361", duimp: "26BR0000925014-0", referencia: "3209714898 / 3209714889", valorAduaneiro: 424292.52, motivo: "Nenhum contrato de câmbio correspondente às duas faturas foi localizado entre os documentos disponíveis." },
 ] as const;
 
-export const variacaoCambialAtivaValidada = arred(cambioJhs93556.variacaoAtiva + cambioFermaq92249.variacaoAtiva);
-export const variacaoCambialPassivaValidada = cambioJhs93077.variacaoPassiva;
+export const variacaoCambialAtivaValidada = arred(cambioJhs93556.variacaoAtiva + variacoesCambioClienteJulho.jhs93461 + variacoesCambioClienteJulho.plasticentro91183);
+export const variacaoCambialPassivaValidada = arred(cambioJhs93077.variacaoPassiva + variacoesCambioClienteJulho.envalior92779 + cambioFermaq92249.variacaoPassiva);
 
 export const resumoFinanceiroJulho = {
   baseJcpJulho,
@@ -243,7 +297,7 @@ export const resumoFinanceiroJulho = {
   jcpLiquidoJulho,
   variacaoCambialAtivaValidada,
   variacaoCambialPassivaValidada,
-  contratosCambioValidados: 4,
+  contratosCambioValidados: 7,
   contratosCambioPendentes: contratosCambioJulhoPendentes.length,
   importacoesSemContratoCambio: importacoesSemContratoCambioJulho.length,
   valorEntradasSemCcPendente: 7047.92,
