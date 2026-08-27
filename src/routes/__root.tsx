@@ -24,6 +24,7 @@ import {
 import { DreJulhoCompleta } from "@/components/nitaplast/dre-julho-completa";
 import { ErpProvider, useErp } from "@/context/erp-context";
 import { AuthProvider, useAuth } from "@/context/auth-context";
+import { SelecionarEmpresa } from "@/components/selecionar-empresa";
 
 function NotFoundComponent() {
   return (
@@ -174,7 +175,7 @@ function AuthSplash() {
 }
 
 function AuthenticatedApp() {
-  const { session, loading } = useAuth();
+  const { session, loading, justSignedIn, acknowledgeSignIn } = useAuth();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const router = useRouter();
 
@@ -189,6 +190,7 @@ function AuthenticatedApp() {
 
   if (pathname === "/login") return <Outlet />;
   if (loading || !session) return <AuthSplash />;
+  if (justSignedIn) return <SelecionarEmpresa onConfirmar={acknowledgeSignIn} />;
   return <ErpApplication />;
 }
 
