@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ArrowRightLeft, Plus, RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { saldosImplantacao } from "@/data/nitaplast-implantacao";
+import { ContaCombobox } from "@/components/conta-combobox";
 import type { LancamentoIntegrado } from "@/data/nitaplast-razao-integrado";
 import { useAjustesLancamentos, type DadosLancamentoManual } from "@/hooks/use-ajustes-lancamentos";
 import { removerReclassificacaoPersistida, type LadoReclassificacao } from "@/hooks/use-reclassificacoes-inteligentes";
@@ -65,11 +65,6 @@ export function ReclassificacaoInteligente({
     valor: "",
     motivo: "",
   });
-
-  const contas = useMemo(
-    () => [...saldosImplantacao].sort((a, b) => a.classificacao.localeCompare(b.classificacao, "pt-BR", { numeric: true })),
-    [],
-  );
 
   const contaOrigem = lado === "debito" ? lancamento.debitoCodigo : lancamento.creditoCodigo;
   const contaOrigemNome = lado === "debito" ? lancamento.debito : lancamento.credito;
@@ -199,12 +194,7 @@ export function ReclassificacaoInteligente({
               </div>
 
               <label className="grid gap-1 text-xs font-medium">Nova conta contábil
-                <select value={contaDestino} onChange={(e) => setContaDestino(e.target.value)} className="h-10 rounded-md border bg-background px-3 text-sm">
-                  <option value="">Selecione a conta correta…</option>
-                  {contas.filter((conta) => conta.conta !== contaOrigem).map((conta) => (
-                    <option key={`${conta.conta}-${conta.classificacao}`} value={conta.conta}>{conta.conta} · {conta.classificacao} · {conta.descricao}</option>
-                  ))}
-                </select>
+                <ContaCombobox value={contaDestino} onChange={setContaDestino} excluir={contaOrigem} placeholder="Selecione a conta correta…" />
               </label>
 
               <label className="grid gap-1 text-xs font-medium">Centro de custo do ajuste
@@ -268,16 +258,10 @@ export function ReclassificacaoInteligente({
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="grid gap-1 text-xs font-medium">Conta débito
-                  <select value={novo.debitoCodigo} onChange={(e) => setNovo((x) => ({ ...x, debitoCodigo: e.target.value }))} className="h-10 rounded-md border bg-background px-3 text-sm">
-                    <option value="">Selecione…</option>
-                    {contas.map((conta) => <option key={`d-${conta.conta}-${conta.classificacao}`} value={conta.conta}>{conta.conta} · {conta.classificacao} · {conta.descricao}</option>)}
-                  </select>
+                  <ContaCombobox value={novo.debitoCodigo} onChange={(codigo) => setNovo((x) => ({ ...x, debitoCodigo: codigo }))} />
                 </label>
                 <label className="grid gap-1 text-xs font-medium">Conta crédito
-                  <select value={novo.creditoCodigo} onChange={(e) => setNovo((x) => ({ ...x, creditoCodigo: e.target.value }))} className="h-10 rounded-md border bg-background px-3 text-sm">
-                    <option value="">Selecione…</option>
-                    {contas.map((conta) => <option key={`c-${conta.conta}-${conta.classificacao}`} value={conta.conta}>{conta.conta} · {conta.classificacao} · {conta.descricao}</option>)}
-                  </select>
+                  <ContaCombobox value={novo.creditoCodigo} onChange={(codigo) => setNovo((x) => ({ ...x, creditoCodigo: codigo }))} />
                 </label>
               </div>
 
