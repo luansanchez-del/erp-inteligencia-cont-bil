@@ -45,6 +45,7 @@ import { Route as RelatoriosBalanceteCentroCustoRouteImport } from './routes/rel
 import { Route as RelatoriosDiarioRouteImport } from './routes/relatorios.diario'
 import { Route as RelatoriosDreRouteImport } from './routes/relatorios.dre'
 import { Route as RelatoriosRazaoRouteImport } from './routes/relatorios.razao'
+import { Route as AdministracaoUsuariosNovoRouteImport } from './routes/administracao.usuarios.novo'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -229,10 +230,16 @@ const RelatoriosRazaoRoute = RelatoriosRazaoRouteImport.update({
   path: '/razao',
   getParentRoute: () => RelatoriosRoute,
 } as any)
+const AdministracaoUsuariosNovoRoute =
+  AdministracaoUsuariosNovoRouteImport.update({
+    id: '/usuarios/novo',
+    path: '/usuarios/novo',
+    getParentRoute: () => AdministracaoRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/administracao': typeof AdministracaoRoute
+  '/administracao': typeof AdministracaoRouteWithChildren
   '/ecd-ecf': typeof EcdEcfRoute
   '/fiscal': typeof FiscalRoute
   '/grupos': typeof GruposRoute
@@ -267,10 +274,11 @@ export interface FileRoutesByFullPath {
   '/relatorios/dre': typeof RelatoriosDreRoute
   '/relatorios/razao': typeof RelatoriosRazaoRoute
   '/empresas/': typeof EmpresasIndexRoute
+  '/administracao/usuarios/novo': typeof AdministracaoUsuariosNovoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/administracao': typeof AdministracaoRoute
+  '/administracao': typeof AdministracaoRouteWithChildren
   '/ecd-ecf': typeof EcdEcfRoute
   '/fiscal': typeof FiscalRoute
   '/grupos': typeof GruposRoute
@@ -305,11 +313,12 @@ export interface FileRoutesByTo {
   '/relatorios/dre': typeof RelatoriosDreRoute
   '/relatorios/razao': typeof RelatoriosRazaoRoute
   '/empresas': typeof EmpresasIndexRoute
+  '/administracao/usuarios/novo': typeof AdministracaoUsuariosNovoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/administracao': typeof AdministracaoRoute
+  '/administracao': typeof AdministracaoRouteWithChildren
   '/ecd-ecf': typeof EcdEcfRoute
   '/fiscal': typeof FiscalRoute
   '/grupos': typeof GruposRoute
@@ -344,6 +353,7 @@ export interface FileRoutesById {
   '/relatorios/dre': typeof RelatoriosDreRoute
   '/relatorios/razao': typeof RelatoriosRazaoRoute
   '/empresas/': typeof EmpresasIndexRoute
+  '/administracao/usuarios/novo': typeof AdministracaoUsuariosNovoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -384,6 +394,7 @@ export interface FileRouteTypes {
     | '/relatorios/dre'
     | '/relatorios/razao'
     | '/empresas/'
+    | '/administracao/usuarios/novo'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -422,6 +433,7 @@ export interface FileRouteTypes {
     | '/relatorios/dre'
     | '/relatorios/razao'
     | '/empresas'
+    | '/administracao/usuarios/novo'
   id:
     | '__root__'
     | '/'
@@ -460,11 +472,12 @@ export interface FileRouteTypes {
     | '/relatorios/dre'
     | '/relatorios/razao'
     | '/empresas/'
+    | '/administracao/usuarios/novo'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdministracaoRoute: typeof AdministracaoRoute
+  AdministracaoRoute: typeof AdministracaoRouteWithChildren
   EcdEcfRoute: typeof EcdEcfRoute
   FiscalRoute: typeof FiscalRoute
   GruposRoute: typeof GruposRoute
@@ -751,8 +764,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RelatoriosRazaoRouteImport
       parentRoute: typeof RelatoriosRoute
     }
+    '/administracao/usuarios/novo': {
+      id: '/administracao/usuarios/novo'
+      path: '/usuarios/novo'
+      fullPath: '/administracao/usuarios/novo'
+      preLoaderRoute: typeof AdministracaoUsuariosNovoRouteImport
+      parentRoute: typeof AdministracaoRoute
+    }
   }
 }
+
+interface AdministracaoRouteChildren {
+  AdministracaoUsuariosNovoRoute: typeof AdministracaoUsuariosNovoRoute
+}
+
+const AdministracaoRouteChildren: AdministracaoRouteChildren = {
+  AdministracaoUsuariosNovoRoute: AdministracaoUsuariosNovoRoute,
+}
+
+const AdministracaoRouteWithChildren = AdministracaoRoute._addFileChildren(
+  AdministracaoRouteChildren,
+)
 
 interface RelatoriosRouteChildren {
   RelatoriosBalanceteCentroCustoRoute: typeof RelatoriosBalanceteCentroCustoRoute
@@ -774,7 +806,7 @@ const RelatoriosRouteWithChildren = RelatoriosRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdministracaoRoute: AdministracaoRoute,
+  AdministracaoRoute: AdministracaoRouteWithChildren,
   EcdEcfRoute: EcdEcfRoute,
   FiscalRoute: FiscalRoute,
   GruposRoute: GruposRoute,

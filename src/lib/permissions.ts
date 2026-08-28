@@ -1,16 +1,13 @@
+import { useAuth } from "@/context/auth-context";
 import type { AcaoPermissao, ModuloId } from "@/types/erp";
 
-// Perfil mockado. Na fase seguinte vem do usuário autenticado.
-const perfilAtual = {
-  funcao: "Administrador",
-  permissoes: "todas" as "todas" | Record<ModuloId, AcaoPermissao[]>,
-};
-
 export function useCan(modulo: ModuloId, acao: AcaoPermissao = "ver"): boolean {
-  if (perfilAtual.permissoes === "todas") return true;
-  return perfilAtual.permissoes[modulo]?.includes(acao) ?? false;
+  const { perfil } = useAuth();
+  if (!perfil) return false;
+  return perfil.permissoes.some((p) => p.modulo === modulo && p.acoes.includes(acao));
 }
 
 export function useFuncaoAtual() {
-  return perfilAtual.funcao;
+  const { perfil } = useAuth();
+  return perfil?.funcaoNome ?? "—";
 }

@@ -16,7 +16,6 @@ type ResultadoResumo = { saldoAnterior: number; movimentoMes: number };
 export function BalancetePrintSummary({ linhas, resultadoContabil }: { linhas: LinhaResumoBalancete[]; resultadoContabil?: ResultadoResumo }) {
   const { empresa } = useErp();
   const analiticas = linhas.filter((linha) => linha.tipo === "A");
-  const contasResultado = analiticas.filter((linha) => /^(4|5)(\.|$)/.test(linha.classificacao));
   const total = (campo: "saldoAnterior" | "debitos" | "creditos" | "saldoAtual") => arred(analiticas.reduce((soma, linha) => soma + linha[campo], 0));
   const porClassificacao = (classificacao: string) => linhas.find((linha) => linha.tipo === "S" && linha.classificacao === classificacao);
   const porDescricao = (expressao: RegExp) => linhas.filter((linha) => linha.tipo === "S" && expressao.test(linha.descricao)).sort((a, b) => a.classificacao.split(".").length - b.classificacao.split(".").length)[0];
@@ -33,8 +32,14 @@ export function BalancetePrintSummary({ linhas, resultadoContabil }: { linhas: L
   const compensacaoAtiva = { ...compensacaoAtivaBase, descricao: "CONTAS DE COMPENSAÇÃO" };
   const compensacaoPassivaBase = linhas.filter((linha) => linha.tipo === "S" && /^(PASSIVO COMPENSATÓRIO|CONTAS DE COMPENSAÇÃO)$/i.test(linha.descricao)).sort((a, b) => b.classificacao.localeCompare(a.classificacao))[0];
   const compensacaoPassiva = { ...(compensacaoPassivaBase ?? vazio("CONTAS DE COMPENSAÇÃO")), descricao: "CONTAS DE COMPENSAÇÃO" };
-  const saldoAnteriorResultado = arred(resultadoContabil?.saldoAnterior ?? contasResultado.reduce((soma, linha) => soma + linha.saldoAnterior, 0));
-  const movimentoResultado = arred(resultadoContabil?.movimentoMes ?? contasResultado.reduce((soma, linha) => soma + linha.debitos - linha.creditos, 0));
+  // Fallback (usado quando a competência não tem motor de DRE dedicado, ex.: junho):
+  // deriva do movimento das próprias linhas de Receitas/Despesas Operacionais/Resultados
+  // Não Operacionais já resolvidas acima (batem com o Domínio), em vez de tentar
+  // reclassificar contas por prefixo — um filtro de classificação (`/^(4|5)/`) já se
+  // mostrou incompleto e chegou a ignorar a Receita inteira em junho/2026.
+  const gruposResultado = [receitas, despesas, naoOperacional];
+  const saldoAnteriorResultado = arred(resultadoContabil?.saldoAnterior ?? gruposResultado.reduce((soma, linha) => soma + linha.saldoAnterior, 0));
+  const movimentoResultado = arred(resultadoContabil?.movimentoMes ?? gruposResultado.reduce((soma, linha) => soma + (linha.saldoAtual - linha.saldoAnterior), 0));
   const linhaResultado = (descricao: string, incluirAnterior: boolean): LinhaResumoBalancete => ({
     tipo: "S",
     classificacao: "",

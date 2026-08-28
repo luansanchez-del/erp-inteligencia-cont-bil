@@ -83,7 +83,7 @@ export function LalurJulho() {
             centroCusto: "SEM CENTRO DE CUSTO",
             valor: irpjCsll.irpjAPagar,
           },
-          `Cálculo do LALUR de 07/2026: lucro contábil ${brl.format(dre.resultado)}, base IRPJ ${brl.format(irpjCsll.baseIrpj)}.`,
+          `Cálculo do LALUR de 07/2026 (Balanço de Suspensão/Redução): lucro contábil acumulado jan-jul ${brl.format(irpjCsll.lucroContabilAcumuladoJaneiroAJulho)}, base IRPJ ${brl.format(irpjCsll.baseIrpj)}.`,
         );
       }
       if (irpjCsll.csllAPagar > 0) {
@@ -98,7 +98,7 @@ export function LalurJulho() {
             centroCusto: "SEM CENTRO DE CUSTO",
             valor: irpjCsll.csllAPagar,
           },
-          `Cálculo do LALUR de 07/2026: lucro contábil ${brl.format(dre.resultado)}, base CSLL ${brl.format(irpjCsll.baseCsll)}.`,
+          `Cálculo do LALUR de 07/2026 (Balanço de Suspensão/Redução): lucro contábil acumulado jan-jul ${brl.format(irpjCsll.lucroContabilAcumuladoJaneiroAJulho)}, base CSLL ${brl.format(irpjCsll.baseCsll)}.`,
         );
       }
     } catch (e) {
@@ -113,7 +113,9 @@ export function LalurJulho() {
           <div>
             <CardTitle className="text-base">LALUR — Apuração IRPJ/CSLL — 07/2026</CardTitle>
             <CardDescription>
-              Lucro Real mensal (antecipação de DARF): lucro contábil do mês ± adições e exclusões abaixo.
+              Balanço de Suspensão/Redução (mesmo método usado em janeiro-junho/2026): lucro real
+              acumulado de janeiro a julho ± ajustes do LALUR abaixo, abatidos os DARFs de
+              estimativa já pagos até junho.
             </CardDescription>
           </div>
           {jaGerado ? (
@@ -131,9 +133,13 @@ export function LalurJulho() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <tbody>
-              <tr className="border-b font-semibold">
+              <tr className="border-b text-xs text-muted-foreground">
                 <td className="py-2">Lucro Contábil do mês (Resultado da DRE de julho)</td>
                 <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.lucroContabilDoMes)}</td>
+              </tr>
+              <tr className="border-b font-semibold">
+                <td className="py-2">Lucro Contábil Acumulado (janeiro a julho/2026)</td>
+                <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.lucroContabilAcumuladoJaneiroAJulho)}</td>
               </tr>
               {ajustes.map((ajuste) => (
                 <tr key={ajuste.id} className="border-b text-xs text-muted-foreground">
@@ -157,7 +163,7 @@ export function LalurJulho() {
                 </tr>
               ))}
               <tr className="border-b font-semibold">
-                <td className="py-2">Base IRPJ (lucro do mês ± adições/exclusões do LALUR)</td>
+                <td className="py-2">Base IRPJ (lucro real acumulado Jan-Jul ± adições/exclusões do LALUR)</td>
                 <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.baseIrpj)}</td>
               </tr>
               <tr className="border-b">
@@ -165,24 +171,32 @@ export function LalurJulho() {
                 <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.irpjNormal)}</td>
               </tr>
               <tr className="border-b">
-                <td className="py-2">Adicional IRPJ (10% sobre o que exceder R$ 20.000,00/mês)</td>
+                <td className="py-2">Adicional IRPJ (10% sobre o que exceder R$ 20.000,00 × 7 meses)</td>
                 <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.irpjAdicional)}</td>
               </tr>
+              <tr className="border-b text-xs text-muted-foreground">
+                <td className="py-2">(-) Pagamentos de estimativa de IRPJ já efetuados (jan-jun/2026)</td>
+                <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.pagamentosEstimativaIrpjAnteriores)}</td>
+              </tr>
               <tr className="border-b">
-                <td className="py-2">(-) IRRF sobre Aplicações Financeiras a compensar</td>
-                <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.retencoesIrpjCompensaveis)}</td>
+                <td className="py-2">(-) IRRF sobre Aplicações Financeiras a compensar (acumulado jan-jul)</td>
+                <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.irrfAcumuladoCompensavel)}</td>
               </tr>
               <tr className="border-b font-bold">
                 <td className="py-2">IRPJ a pagar</td>
                 <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.irpjAPagar)}</td>
               </tr>
               <tr className="border-b font-semibold">
-                <td className="py-2">Base CSLL (lucro do mês ± adições/exclusões do LALUR)</td>
+                <td className="py-2">Base CSLL (lucro real acumulado Jan-Jul ± adições/exclusões do LALUR)</td>
                 <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.baseCsll)}</td>
               </tr>
               <tr className="border-b">
                 <td className="py-2">CSLL devida (9%)</td>
                 <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.csllDevida)}</td>
+              </tr>
+              <tr className="border-b text-xs text-muted-foreground">
+                <td className="py-2">(-) Pagamentos de estimativa de CSLL já efetuados (jan-jun/2026)</td>
+                <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.pagamentosEstimativaCsllAnteriores)}</td>
               </tr>
               <tr className="font-bold">
                 <td className="py-2">CSLL a pagar</td>

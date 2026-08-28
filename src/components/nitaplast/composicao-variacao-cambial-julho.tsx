@@ -17,7 +17,7 @@ const arred = (valor: number) => Math.round(valor * 100) / 100;
 
 const composicao = [
   { id: "JUL-CAMBIO-JHS-93556-VCA", natureza: "Ativa", conta: "25096", data: "27/07/2026", contraparte: "JHS International", documento: "NF 93556 · INV JXGX20260328624 · contrato 617226937", base: cambioJhs93556.valorContabilObrigacao, liquidacao: cambioJhs93556.valorLiquidado, formula: "Obrigação contábil − valor liquidado", valor: cambioJhs93556.variacaoAtiva },
-  { id: "JUL-CAMBIO-FERMAQ-92249-VCA", natureza: "Ativa", conta: "25096", data: "27/07/2026", contraparte: "Fermaq", documento: "DP 92249/003 · contrato 617257802", base: cambioFermaq92249.valorContabilDireito, liquidacao: cambioFermaq92249.valorRecebido, formula: "Valor recebido − direito contábil", valor: cambioFermaq92249.variacaoAtiva },
+  { id: "JUL-CAMBIO-FERMAQ-92249-VCP", natureza: "Passiva", conta: "25109", data: "27/07/2026", contraparte: "Fermaq", documento: "DP 92249/003 · contrato 617257802", base: cambioFermaq92249.valorContabilDireito, liquidacao: cambioFermaq92249.valorRecebido, formula: "Valor recebido − direito contábil", valor: cambioFermaq92249.variacaoPassiva },
   { id: "JUL-CAMBIO-JHS-16094-VCP", natureza: "Passiva", conta: "25109", data: "03/07/2026", contraparte: "JHS International", documento: "NF 93077 · OC 16094 · INV JXGX20260326616 · contrato 610005759", base: cambioJhs93077.valorContabilObrigacao, liquidacao: cambioJhs93077.valorLiquidado, formula: "Valor liquidado − obrigação contábil", valor: cambioJhs93077.variacaoPassiva },
 ] as const;
 

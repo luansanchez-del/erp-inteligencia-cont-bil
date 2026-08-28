@@ -25,7 +25,11 @@ type Estab = "Matriz" | "Filial SP";
 type LinhaApresentacao = { descricao: string; valor: number | null; percentual?: string; nivel?: 0 | 1; destaque?: boolean };
 
 const receitaBrutaApresentacao = 4_138_549.72;
-const resultadoApresentacao = 234_732.08;
+// Inclui a provisão de custo de R$ 100.000,00 solicitada pelo cliente em 27/08/2026
+// (débito 25948 / crédito 25255, competência 07/2026) e a variação cambial de julho.
+// Conferida contra dre.resultado em tempo de execução no componente — ver checagem
+// logo após o cálculo de `dre`.
+const resultadoApresentacao = 128_172.33;
 const linhasApresentacao: LinhaApresentacao[] = [
   { descricao: "(+) Receita Operacional Bruta", valor: receitaBrutaApresentacao, percentual: "100,00%", destaque: true },
   { descricao: "Receita Venda Produção Matriz", valor: 3_443_785.35, nivel: 1 },
@@ -50,7 +54,7 @@ const linhasApresentacao: LinhaApresentacao[] = [
   { descricao: "(-) CPV Filial", valor: 177_301.11, nivel: 1 },
   { descricao: "(-) CMV Filial", valor: 0, nivel: 1 },
   { descricao: "(=) Lucro bruto", valor: 1_568_244.40, percentual: "37,89%", destaque: true },
-  { descricao: "(-) Despesas operacionais", valor: 1_437_134.17, percentual: "34,73%", destaque: true },
+  { descricao: "(-) Despesas operacionais", valor: 1_543_693.92, percentual: "37,30%", destaque: true },
   { descricao: "Despesas Administrativas", valor: 175_861.49, percentual: "4,25%", nivel: 1 },
   { descricao: "Despesas com Serviço - NPLog", valor: 135_289.01, percentual: "3,27%", nivel: 1 },
   { descricao: "Despesas Comerciais", valor: 406_412.20, percentual: "9,82%", nivel: 1 },
@@ -60,18 +64,19 @@ const linhasApresentacao: LinhaApresentacao[] = [
   { descricao: "Despesas com Industrialização", valor: 364_750.98, percentual: "8,81%", nivel: 1 },
   { descricao: "Despesas com Exportação — Matriz", valor: 5_225.43, percentual: "0,13%", nivel: 1 },
   { descricao: "Despesas comerciais SP", valor: 58_910.56, percentual: "1,42%", nivel: 1 },
-  { descricao: "Subtotal das despesas operacionais antes do resultado financeiro", valor: 1_329_333.42, destaque: true },
-  { descricao: "Despesas Financeiras", valor: 143_700.96, percentual: "3,47%", nivel: 1 },
-  { descricao: "(-) Receitas Financeiras", valor: 35_900.21, percentual: "0,87%", nivel: 1 },
-  { descricao: "Despesas Financeiras Líquidas", valor: 107_800.75, destaque: true },
+  { descricao: "Provisão de Custo — Solicitação do Cliente 07/2026", valor: 100_000.00, percentual: "2,42%", nivel: 1 },
+  { descricao: "Subtotal das despesas operacionais antes do resultado financeiro", valor: 1_429_333.42, destaque: true },
+  { descricao: "Despesas Financeiras", valor: 152_077.49, percentual: "3,67%", nivel: 1 },
+  { descricao: "(-) Receitas Financeiras", valor: 37_716.99, percentual: "0,91%", nivel: 1 },
+  { descricao: "Despesas Financeiras Líquidas", valor: 114_360.50, destaque: true },
   { descricao: "(-) PIS não cumulativo sobre despesas", valor: 0, percentual: "0,00%", nivel: 1 },
   { descricao: "(-) COFINS não cumulativo sobre despesas", valor: 0, percentual: "0,00%", nivel: 1 },
-  { descricao: "Total das despesas operacionais", valor: 1_437_134.17, destaque: true },
-  { descricao: "(=) Resultado Operacional", valor: 131_110.23, percentual: "3,17%", destaque: true },
+  { descricao: "Total das despesas operacionais", valor: 1_543_693.92, destaque: true },
+  { descricao: "(=) Resultado Operacional", valor: 24_550.48, percentual: "0,59%", destaque: true },
   { descricao: "Resultado não operacional", valor: 103_621.85, destaque: true },
   { descricao: "Receita de Alienação de Imobilizado", valor: 306_900, percentual: "7,42%", nivel: 1 },
   { descricao: "Custo na Baixa/Alienação de Imobilizado", valor: 203_278.15, percentual: "4,91%", nivel: 1 },
-  { descricao: "(=) Lucro líquido", valor: resultadoApresentacao, percentual: "5,67%", destaque: true },
+  { descricao: "(=) Lucro líquido", valor: resultadoApresentacao, percentual: "3,10%", destaque: true },
 ];
 
 const ccProd = new Set(["101", "102", "103", "104", "105", "106", "107", "108", "109", "110", "111", "503", "10014", "10032", "10057", "10060", "19999"]);
@@ -93,6 +98,11 @@ export function DreJulhoCompleta() {
   const calculo = useMemo(() => calcularDreJulhoFinal(razaoAjustado), [razaoAjustado]);
   const dre = calculo.dre;
   const composicao = calculo.composicao;
+  if (Math.abs(resultadoApresentacao - dre.resultado) > 0.01) {
+    throw new Error(
+      `Tabela de apresentação da DRE desatualizada: mostra R$ ${resultadoApresentacao.toFixed(2)}, mas o Razão fecha em R$ ${dre.resultado.toFixed(2)}. Atualize resultadoApresentacao/linhasApresentacao em dre-julho-completa.tsx.`,
+    );
+  }
   const [abertas, setAbertas] = useState<Set<string>>(new Set(["receita", "deducoes", "custos", "despesas", "fin-d", "fin-r", "alienacao"]));
 
   const creditoPorEstabelecimento = (conta: string, estabelecimento: Estab) => arred(-razaoAjustado.reduce((s, l) => {
@@ -238,7 +248,7 @@ export function DreJulhoCompleta() {
     { id: "alien-rec", descricao: "Vendas reconhecidas no Razão — Mini + Corolla + Transformador", nivel: 2, valor: dre.receitaAlienacaoImobilizado, criterio: "Conta 4736. NF 93495 R$ 119.900,00 + NF 93569 R$ 127.000,00 + NF 93639 R$ 60.000,00 = R$ 306.900,00.", composicao: base.alienacaoReceita },
     { id: "alien-custo", descricao: "(-) Custo dos Ativos Imobilizados Vendidos — Mini + Corolla + Transformador", nivel: 1, valor: dre.custoAlienacaoImobilizado, criterio: "Conta 4760. Mini residual R$ 52.500,00 + Corolla residual R$ 93.139,29 + Transformador residual R$ 57.638,86 (custo original R$ 98.016,00 - depreciação acumulada até 14/07 de R$ 40.377,14) = R$ 203.278,15.", composicao: base.alienacaoCusto },
     { id: "alien-res", descricao: "(=) Ganho reconhecido na Alienação — Mini + Corolla + Transformador", nivel: 1, valor: dre.resultadoAlienacaoImobilizado, criterio: "R$ 67.400,00 Mini + R$ 33.860,71 Corolla + R$ 2.361,14 Transformador (venda R$ 60.000,00 - residual R$ 57.638,86) = R$ 103.621,85." },
-    { id: "resultado", descricao: "(=) RESULTADO CONTÁBIL 07/2026 — FECHADO", nivel: 0, valor: dre.resultado, criterio: `Resultado do Razão incluindo Mini + Corolla + Transformador e o lançamento de versão 07/2026 (decisão do contador em 24/08/2026, ver origem "LANÇAMENTO DE VERSÃO 07/2026" no Razão/Lançamentos: R$ 19.225,58 de despesa — CC 503 replicado na Matriz — menos R$ 3.768,38 de ICMS/COFINS, ambos com estorno programado para 08/2026). Fecha em R$ ${resultadoApresentacao.toFixed(2)}, igual à DRE enviada ao cliente. Recebimento do Transformador em parcelas previstas para agosto e setembro/2026, mantido em Duplicatas a Receber.` },
+    { id: "resultado", descricao: "(=) RESULTADO CONTÁBIL 07/2026 — FECHADO", nivel: 0, valor: dre.resultado, criterio: `Resultado do Razão incluindo Mini + Corolla + Transformador, o lançamento de versão 07/2026 (decisão do contador em 24/08/2026, ver origem "LANÇAMENTO DE VERSÃO 07/2026" no Razão/Lançamentos: R$ 19.225,58 de despesa — CC 503 replicado na Matriz — menos R$ 3.768,38 de ICMS/COFINS, ambos com estorno programado para 08/2026) e a provisão de custo de R$ 100.000,00 solicitada pelo cliente em 27/08/2026 (origem "PROVISÃO DE CUSTO SOLICITADA PELO CLIENTE 07/2026" no Razão, conta 25948/25255, a reverter ou baixar contra o documento definitivo). Fecha em R$ ${resultadoApresentacao.toFixed(2)}. Recebimento do Transformador em parcelas previstas para agosto e setembro/2026, mantido em Duplicatas a Receber.` },
   ];
 
   const paiPorLinha = new Map<string, string | null>();
