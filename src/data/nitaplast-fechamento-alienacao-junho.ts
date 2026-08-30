@@ -5,6 +5,9 @@ const CUSTO_BAIXA_AGREGADO = 7704.14;
 const GANHO_LIQUIDO_ALIENACOES = 7295.86;
 const COMPRESSOR_CUSTO_HISTORICO = 19120.98;
 const COMPRESSOR_DEPRECIACAO_ACUMULADA = 19120.98;
+const SAVEIRO_CUSTO_HISTORICO = 16500.00;
+const SAVEIRO_DEPRECIACAO_ACUMULADA = 8795.86;
+const SAVEIRO_RESIDUAL = 7704.14;
 
 const arred = (valor: number) => Math.round(valor * 100) / 100;
 
@@ -71,10 +74,12 @@ function lancamento(params: {
  * R$ 7.295,86. Logo, sobre a receita bruta de R$ 15.000,00, o valor contábil líquido
  * agregado das alienações é R$ 7.704,14.
  *
- * Enquanto a ficha patrimonial individual da Saveiro não estiver aberta nesta base,
- * os R$ 7.704,14 ficam contra a 4859 - Conta Transitória. Isso NÃO altera o ganho:
- * registra D 4760 / C 4859 e deixa explícita a contrapartida patrimonial pendente,
- * sem inventar custo individual do veículo.
+ * Ficha patrimonial individual da Saveiro AIQ1A37 (informada no fechamento de
+ * junho/2026): custo histórico R$ 16.500,00, depreciação acumulada R$ 8.795,86,
+ * valor residual R$ 7.704,14 — o mesmo valor contábil líquido agregado das
+ * alienações, já que o compressor tem VCL zero. A baixa é individualizada em
+ * D 25187 (depreciação acumulada) / C 1089 (Veículos) e D 4760 (custo) / C 1089,
+ * em vez de ficar na 4859 - Conta Transitória.
  */
 export function aplicarFechamentoAlienacaoJunho(base: LancamentoIntegrado[]): LancamentoIntegrado[] {
   const resultado = [...base];
@@ -93,6 +98,38 @@ export function aplicarFechamentoAlienacaoJunho(base: LancamentoIntegrado[]): La
       observacao: `Custo histórico R$ ${COMPRESSOR_CUSTO_HISTORICO.toFixed(2)} e depreciação acumulada R$ ${COMPRESSOR_DEPRECIACAO_ACUMULADA.toFixed(2)}. Valor contábil líquido zero; a baixa não gera despesa adicional.`,
       fonte: "Informação patrimonial validada no fechamento de junho/2026",
       rastreio: "derivado",
+    }));
+  }
+
+  // Baixa individual da Saveiro AIQ1A37: depreciação acumulada e valor residual sobre custo histórico de R$ 16.500,00.
+  if (!resultado.some((linha) => linha.id === "ALIEN-SAVEIRO-BAIXA-DEPREC-062026")) {
+    resultado.push(lancamento({
+      id: "ALIEN-SAVEIRO-BAIXA-DEPREC-062026",
+      debitoCodigo: "25187",
+      debito: "25187 - (-) Veiculos",
+      creditoCodigo: "1089",
+      credito: "1089 - Veículos",
+      valor: SAVEIRO_DEPRECIACAO_ACUMULADA,
+      historico: "Baixa da depreciação acumulada da Saveiro AIQ1A37 alienada em junho/2026",
+      documento: "BAIXA SAVEIRO AIQ1A37 06/2026",
+      observacao: `Custo histórico R$ ${SAVEIRO_CUSTO_HISTORICO.toFixed(2)}, depreciação acumulada R$ ${SAVEIRO_DEPRECIACAO_ACUMULADA.toFixed(2)} e valor residual R$ ${SAVEIRO_RESIDUAL.toFixed(2)}, conforme ficha patrimonial individual informada no fechamento de junho/2026.`,
+      fonte: "Ficha patrimonial individual da Saveiro AIQ1A37 informada no fechamento de junho/2026",
+      rastreio: "documento",
+    }));
+  }
+  if (!resultado.some((linha) => linha.id === "ALIEN-SAVEIRO-BAIXA-RESIDUAL-062026")) {
+    resultado.push(lancamento({
+      id: "ALIEN-SAVEIRO-BAIXA-RESIDUAL-062026",
+      debitoCodigo: "4760",
+      debito: "4760 - Custo Vendas do Ativo Imobilizado",
+      creditoCodigo: "1089",
+      credito: "1089 - Veículos",
+      valor: SAVEIRO_RESIDUAL,
+      historico: "Baixa do valor residual da Saveiro AIQ1A37 alienada em junho/2026",
+      documento: "BAIXA SAVEIRO AIQ1A37 06/2026",
+      observacao: `Valor contábil líquido individual da Saveiro AIQ1A37: R$ ${SAVEIRO_RESIDUAL.toFixed(2)}, conforme ficha patrimonial informada no fechamento de junho/2026.`,
+      fonte: "Ficha patrimonial individual da Saveiro AIQ1A37 informada no fechamento de junho/2026",
+      rastreio: "documento",
     }));
   }
 
@@ -136,7 +173,8 @@ export function aplicarFechamentoAlienacaoJunho(base: LancamentoIntegrado[]): La
     }));
   }
 
-  // Valor contábil líquido agregado necessário para o ganho final validado.
+  // Rede de segurança: com o compressor e a Saveiro já baixados individualmente acima,
+  // este bloco só dispara se houver alguma divergência residual de arredondamento.
   const custoAntes = despesaLiquidaConta(resultado, "4760");
   const diferencaCusto = arred(CUSTO_BAIXA_AGREGADO - custoAntes);
   if (Math.abs(diferencaCusto) >= 0.005) {
@@ -150,7 +188,7 @@ export function aplicarFechamentoAlienacaoJunho(base: LancamentoIntegrado[]): La
       valor: Math.abs(diferencaCusto),
       historico: "Custo/baixa contábil agregado das alienações de ativo imobilizado - junho/2026",
       documento: "BAIXA ALIENAÇÕES 06/2026",
-      observacao: `Valor contábil líquido agregado validado pelo fechamento: R$ ${CUSTO_BAIXA_AGREGADO.toFixed(2)}. O compressor foi baixado separadamente com VCL zero. A 4859 mantém a parcela patrimonial ainda a abrir por bem, sem inventar o saldo individual da Saveiro.`,
+      observacao: `Divergência residual entre o valor contábil líquido agregado validado (R$ ${CUSTO_BAIXA_AGREGADO.toFixed(2)}) e as baixas individuais já lançadas para o compressor e a Saveiro. Mantido contra a 4859 - Conta Transitória até identificar a causa.`,
       fonte: "DRE final 06/2026 + documentos de alienação + conciliação patrimonial",
       rastreio: "derivado",
     }));
