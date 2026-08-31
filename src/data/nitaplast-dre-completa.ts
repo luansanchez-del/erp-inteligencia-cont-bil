@@ -88,6 +88,15 @@ export const dreCompletaJunho: LinhaDre[] = [
   { id: "alienacao", descricao: "4736 · Vendas do Ativo Imobilizado", valor: 15000.00, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
   { id: "baixa", descricao: "4760 · Custo Vendas do Ativo Imobilizado", valor: 7704.14, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
   { id: "lucro-liq", descricao: "LUCRO / PREJUÍZO LÍQUIDO", valor: 139798.77, nivel: 0, tipo: "resultado", origem: "RAZÃO/BALANCETE 06/2026" },
+  /**
+   * EVIDÊNCIA: base-ir = resultado-op (exclui o Resultado Não Operacional de
+   * R$ 7.295,86 — ganho na alienação do imobilizado). Confirmado contra o
+   * LALUR real do cliente (planilha "CÁLCULO IRPJ E CSLL — LUCRO REAL POR
+   * ESTIMATIVA MENSAL — Competência JUNHO/2026"): a linha "Lucro/(Prejuízo)
+   * Contábil do mês" de junho está lançada em R$ 132.502,91, igual ao nosso
+   * Resultado Operacional — não é erro nem pendência, é a apuração real do
+   * contador para a base do IRPJ/CSLL por estimativa mensal.
+   */
   { id: "base-ir", descricao: "LUCRO APURADO PARA IRPJ E CSLL", valor: 132502.91, nivel: 0, tipo: "informativo", origem: "RAZÃO/BALANCETE 06/2026" },
 ];
 
