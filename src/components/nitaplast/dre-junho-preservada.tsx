@@ -22,6 +22,15 @@ type LinhaApresentacao = { descricao: string; valor: number | null; percentual?:
 
 const receitaBrutaJunho = 3_402_624.71;
 const ajusteEstoqueJunho = 82_536.10;
+/**
+ * EVIDÊNCIA: baseIrpjCsllJunho = Lucro Líquido - Resultado Não Operacional
+ * (exclui o ganho de R$ 7.295,86 na alienação do imobilizado). Confirmado
+ * contra o LALUR real do cliente ("CÁLCULO IRPJ E CSLL — LUCRO REAL POR
+ * ESTIMATIVA MENSAL — Competência JUNHO/2026"): a linha "Lucro/(Prejuízo)
+ * Contábil do mês" de junho está lançada em R$ 132.502,91 — mesmo valor.
+ * Não é erro nem pendência: é a apuração real do contador para a base do
+ * IRPJ/CSLL por estimativa mensal.
+ */
 const baseIrpjCsllJunho = 132_502.91;
 const resultadoNaoOperacionalJunho = 7_295.86;
 const lucroLiquidoJunho = 139_798.77;

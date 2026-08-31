@@ -1,5 +1,6 @@
 type LinhaResumoBalancete = {
   tipo: "A" | "S";
+  conta?: string;
   classificacao: string;
   descricao: string;
   saldoAnterior: number;
@@ -13,7 +14,7 @@ const arred = (valor: number) => Math.round(valor * 100) / 100;
 
 type ResultadoResumo = { saldoAnterior: number; movimentoMes: number };
 
-export function BalancetePrintSummary({ linhas, resultadoContabil }: { linhas: LinhaResumoBalancete[]; resultadoContabil?: ResultadoResumo }) {
+export function BalancetePrintSummary({ linhas, resultadoContabil, resultadoNaoOperacional }: { linhas: LinhaResumoBalancete[]; resultadoContabil?: ResultadoResumo; resultadoNaoOperacional?: ResultadoResumo }) {
   const { empresa } = useErp();
   const analiticas = linhas.filter((linha) => linha.tipo === "A");
   const total = (campo: "saldoAnterior" | "debitos" | "creditos" | "saldoAtual") => arred(analiticas.reduce((soma, linha) => soma + linha[campo], 0));
@@ -26,8 +27,17 @@ export function BalancetePrintSummary({ linhas, resultadoContabil }: { linhas: L
   const receitas = porDescricao(/^RECEITAS$/i) ?? vazio("RECEITAS");
   const despesasBase = porDescricao(/^CUSTOS E DESPESAS$/i) ?? porDescricao(/^DESPESAS OPERACIONAIS$/i) ?? vazio("DESPESAS OPERACIONAIS");
   const despesas = { ...despesasBase, descricao: "DESPESAS OPERACIONAIS" };
-  const naoOperacionalBase = linhas.find((linha) => linha.tipo === "S" && /RESULTAD.*NÃO OPERACION|OUTROS RESULTADOS OPERACIONAIS/i.test(linha.descricao)) ?? vazio("RESULTADOS NÃO OPERACIONAIS");
-  const naoOperacional = { ...naoOperacionalBase, descricao: "RESULTADOS NÃO OPERACIONAIS" };
+  // Alguns planos (ex.: Domínio) não têm conta sintética própria de "Resultados Não
+  // Operacionais" — contas como alienação de imobilizado ficam misturadas dentro de
+  // Receitas/Despesas (ex.: "Receitas Eventuais", "Perdas"), que também recebem OUTRAS
+  // contas de origens diferentes mapeadas para o mesmo código Domínio. Por isso o
+  // chamador informa o movimento exato (já apurado a partir das contas reais no
+  // Razão, não do agregado do Domínio) em vez de tentarmos extrair daqui — extrair da
+  // linha agregada do Domínio contaminaria o valor com contas não relacionadas.
+  const naoOperacionalEncontrada = linhas.find((linha) => linha.tipo === "S" && /RESULTAD.*NÃO OPERACION|OUTROS RESULTADOS OPERACIONAIS/i.test(linha.descricao));
+  const naoOperacional = resultadoNaoOperacional
+    ? { ...vazio("RESULTADOS NÃO OPERACIONAIS"), saldoAnterior: arred(resultadoNaoOperacional.saldoAnterior), debitos: Math.max(0, resultadoNaoOperacional.movimentoMes), creditos: Math.max(0, -resultadoNaoOperacional.movimentoMes), saldoAtual: arred(resultadoNaoOperacional.saldoAnterior + resultadoNaoOperacional.movimentoMes) }
+    : { ...(naoOperacionalEncontrada ?? vazio("RESULTADOS NÃO OPERACIONAIS")), descricao: "RESULTADOS NÃO OPERACIONAIS" };
   const compensacaoAtivaBase = porDescricao(/^(ATIVO COMPENSATÓRIO|CONTAS DE COMPENSAÇÃO)$/i) ?? vazio("CONTAS DE COMPENSAÇÃO");
   const compensacaoAtiva = { ...compensacaoAtivaBase, descricao: "CONTAS DE COMPENSAÇÃO" };
   const compensacaoPassivaBase = linhas.filter((linha) => linha.tipo === "S" && /^(PASSIVO COMPENSATÓRIO|CONTAS DE COMPENSAÇÃO)$/i.test(linha.descricao)).sort((a, b) => b.classificacao.localeCompare(a.classificacao))[0];
