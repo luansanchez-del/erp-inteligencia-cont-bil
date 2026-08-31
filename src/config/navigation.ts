@@ -12,6 +12,7 @@ import {
   FileSpreadsheet,
   CalendarCheck,
   StickyNote,
+  Percent,
   type LucideIcon,
 } from "lucide-react";
 import type { ModuloId } from "@/types/erp";
@@ -61,6 +62,7 @@ export const navGroups: NavGroup[] = [
     ],
   },
   { id: "notas_tecnicas", label: "Notas Técnicas", icon: StickyNote, to: "/notas-tecnicas" },
+  { id: "simples_nacional", label: "Simples Nacional", icon: Percent, to: "/simples-nacional" },
   { id: "importacoes", label: "Importações", icon: Upload, to: "/importacoes" },
   { id: "integracoes", label: "Integrações", icon: Plug, to: "/integracoes" },
   {

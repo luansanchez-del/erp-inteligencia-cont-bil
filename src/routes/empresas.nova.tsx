@@ -9,7 +9,12 @@ import { useErp } from "@/context/erp-context";
 import type { RegimeTributario, TipoEstabelecimento } from "@/types/erp";
 
 export const Route = createFileRoute("/empresas/nova")({
-  validateSearch: (search: Record<string, unknown>) => ({ retorno: search["retorno"] === "/importacoes" ? "/importacoes" as const : undefined }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    retorno:
+      search["retorno"] === "/importacoes" ? "/importacoes" as const
+      : search["retorno"] === "/simples-nacional" ? "/simples-nacional" as const
+      : undefined,
+  }),
   head: () => ({ meta: [{ title: "Nova empresa" }] }),
   component: NovaEmpresaPage,
 });
