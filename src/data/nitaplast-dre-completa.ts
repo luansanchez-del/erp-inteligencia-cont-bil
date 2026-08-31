@@ -29,10 +29,15 @@ export const receitaBrutaJunho = 3402624.71;
  * - Receita Líquida: R$ 2.591.549,94;
  * - CPV/CMV: R$ 1.271.045,60;
  * - Lucro Bruto: R$ 1.320.504,34;
- * - Despesas Operacionais Líquidas: R$ 1.187.406,05;
- * - Resultado Operacional: R$ 133.098,29;
+ * - Despesas Operacionais Líquidas: R$ 1.188.001,43;
+ * - Resultado Operacional: R$ 132.502,91;
  * - Resultado Não Operacional: R$ 7.295,86;
- * - Lucro Líquido: R$ 140.394,15.
+ * - Lucro Líquido: R$ 139.798,77.
+ *
+ * Despesas Produção inclui o complemento contábil de R$ 595,38 (lançamento
+ * DESP-FECH-PRODUCAO-062026, já existente no Razão) que fecha a competência:
+ * R$ 179.461,63 + R$ 595,38 = R$ 180.057,01. Ver nitaplast-dre-detalhada-v7.ts
+ * e conferido contra a DRE enviada ao cliente (Lucro Líquido R$ 139.798,77).
  */
 export const dreCompletaJunho: LinhaDre[] = [
   { id: "receita", descricao: "(+) Receita Operacional Bruta", valor: 3402624.71, nivel: 0, tipo: "grupo", origem: "DRE FINAL 06/2026" },
@@ -59,11 +64,11 @@ export const dreCompletaJunho: LinhaDre[] = [
   { id: "cpv-f", descricao: "25945 · Custos de Produtos Vendidos - Filial", valor: 113234.66, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
   { id: "lucro-bruto", descricao: "LUCRO BRUTO", valor: 1320504.34, nivel: 0, tipo: "resultado", origem: "RAZÃO/BALANCETE 06/2026" },
 
-  { id: "despesas", descricao: "(-) Despesas Operacionais antes dos créditos", valor: 1256351.05, nivel: 0, tipo: "grupo", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "despesas", descricao: "(-) Despesas Operacionais antes dos créditos", valor: 1256946.43, nivel: 0, tipo: "grupo", origem: "RAZÃO/BALANCETE 06/2026" },
   { id: "adm", descricao: "Despesas Administrativas", valor: 132400.28, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026", composicaoPendente: true },
   { id: "nplog", descricao: "Despesas com Serviço - NPLog", valor: 115364.37, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
   { id: "comerciais", descricao: "Despesas Comerciais", valor: 237639.64, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026", composicaoPendente: true },
-  { id: "producao", descricao: "Despesas Produção", valor: 179461.63, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026", composicaoPendente: true },
+  { id: "producao", descricao: "Despesas Produção", valor: 180057.01, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026", composicaoPendente: true },
   { id: "veiculos", descricao: "Despesas Veículos", valor: 42644.85, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026", composicaoPendente: true },
   { id: "barracao", descricao: "Despesas Barracão", valor: 3304.32, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026", composicaoPendente: true },
   { id: "imobilizado", descricao: "Despesas com Imobilizado", valor: 1429.39, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026", composicaoPendente: true },
@@ -76,14 +81,14 @@ export const dreCompletaJunho: LinhaDre[] = [
 
   { id: "credito-pis", descricao: "(-) Crédito de PIS sobre custos e despesas", valor: -12298.30, nivel: 1, tipo: "credito", origem: "RAZÃO/BALANCETE 06/2026" },
   { id: "credito-cofins", descricao: "(-) Crédito de COFINS sobre custos e despesas", valor: -56646.70, nivel: 1, tipo: "credito", origem: "RAZÃO/BALANCETE 06/2026" },
-  { id: "despesas-liquidas", descricao: "Total Despesas Operacionais Líquidas", valor: 1187406.05, nivel: 0, tipo: "resultado", origem: "RAZÃO/BALANCETE 06/2026" },
-  { id: "resultado-op", descricao: "RESULTADO OPERACIONAL", valor: 133098.29, nivel: 0, tipo: "resultado", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "despesas-liquidas", descricao: "Total Despesas Operacionais Líquidas", valor: 1188001.43, nivel: 0, tipo: "resultado", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "resultado-op", descricao: "RESULTADO OPERACIONAL", valor: 132502.91, nivel: 0, tipo: "resultado", origem: "RAZÃO/BALANCETE 06/2026" },
 
   { id: "nao-op", descricao: "Resultado Não Operacional", valor: 7295.86, nivel: 0, tipo: "grupo", origem: "RAZÃO/BALANCETE 06/2026" },
   { id: "alienacao", descricao: "4736 · Vendas do Ativo Imobilizado", valor: 15000.00, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
   { id: "baixa", descricao: "4760 · Custo Vendas do Ativo Imobilizado", valor: 7704.14, nivel: 1, tipo: "detalhe", origem: "RAZÃO/BALANCETE 06/2026" },
-  { id: "lucro-liq", descricao: "LUCRO / PREJUÍZO LÍQUIDO", valor: 140394.15, nivel: 0, tipo: "resultado", origem: "RAZÃO/BALANCETE 06/2026" },
-  { id: "base-ir", descricao: "LUCRO APURADO PARA IRPJ E CSLL", valor: 133098.29, nivel: 0, tipo: "informativo", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "lucro-liq", descricao: "LUCRO / PREJUÍZO LÍQUIDO", valor: 139798.77, nivel: 0, tipo: "resultado", origem: "RAZÃO/BALANCETE 06/2026" },
+  { id: "base-ir", descricao: "LUCRO APURADO PARA IRPJ E CSLL", valor: 132502.91, nivel: 0, tipo: "informativo", origem: "RAZÃO/BALANCETE 06/2026" },
 ];
 
 export const idsDespesasOperacionais = [
