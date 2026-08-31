@@ -11,6 +11,7 @@ import { aplicarFechamentoDespesasJunho } from "./nitaplast-fechamento-despesas-
 import { aplicarFechamentoAlienacaoJunho } from "./nitaplast-fechamento-alienacao-junho";
 import { aplicarSnapshotFechamentoJunho, validarSnapshotFechamentoJunho } from "./nitaplast-fechamento-junho-congelado";
 import { garantirPlanoFechamentoJunho } from "./nitaplast-plano-fechamento-junho";
+import { lancamentosDepreciacaoJunho } from "./nitaplast-depreciacao-junho";
 
 export type { LancamentoIntegrado } from "./nitaplast-razao-base";
 export { contaPorBanco, depreciacoes } from "./nitaplast-razao-base";
@@ -95,6 +96,7 @@ const baseDocumentalJunho = [
   ...lancamentosBaseSaneados,
   ...receitasFilialDocumentadas,
   ...fechamentoCpvSemIcmsMatrizObsoleto,
+  ...lancamentosDepreciacaoJunho,
 ];
 
 // Importação e financeiro nascem no Razão antes do Balancete/DRE.
