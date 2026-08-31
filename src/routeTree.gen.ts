@@ -17,6 +17,7 @@ import { Route as GruposRouteImport } from './routes/grupos'
 import { Route as ImportacoesRouteImport } from './routes/importacoes'
 import { Route as IntegracoesRouteImport } from './routes/integracoes'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as NotasTecnicasRouteImport } from './routes/notas-tecnicas'
 import { Route as ObrigacoesRouteImport } from './routes/obrigacoes'
 import { Route as PatrimonioRouteImport } from './routes/patrimonio'
 import { Route as RelatoriosRouteImport } from './routes/relatorios'
@@ -85,6 +86,11 @@ const IntegracoesRoute = IntegracoesRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotasTecnicasRoute = NotasTecnicasRouteImport.update({
+  id: '/notas-tecnicas',
+  path: '/notas-tecnicas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ObrigacoesRoute = ObrigacoesRouteImport.update({
@@ -246,6 +252,7 @@ export interface FileRoutesByFullPath {
   '/importacoes': typeof ImportacoesRoute
   '/integracoes': typeof IntegracoesRoute
   '/login': typeof LoginRoute
+  '/notas-tecnicas': typeof NotasTecnicasRoute
   '/obrigacoes': typeof ObrigacoesRoute
   '/patrimonio': typeof PatrimonioRoute
   '/relatorios': typeof RelatoriosRouteWithChildren
@@ -285,6 +292,7 @@ export interface FileRoutesByTo {
   '/importacoes': typeof ImportacoesRoute
   '/integracoes': typeof IntegracoesRoute
   '/login': typeof LoginRoute
+  '/notas-tecnicas': typeof NotasTecnicasRoute
   '/obrigacoes': typeof ObrigacoesRoute
   '/patrimonio': typeof PatrimonioRoute
   '/relatorios': typeof RelatoriosRouteWithChildren
@@ -325,6 +333,7 @@ export interface FileRoutesById {
   '/importacoes': typeof ImportacoesRoute
   '/integracoes': typeof IntegracoesRoute
   '/login': typeof LoginRoute
+  '/notas-tecnicas': typeof NotasTecnicasRoute
   '/obrigacoes': typeof ObrigacoesRoute
   '/patrimonio': typeof PatrimonioRoute
   '/relatorios': typeof RelatoriosRouteWithChildren
@@ -366,6 +375,7 @@ export interface FileRouteTypes {
     | '/importacoes'
     | '/integracoes'
     | '/login'
+    | '/notas-tecnicas'
     | '/obrigacoes'
     | '/patrimonio'
     | '/relatorios'
@@ -405,6 +415,7 @@ export interface FileRouteTypes {
     | '/importacoes'
     | '/integracoes'
     | '/login'
+    | '/notas-tecnicas'
     | '/obrigacoes'
     | '/patrimonio'
     | '/relatorios'
@@ -444,6 +455,7 @@ export interface FileRouteTypes {
     | '/importacoes'
     | '/integracoes'
     | '/login'
+    | '/notas-tecnicas'
     | '/obrigacoes'
     | '/patrimonio'
     | '/relatorios'
@@ -484,6 +496,7 @@ export interface RootRouteChildren {
   ImportacoesRoute: typeof ImportacoesRoute
   IntegracoesRoute: typeof IntegracoesRoute
   LoginRoute: typeof LoginRoute
+  NotasTecnicasRoute: typeof NotasTecnicasRoute
   ObrigacoesRoute: typeof ObrigacoesRoute
   PatrimonioRoute: typeof PatrimonioRoute
   RelatoriosRoute: typeof RelatoriosRouteWithChildren
@@ -566,6 +579,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notas-tecnicas': {
+      id: '/notas-tecnicas'
+      path: '/notas-tecnicas'
+      fullPath: '/notas-tecnicas'
+      preLoaderRoute: typeof NotasTecnicasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/obrigacoes': {
@@ -813,6 +833,7 @@ const rootRouteChildren: RootRouteChildren = {
   ImportacoesRoute: ImportacoesRoute,
   IntegracoesRoute: IntegracoesRoute,
   LoginRoute: LoginRoute,
+  NotasTecnicasRoute: NotasTecnicasRoute,
   ObrigacoesRoute: ObrigacoesRoute,
   PatrimonioRoute: PatrimonioRoute,
   RelatoriosRoute: RelatoriosRouteWithChildren,
