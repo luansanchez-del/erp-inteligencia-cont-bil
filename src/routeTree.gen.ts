@@ -21,6 +21,7 @@ import { Route as NotasTecnicasRouteImport } from './routes/notas-tecnicas'
 import { Route as ObrigacoesRouteImport } from './routes/obrigacoes'
 import { Route as PatrimonioRouteImport } from './routes/patrimonio'
 import { Route as RelatoriosRouteImport } from './routes/relatorios'
+import { Route as SimplesNacionalRouteImport } from './routes/simples-nacional'
 import { Route as ContabilBalanceteRouteImport } from './routes/contabil.balancete'
 import { Route as ContabilBalancoPatrimonialRouteImport } from './routes/contabil.balanco-patrimonial'
 import { Route as ContabilCentrosDeCustoRouteImport } from './routes/contabil.centros-de-custo'
@@ -106,6 +107,11 @@ const PatrimonioRoute = PatrimonioRouteImport.update({
 const RelatoriosRoute = RelatoriosRouteImport.update({
   id: '/relatorios',
   path: '/relatorios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SimplesNacionalRoute = SimplesNacionalRouteImport.update({
+  id: '/simples-nacional',
+  path: '/simples-nacional',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContabilBalanceteRoute = ContabilBalanceteRouteImport.update({
@@ -256,6 +262,7 @@ export interface FileRoutesByFullPath {
   '/obrigacoes': typeof ObrigacoesRoute
   '/patrimonio': typeof PatrimonioRoute
   '/relatorios': typeof RelatoriosRouteWithChildren
+  '/simples-nacional': typeof SimplesNacionalRoute
   '/contabil/balancete': typeof ContabilBalanceteRoute
   '/contabil/balanco-patrimonial': typeof ContabilBalancoPatrimonialRoute
   '/contabil/centros-de-custo': typeof ContabilCentrosDeCustoRoute
@@ -296,6 +303,7 @@ export interface FileRoutesByTo {
   '/obrigacoes': typeof ObrigacoesRoute
   '/patrimonio': typeof PatrimonioRoute
   '/relatorios': typeof RelatoriosRouteWithChildren
+  '/simples-nacional': typeof SimplesNacionalRoute
   '/contabil/balancete': typeof ContabilBalanceteRoute
   '/contabil/balanco-patrimonial': typeof ContabilBalancoPatrimonialRoute
   '/contabil/centros-de-custo': typeof ContabilCentrosDeCustoRoute
@@ -337,6 +345,7 @@ export interface FileRoutesById {
   '/obrigacoes': typeof ObrigacoesRoute
   '/patrimonio': typeof PatrimonioRoute
   '/relatorios': typeof RelatoriosRouteWithChildren
+  '/simples-nacional': typeof SimplesNacionalRoute
   '/contabil/balancete': typeof ContabilBalanceteRoute
   '/contabil/balanco-patrimonial': typeof ContabilBalancoPatrimonialRoute
   '/contabil/centros-de-custo': typeof ContabilCentrosDeCustoRoute
@@ -379,6 +388,7 @@ export interface FileRouteTypes {
     | '/obrigacoes'
     | '/patrimonio'
     | '/relatorios'
+    | '/simples-nacional'
     | '/contabil/balancete'
     | '/contabil/balanco-patrimonial'
     | '/contabil/centros-de-custo'
@@ -419,6 +429,7 @@ export interface FileRouteTypes {
     | '/obrigacoes'
     | '/patrimonio'
     | '/relatorios'
+    | '/simples-nacional'
     | '/contabil/balancete'
     | '/contabil/balanco-patrimonial'
     | '/contabil/centros-de-custo'
@@ -459,6 +470,7 @@ export interface FileRouteTypes {
     | '/obrigacoes'
     | '/patrimonio'
     | '/relatorios'
+    | '/simples-nacional'
     | '/contabil/balancete'
     | '/contabil/balanco-patrimonial'
     | '/contabil/centros-de-custo'
@@ -500,6 +512,7 @@ export interface RootRouteChildren {
   ObrigacoesRoute: typeof ObrigacoesRoute
   PatrimonioRoute: typeof PatrimonioRoute
   RelatoriosRoute: typeof RelatoriosRouteWithChildren
+  SimplesNacionalRoute: typeof SimplesNacionalRoute
   ContabilBalanceteRoute: typeof ContabilBalanceteRoute
   ContabilBalancoPatrimonialRoute: typeof ContabilBalancoPatrimonialRoute
   ContabilCentrosDeCustoRoute: typeof ContabilCentrosDeCustoRoute
@@ -607,6 +620,13 @@ declare module '@tanstack/react-router' {
       path: '/relatorios'
       fullPath: '/relatorios'
       preLoaderRoute: typeof RelatoriosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/simples-nacional': {
+      id: '/simples-nacional'
+      path: '/simples-nacional'
+      fullPath: '/simples-nacional'
+      preLoaderRoute: typeof SimplesNacionalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contabil/balancete': {
@@ -837,6 +857,7 @@ const rootRouteChildren: RootRouteChildren = {
   ObrigacoesRoute: ObrigacoesRoute,
   PatrimonioRoute: PatrimonioRoute,
   RelatoriosRoute: RelatoriosRouteWithChildren,
+  SimplesNacionalRoute: SimplesNacionalRoute,
   ContabilBalanceteRoute: ContabilBalanceteRoute,
   ContabilBalancoPatrimonialRoute: ContabilBalancoPatrimonialRoute,
   ContabilCentrosDeCustoRoute: ContabilCentrosDeCustoRoute,

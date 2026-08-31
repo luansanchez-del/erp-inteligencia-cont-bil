@@ -138,7 +138,8 @@ export type ModuloId =
   | "patrimonio"
   | "ecd_ecf"
   | "obrigacoes"
-  | "notas_tecnicas";
+  | "notas_tecnicas"
+  | "simples_nacional";
 
 export type AcaoPermissao = "ver" | "criar" | "editar" | "excluir" | "efetivar";
 
@@ -207,4 +208,29 @@ export interface Integracao {
   nome: string;
   descricao: string;
   status: "nao_conectado" | "conectado" | "planejado";
+}
+
+/** Sócio que integraliza capital social na abertura contábil de uma empresa. */
+export interface SocioCapitalAbertura {
+  id: string;
+  nome: string;
+  cpf?: string | undefined;
+  valorCapital: number;
+}
+
+/**
+ * Lançamento de abertura (implantação de saldo inicial de capital social) de uma
+ * empresa do Simples Nacional. Módulo próprio, isolado do motor contábil da Nitaplast.
+ */
+export interface AberturaSimplesNacional {
+  id: string;
+  empresaId: string;
+  dataAbertura: string;
+  contaContrapartidaCodigo: string;
+  contaContrapartidaDescricao: string;
+  contaCapitalCodigo: string;
+  contaCapitalDescricao: string;
+  socios: SocioCapitalAbertura[];
+  observacoes?: string | undefined;
+  criadoEm: string;
 }
