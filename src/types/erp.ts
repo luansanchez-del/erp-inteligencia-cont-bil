@@ -137,7 +137,8 @@ export type ModuloId =
   | "fiscal"
   | "patrimonio"
   | "ecd_ecf"
-  | "obrigacoes";
+  | "obrigacoes"
+  | "notas_tecnicas";
 
 export type AcaoPermissao = "ver" | "criar" | "editar" | "excluir" | "efetivar";
 
