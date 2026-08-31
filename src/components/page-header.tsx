@@ -211,6 +211,16 @@ export function PageShell({ children }: { children: ReactNode }) {
             .erp-report-page[data-report-period="2026-07"][data-report-kind="Balancete"] .erp-route-content td:nth-child(9),
             .erp-report-page[data-report-period="2026-07"][data-report-kind="Balancete"] .erp-route-content th:nth-child(11),
             .erp-report-page[data-report-period="2026-07"][data-report-kind="Balancete"] .erp-route-content td:nth-child(11) { display: none !important; }
+            /*
+             * A tabela analítica de julho (BalanceteJulhoAjustavel) tem 11 colunas e a
+             * última (Detalhe/botão) é só de tela — faz sentido a regra global em
+             * styles.css ocultar table th/td:last-child para "Balancete". Mas a tabela de
+             * junho (BalanceteDominioCompetencia) tem só 9 colunas e a última já É o
+             * Saldo atual: a mesma regra global apaga um dado real, não uma coluna de UI.
+             * Reexibe especificamente para 06/2026.
+             */
+            .erp-report-page[data-report-period="2026-06"][data-report-kind="Balancete"] .erp-route-content table th:last-child,
+            .erp-report-page[data-report-period="2026-06"][data-report-kind="Balancete"] .erp-route-content table td:last-child { display: table-cell !important; }
             .erp-report-page[data-report-kind="Balancete"] .erp-page-header { display: none !important; }
             .erp-report-page[data-report-kind="Balancete"] .erp-route-content { gap: 0 !important; }
             .erp-report-page[data-report-kind="Balancete"] .erp-route-content .rounded-xl,
