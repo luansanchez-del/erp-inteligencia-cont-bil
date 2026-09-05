@@ -12,7 +12,7 @@ import {
   FileSpreadsheet,
   CalendarCheck,
   StickyNote,
-  Percent,
+  Waypoints,
   type LucideIcon,
 } from "lucide-react";
 import type { ModuloId } from "@/types/erp";
@@ -62,7 +62,9 @@ export const navGroups: NavGroup[] = [
     ],
   },
   { id: "notas_tecnicas", label: "Notas Técnicas", icon: StickyNote, to: "/notas-tecnicas" },
-  { id: "simples_nacional", label: "Simples Nacional", icon: Percent, to: "/simples-nacional" },
+  // A rota e a permissão permanecem com o identificador legado durante a
+  // transição. Para o usuário, a implantação é uma capacidade única do ERP.
+  { id: "simples_nacional", label: "Implantação", icon: Waypoints, to: "/simples-nacional" },
   { id: "importacoes", label: "Importações", icon: Upload, to: "/importacoes" },
   { id: "integracoes", label: "Integrações", icon: Plug, to: "/integracoes" },
   {
