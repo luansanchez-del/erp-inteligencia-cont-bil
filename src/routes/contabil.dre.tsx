@@ -5,6 +5,9 @@ import { DreSafeBoundary } from "@/components/nitaplast/dre-safe-boundary";
 import { Route as DreJunhoPreservadaRoute } from "@/components/nitaplast/dre-junho-preservada";
 import { Card, CardContent } from "@/components/ui/card";
 import { useErp } from "@/context/erp-context";
+import { DreCompetenciaAberta } from "@/components/competencia-aberta";
+import { useLancamentosCompetencia } from "@/hooks/use-lancamentos-competencia";
+import { temMotorDedicado } from "@/lib/competencia";
 
 export const Route = createFileRoute("/contabil/dre")({ component: DrePage });
 
@@ -39,7 +42,11 @@ function CarregandoDre({ titulo }: { titulo: string }) {
 }
 
 function DrePage() {
-  const { competencia } = useErp();
+  const { empresa, competencia } = useErp();
+
+  if (!temMotorDedicado(competencia.id)) {
+    return <PageShell><DreAbertaWrapper empresaId={empresa.id} competencia={competencia} /></PageShell>;
+  }
 
   if (competencia.id === "2026-07") {
     return (
@@ -66,4 +73,9 @@ function DrePage() {
   }
 
   return <DreJunhoPreservada />;
+}
+
+function DreAbertaWrapper({ empresaId, competencia }: { empresaId: string; competencia: ReturnType<typeof useErp>["competencia"] }) {
+  const { lancamentos } = useLancamentosCompetencia(empresaId, competencia.id);
+  return <DreCompetenciaAberta lancamentos={lancamentos} competencia={competencia} />;
 }
