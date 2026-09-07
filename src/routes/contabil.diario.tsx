@@ -8,11 +8,28 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
+import { useErp } from "@/context/erp-context";
+import { useLancamentosCompetencia } from "@/hooks/use-lancamentos-competencia";
+import { DiarioCompetenciaAberta } from "@/components/competencia-aberta";
+import { temMotorDedicado } from "@/lib/competencia";
 
-export const Route = createFileRoute("/contabil/diario")({ component: DiarioPage });
+export const Route = createFileRoute("/contabil/diario")({ component: DiarioRoteador });
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 function chaveData(data: string) { const br = data.match(/^(\d{2})\/(\d{2})\/(\d{4})$/); return br ? `${br[3]}-${br[2]}-${br[1]}` : data; }
+
+function DiarioRoteador() {
+  const { empresa, competencia } = useErp();
+  if (!temMotorDedicado(competencia.id)) {
+    return <PageShell><PageHeader titulo="Diário Contábil" descricao={`Competência ${competencia.label} • espelho cronológico dos lançamentos.`} /><DiarioAbertoWrapper empresaId={empresa.id} competencia={competencia} /></PageShell>;
+  }
+  return <DiarioPage />;
+}
+
+function DiarioAbertoWrapper({ empresaId, competencia }: { empresaId: string; competencia: ReturnType<typeof useErp>["competencia"] }) {
+  const { lancamentos } = useLancamentosCompetencia(empresaId, competencia.id);
+  return <DiarioCompetenciaAberta lancamentos={lancamentos} competencia={competencia} />;
+}
 
 function DiarioPage() {
   useNitaplastJunho();

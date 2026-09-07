@@ -13,8 +13,19 @@ import { useAjustesLancamentos, type DadosLancamentoManual } from "@/hooks/use-a
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
 import { useCentrosCusto } from "@/hooks/use-centros-custo";
+import { useErp } from "@/context/erp-context";
+import { LancamentosCompetenciaAberta } from "@/components/competencia-aberta";
+import { temMotorDedicado } from "@/lib/competencia";
 
-export const Route = createFileRoute("/contabil/lancamentos")({ component: Lancamentos });
+export const Route = createFileRoute("/contabil/lancamentos")({ component: LancamentosRoteador });
+
+function LancamentosRoteador() {
+  const { empresa, competencia } = useErp();
+  if (!temMotorDedicado(competencia.id)) {
+    return <PageShell><PageHeader titulo="Lançamentos" descricao={`Competência ${competencia.label} • escrituração direta, sem motor dedicado ainda.`} /><LancamentosCompetenciaAberta empresaId={empresa.id} competencia={competencia} /></PageShell>;
+  }
+  return <Lancamentos />;
+}
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 type FiltroStatus = "todos" | "alerta" | "pendente";

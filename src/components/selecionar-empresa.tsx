@@ -3,6 +3,7 @@ import { Building2, ChevronRight, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useErp } from "@/context/erp-context";
 import { useAuth } from "@/context/auth-context";
+import { regimeTexto } from "@/lib/empresa";
 
 export function SelecionarEmpresa({ onConfirmar }: { onConfirmar: () => void }) {
   const { empresas, setEmpresaId } = useErp();
@@ -63,6 +64,9 @@ export function SelecionarEmpresa({ onConfirmar }: { onConfirmar: () => void }) 
                 <span className="block truncate text-sm font-medium">{empresa.nomeFantasia}</span>
                 <span className="block truncate text-xs text-muted-foreground">
                   {empresa.codigo} · {empresa.cnpj}
+                </span>
+                <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                  {regimeTexto(empresa)}{empresa.id === "piloto-simples-demonstracao" ? " · ambiente sem dados reais" : ""}
                 </span>
               </span>
               <ChevronRight className="size-4 shrink-0 text-muted-foreground" />

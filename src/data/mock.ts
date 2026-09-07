@@ -41,10 +41,25 @@ export const empresas: Empresa[] = [
     grupoId: "g-nitaplast",
     ativa: true,
   },
+  {
+    id: "piloto-simples-demonstracao",
+    codigo: "DEMO-001",
+    razaoSocial: "EMPRESA PILOTO DO SIMPLES NACIONAL LTDA",
+    nomeFantasia: "EMPRESA PILOTO — Demonstração",
+    cnpj: "00.000.000/0000-00",
+    municipio: "Curitiba",
+    uf: "PR",
+    atividade: "Serviços",
+    tipo: "matriz",
+    regime: "simples",
+    regimeConfirmado: true,
+    ativa: true,
+  },
 ];
 
 export const competenciasDisponiveis: { id: string; label: string; status: StatusCompetencia }[] = [
-  { id: "2026-07", label: "07/2026", status: "em_fechamento" },
+  { id: "2026-08", label: "08/2026", status: "aberta" },
+  { id: "2026-07", label: "07/2026", status: "fechada" },
   { id: "2026-06", label: "06/2026", status: "fechada" },
   { id: "2026-05", label: "05/2026", status: "fechada" },
 ];

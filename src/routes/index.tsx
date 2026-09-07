@@ -12,7 +12,6 @@ import { PageHeader, PageShell } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useErp } from "@/context/erp-context";
-import { empresas } from "@/data/mock";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -32,17 +31,6 @@ export const Route = createFileRoute("/")({
   component: Dashboard,
 });
 
-const indicadores = [
-  { label: "Lançamentos na competência", valor: "—", nota: "aguardando motor contábil" },
-  { label: "Lotes pendentes", valor: "—", nota: "sem processamento nesta etapa" },
-  { label: "Itens a conciliar", valor: "—", nota: "conciliação não implementada" },
-  {
-    label: "Estabelecimentos ativos",
-    valor: String(empresas.filter((e) => e.ativa).length),
-    nota: "grupo NITAPLAST — matriz e filial SP",
-  },
-];
-
 const atalhos = [
   { label: "Empresas", to: "/empresas", icon: Building2 },
   { label: "Lançamentos", to: "/contabil/lancamentos", icon: BookOpen },
@@ -53,13 +41,27 @@ const atalhos = [
 
 function Dashboard() {
   const { empresa, competencia } = useErp();
+  const baseNitaplast = empresa.grupoId === "g-nitaplast";
+  const indicadores = baseNitaplast
+    ? [
+        { label: "Base contábil", valor: "Ativa", nota: "histórico da Nitaplast preservado" },
+        { label: "Competência", valor: competencia.label, nota: competencia.status === "fechada" ? "fechamento concluído" : "em processamento" },
+        { label: "Estabelecimento", valor: empresa.tipo === "matriz" ? "Matriz" : "Filial", nota: empresa.cnpj },
+        { label: "Proteção", valor: "Legado", nota: "novo fluxo sem escrita nesta base" },
+      ]
+    : [
+        { label: "Cadastro", valor: "Concluído", nota: "empresa identificada para demonstração" },
+        { label: "Documentos", valor: "0", nota: "aguardando PIER, Questor ou arquivos" },
+        { label: "Plano e saldos", valor: "Pendente", nota: "nenhum saldo implantado" },
+        { label: "Efetivação", valor: "Bloqueada", nota: "liberada somente após conferência" },
+      ];
 
   return (
     <PageShell>
       <PageHeader
         titulo="Dashboard"
         descricao={`Panorama de ${empresa.nomeFantasia} na competência ${competencia.label}.`}
-        acoes={<Badge variant="outline">Fundação — sem motor contábil</Badge>}
+        acoes={<Badge variant="outline">{baseNitaplast ? "Base contábil preservada" : "Empresa piloto — demonstração"}</Badge>}
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -115,8 +117,9 @@ function Dashboard() {
             </div>
             <p className="flex items-start gap-2 rounded-md bg-muted/60 p-3 text-xs text-muted-foreground">
               <CircleAlert className="mt-0.5 size-4 shrink-0" />
-              Etapa atual é a fundação visual: nenhuma regra contábil, importação ou integração está
-              ativa.
+              {baseNitaplast
+                ? "Os dados contábeis existentes permanecem no motor preservado da Nitaplast."
+                : "Empresa isolada para visualizar a automação. Nenhum dado da Nitaplast é utilizado como fallback."}
             </p>
           </CardContent>
         </Card>

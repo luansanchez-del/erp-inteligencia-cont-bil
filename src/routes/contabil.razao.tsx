@@ -14,6 +14,9 @@ import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
 import { saldosImplantacao } from "@/data/nitaplast-implantacao";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
+import { useLancamentosCompetencia } from "@/hooks/use-lancamentos-competencia";
+import { RazaoCompetenciaAberta } from "@/components/competencia-aberta";
+import { temMotorDedicado } from "@/lib/competencia";
 
 export const Route = createFileRoute("/contabil/razao")({ component: RazaoPage });
 
@@ -22,11 +25,19 @@ const POR_PAGINA = 100;
 type Modo = "contabil" | "implantacao" | "financeiro";
 
 function RazaoPage() {
-  const { competencia } = useErp();
+  const { empresa, competencia } = useErp();
   if (competencia.id === "2026-07") {
     return <PageShell><RazaoJulhoAjustavel /></PageShell>;
   }
+  if (!temMotorDedicado(competencia.id)) {
+    return <PageShell><RazaoAbertaWrapper empresaId={empresa.id} competencia={competencia} /></PageShell>;
+  }
   return <RazaoJunhoPage />;
+}
+
+function RazaoAbertaWrapper({ empresaId, competencia }: { empresaId: string; competencia: ReturnType<typeof useErp>["competencia"] }) {
+  const { lancamentos } = useLancamentosCompetencia(empresaId, competencia.id);
+  return <RazaoCompetenciaAberta lancamentos={lancamentos} competencia={competencia} />;
 }
 
 function RazaoJunhoPage() {
