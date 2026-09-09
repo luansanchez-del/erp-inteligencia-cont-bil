@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { lancamentosIntegradosAgosto } from "@/data/nitaplast-razao-agosto";
 
 const STORAGE_KEY = "erp-lancamentos-competencia-v1";
 
@@ -20,6 +21,10 @@ export type LancamentoCompetencia = {
   origem: OrigemLancamentoCompetencia;
   /** Quando origem = "importado": id do item em `ItemDossieImportacao` que gerou este lançamento. */
   origemDossieId?: string | undefined;
+  estornadoDeId?: string | undefined;
+  status?: "validado" | "revisar" | undefined;
+  observacao?: string | undefined;
+  fonte?: string | undefined;
 };
 
 export type DadosLancamentoCompetencia = Omit<LancamentoCompetencia, "id" | "empresaId" | "competenciaId" | "criadoEm" | "origem" | "origemDossieId">;
@@ -55,9 +60,34 @@ export function useLancamentosCompetencia(empresaId: string, competenciaId: stri
     }
   }
 
+  const lancamentosBase = useMemo<LancamentoCompetencia[]>(() => {
+    if (empresaId !== "nitaplast-matriz" || competenciaId !== "2026-08") return [];
+    return lancamentosIntegradosAgosto.map((linha) => ({
+      id: linha.id,
+      empresaId,
+      competenciaId,
+      data: linha.data.split("/").reverse().join("-"),
+      debitoCodigo: linha.debitoCodigo,
+      creditoCodigo: linha.creditoCodigo,
+      historico: linha.historico,
+      documento: linha.documento,
+      cc: linha.cc,
+      centroCusto: linha.centroCusto,
+      valor: linha.valor,
+      criadoEm: "2026-08-31T23:59:59.000Z",
+      origem: "importado",
+      status: linha.status,
+      observacao: linha.observacao,
+      fonte: linha.fonte,
+    }));
+  }, [competenciaId, empresaId]);
+
   const lancamentos = useMemo(
-    () => todos.filter((item) => item.empresaId === empresaId && item.competenciaId === competenciaId),
-    [todos, empresaId, competenciaId],
+    () => [
+      ...lancamentosBase,
+      ...todos.filter((item) => item.empresaId === empresaId && item.competenciaId === competenciaId),
+    ],
+    [todos, empresaId, competenciaId, lancamentosBase],
   );
 
   function registrar(dados: DadosLancamentoCompetencia, origem: OrigemLancamentoCompetencia = "manual", origemDossieId?: string): LancamentoCompetencia {
@@ -75,7 +105,26 @@ export function useLancamentosCompetencia(empresaId: string, competenciaId: stri
   }
 
   function remover(id: string) {
-    persistir(todos.filter((item) => item.id !== id));
+    const original = lancamentos.find((item) => item.id === id);
+    if (!original) return;
+    const estorno: LancamentoCompetencia = {
+      ...original,
+      id: `EST-${competenciaId}-${Date.now()}-${Math.round(Math.random() * 1e6)}`,
+      empresaId,
+      competenciaId,
+      debitoCodigo: original.creditoCodigo,
+      creditoCodigo: original.debitoCodigo,
+      historico: `Estorno de ${original.id} — ${original.historico}`,
+      documento: original.documento || original.id,
+      criadoEm: new Date().toISOString(),
+      origem: "manual",
+      origemDossieId: original.origemDossieId,
+      estornadoDeId: original.id,
+      status: "validado",
+      observacao: `Exclusão contábil por estorno. O lançamento original ${original.id} permanece preservado.`,
+      fonte: `Ação manual; origem preservada: ${original.fonte ?? original.origemDossieId ?? original.id}`,
+    };
+    persistir([...todos, estorno]);
   }
 
   return { lancamentos, registrar, remover };
