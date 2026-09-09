@@ -131,6 +131,7 @@ const matriculasAgosto = new Set(folhaAgostoDetalhe.map((colaborador) => colabor
 export const comparacaoFolhaJulhoAgosto = {
   entradas: folhaAgostoDetalhe.filter((colaborador) => !matriculasJulho.has(colaborador.matricula)).map(({ matricula, nome, cc, unidade }) => ({ matricula, nome, cc, unidade })),
   saidas: [...matriculasJulho].filter((matricula) => !matriculasAgosto.has(matricula)),
+  desligadosNaCompetencia: folhaAgostoDetalhe.filter((colaborador) => colaborador.rescisao).map(({ matricula, nome, cc, unidade }) => ({ matricula, nome, cc, unidade })),
   totalJulho: matriculasJulho.size,
   totalAgosto: matriculasAgosto.size,
 } as const;
@@ -157,6 +158,7 @@ export const resumoFolhaAgosto = {
 } as const;
 
 if (comparacaoFolhaJulhoAgosto.entradas.length !== 1 || comparacaoFolhaJulhoAgosto.entradas[0]?.matricula !== "30357") throw new Error("Entrada da folha de agosto divergente");
-if (comparacaoFolhaJulhoAgosto.saidas.length !== 1 || comparacaoFolhaJulhoAgosto.saidas[0] !== "30355") throw new Error("Saída da folha de agosto divergente");
+if (comparacaoFolhaJulhoAgosto.saidas.length !== 0) throw new Error("Saída da folha de agosto divergente");
+if (comparacaoFolhaJulhoAgosto.desligadosNaCompetencia.length !== 1 || comparacaoFolhaJulhoAgosto.desligadosNaCompetencia[0]?.matricula !== "30355") throw new Error("Rescisão da folha de agosto divergente");
 if (arred(folhaAgostoDetalhe.filter((colaborador) => colaborador.unidade === "Matriz").reduce((total, colaborador) => total + colaborador.baseEncargos, 0)) !== resumoFolhaAgosto.baseInssMatriz) throw new Error("Base INSS da Matriz em agosto divergente");
 if (arred(folhaAgostoDetalhe.filter((colaborador) => colaborador.unidade === "Filial SP").reduce((total, colaborador) => total + colaborador.baseEncargos, 0)) !== resumoFolhaAgosto.baseInssFilial) throw new Error("Base INSS da Filial em agosto divergente");
