@@ -8,7 +8,7 @@ import { useErp } from "@/context/erp-context";
 import { DreCompetenciaAberta } from "@/components/competencia-aberta";
 import { useLancamentosCompetencia } from "@/hooks/use-lancamentos-competencia";
 import { temMotorDedicado } from "@/lib/competencia";
-import { DreAgostoCompleta } from "@/components/nitaplast/contabil-agosto-completo";
+import { DreAgostoPadrao } from "@/components/nitaplast/contabil-agosto-completo";
 
 export const Route = createFileRoute("/contabil/dre")({ component: DrePage });
 
@@ -35,19 +35,26 @@ const DreJulhoCompleta = lazy(() =>
 function CarregandoDre({ titulo }: { titulo: string }) {
   return (
     <Card>
-      <CardContent className="pt-5 text-sm text-muted-foreground">
-        Carregando {titulo}…
-      </CardContent>
+      <CardContent className="pt-5 text-sm text-muted-foreground">Carregando {titulo}…</CardContent>
     </Card>
   );
 }
 
 function DrePage() {
   const { empresa, competencia } = useErp();
-  if (competencia.id === "2026-08") return <PageShell><DreAgostoCompleta /></PageShell>;
+  if (competencia.id === "2026-08")
+    return (
+      <PageShell>
+        <DreAgostoPadrao />
+      </PageShell>
+    );
 
   if (!temMotorDedicado(competencia.id)) {
-    return <PageShell><DreAbertaWrapper empresaId={empresa.id} competencia={competencia} /></PageShell>;
+    return (
+      <PageShell>
+        <DreAbertaWrapper empresaId={empresa.id} competencia={competencia} />
+      </PageShell>
+    );
   }
 
   if (competencia.id === "2026-07") {
@@ -77,7 +84,13 @@ function DrePage() {
   return <DreJunhoPreservada />;
 }
 
-function DreAbertaWrapper({ empresaId, competencia }: { empresaId: string; competencia: ReturnType<typeof useErp>["competencia"] }) {
+function DreAbertaWrapper({
+  empresaId,
+  competencia,
+}: {
+  empresaId: string;
+  competencia: ReturnType<typeof useErp>["competencia"];
+}) {
   const { lancamentos } = useLancamentosCompetencia(empresaId, competencia.id);
   return <DreCompetenciaAberta lancamentos={lancamentos} competencia={competencia} />;
 }
