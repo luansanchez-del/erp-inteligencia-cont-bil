@@ -107,7 +107,7 @@ export function LancamentosCompetenciaAberta({ empresaId, competencia }: { empre
           <CardHeader><CardTitle className="text-base">Lançamentos de {competencia.label}</CardTitle><CardDescription>{lancamentos.length} partida(s) registrada(s) diretamente nesta competência.</CardDescription></CardHeader>
           <CardContent className="overflow-x-auto">
             <table className="w-full min-w-[1100px] text-sm">
-              <thead><tr className="border-b bg-muted/40 text-left text-xs"><th className="p-2">Data</th><th className="p-2">Débito</th><th className="p-2">Crédito</th><th className="p-2">Histórico</th><th className="p-2">Documento</th><th className="p-2 text-right">Valor</th>{fechada ? null : <th className="p-2 text-right">Ações</th>}</tr></thead>
+              <thead><tr className="border-b bg-muted/40 text-left text-xs"><th className="p-2">Data</th><th className="p-2">Débito</th><th className="p-2">Crédito</th><th className="p-2">Histórico</th><th className="p-2">Documento</th><th className="p-2">Origem</th><th className="p-2 text-right">Valor</th>{fechada ? null : <th className="p-2 text-right">Ações</th>}</tr></thead>
               <tbody>{lancamentos.map((l) => <LinhaLancamento key={l.id} lancamento={l} onRemover={fechada ? undefined : () => remover(l.id)} />)}</tbody>
             </table>
           </CardContent>
@@ -127,6 +127,7 @@ function LinhaLancamento({ lancamento, onRemover }: { lancamento: LancamentoComp
       <td className="p-2">{lancamento.creditoCodigo} — {credito?.descricao ?? "conta não cadastrada"}</td>
       <td className="max-w-[420px] p-2 text-muted-foreground">{lancamento.historico}</td>
       <td className="p-2 font-mono text-xs">{lancamento.documento || "—"}</td>
+      <td className="p-2">{lancamento.origem === "importado" ? <Badge variant="outline" className="border-blue-400 text-blue-800">Importado</Badge> : <Badge variant="outline">Manual</Badge>}</td>
       <td className="p-2 text-right tabular-nums">{brl.format(lancamento.valor)}</td>
       {onRemover ? <td className="p-2 text-right"><Button variant="outline" size="sm" className="gap-1 text-red-700" onClick={onRemover}><Trash2 className="size-3.5" /> Remover</Button></td> : null}
     </tr>
