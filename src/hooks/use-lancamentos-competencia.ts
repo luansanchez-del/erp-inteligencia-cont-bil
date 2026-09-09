@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { lancamentosIntegradosAgosto } from "@/data/nitaplast-razao-agosto";
+import { temBaseContabilCarregada } from "@/lib/bases-contabeis";
 
 const STORAGE_KEY = "erp-lancamentos-competencia-v1";
 
@@ -61,7 +62,7 @@ export function useLancamentosCompetencia(empresaId: string, competenciaId: stri
   }
 
   const lancamentosBase = useMemo<LancamentoCompetencia[]>(() => {
-    if (empresaId !== "nitaplast-matriz" || competenciaId !== "2026-08") return [];
+    if (!temBaseContabilCarregada(empresaId, competenciaId)) return [];
     return lancamentosIntegradosAgosto.map((linha) => ({
       id: linha.id,
       empresaId,
