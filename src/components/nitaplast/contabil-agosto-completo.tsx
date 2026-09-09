@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { estruturaBalanceteNitaplast } from "@/data/nitaplast-balancete-estrutura";
 import { saldosImplantacao } from "@/data/nitaplast-implantacao";
 import { saldoAberturaAgostoPorConta } from "@/data/nitaplast-saldos-agosto";
@@ -689,64 +690,74 @@ export function DreAgostoPadrao() {
         <Metric label="Despesas operacionais" valor={despesas} />
         <Metric label="Resultado" valor={resultado} />
       </div>
-      <AnaliseVerticalDre
-        agosto={{
-          receitaBruta,
-          deducoes,
-          receitaLiquida,
-          cpv,
-          lucroBruto,
-          despesas,
-          resultadoFinanceiro: arred(receitasFinanceiras - despesasFinanceiras),
-          resultadoOperacional,
-          naoOperacional,
-          resultado,
-        }}
-      />
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            Demonstração do Resultado do Exercício — 08/2026
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40">
-                <th className="p-2 text-left">Descrição</th>
-                <th className="p-2 text-right">Valor</th>
-                <th className="p-2 text-right">% Receita</th>
-              </tr>
-            </thead>
-            <tbody>
-              {linhas
-                .filter((l) => !l.pai || abertas.has(l.pai))
-                .map((l) => (
-                  <tr key={l.id} className={`border-b ${l.nivel === 0 ? "font-semibold" : ""}`}>
-                    <td className={`p-2 ${l.nivel === 1 ? "pl-10" : ""}`}>
-                      {pais.has(l.id) ? (
-                        <button className="mr-2 inline-flex" onClick={() => alternar(l.id)}>
-                          {abertas.has(l.id) ? (
-                            <ChevronDown className="size-4" />
-                          ) : (
-                            <ChevronRight className="size-4" />
-                          )}
-                        </button>
-                      ) : null}
-                      {l.descricao}
-                    </td>
-                    <td className="p-2 text-right tabular-nums">{brl.format(l.valor)}</td>
-                    <td className="p-2 text-right tabular-nums">
-                      {receitaBruta
-                        ? `${((l.valor / receitaBruta) * 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`
-                        : "0,00%"}
-                    </td>
+      <Tabs defaultValue="composicao" className="grid gap-3">
+        <TabsList className="w-fit">
+          <TabsTrigger value="composicao">Composição da DRE</TabsTrigger>
+          <TabsTrigger value="analise">Análise vertical e horizontal</TabsTrigger>
+        </TabsList>
+        <TabsContent value="composicao">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                Demonstração do Resultado do Exercício — 08/2026
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/40">
+                    <th className="p-2 text-left">Descrição</th>
+                    <th className="p-2 text-right">Valor</th>
+                    <th className="p-2 text-right">% Receita</th>
                   </tr>
-                ))}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
+                </thead>
+                <tbody>
+                  {linhas
+                    .filter((l) => !l.pai || abertas.has(l.pai))
+                    .map((l) => (
+                      <tr key={l.id} className={`border-b ${l.nivel === 0 ? "font-semibold" : ""}`}>
+                        <td className={`p-2 ${l.nivel === 1 ? "pl-10" : ""}`}>
+                          {pais.has(l.id) ? (
+                            <button className="mr-2 inline-flex" onClick={() => alternar(l.id)}>
+                              {abertas.has(l.id) ? (
+                                <ChevronDown className="size-4" />
+                              ) : (
+                                <ChevronRight className="size-4" />
+                              )}
+                            </button>
+                          ) : null}
+                          {l.descricao}
+                        </td>
+                        <td className="p-2 text-right tabular-nums">{brl.format(l.valor)}</td>
+                        <td className="p-2 text-right tabular-nums">
+                          {receitaBruta
+                            ? `${((l.valor / receitaBruta) * 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`
+                            : "0,00%"}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="analise">
+          <AnaliseVerticalDre
+            agosto={{
+              receitaBruta,
+              deducoes,
+              receitaLiquida,
+              cpv,
+              lucroBruto,
+              despesas,
+              resultadoFinanceiro: arred(receitasFinanceiras - despesasFinanceiras),
+              resultadoOperacional,
+              naoOperacional,
+              resultado,
+            }}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
