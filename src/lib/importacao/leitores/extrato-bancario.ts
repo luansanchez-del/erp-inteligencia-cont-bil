@@ -98,6 +98,10 @@ function lerExtratoBancoBrasil(linhasPdf: LinhaPdf[]): ResultadoLeituraDocumento
 }
 
 const LINHA_ITAU = /^(\d{2}\/\d{2}\/\d{4})\s+(.+?)(?:\s+(\d{2,3}\.\d{3}\.\d{3}[/-]\d{4}-\d{2}|\d{3}\.\d{3}\.\d{3}-\d{2}))?\s+(-?[\d.]+,\d{2})$/;
+// Layout Itaú às vezes quebra "data + descrição" e "valor" em duas linhas visuais distintas
+// (ex.: rendimento diário de aplicação automática) — a descrição some numa linha própria e
+// sobra só "data + valor" na linha seguinte, sem bater com LINHA_ITAU.
+const LINHA_ITAU_SEM_DESCRICAO = /^(\d{2}\/\d{2}\/\d{4})\s+(-?[\d.]+,\d{2})$/;
 
 function lerExtratoItau(linhasPdf: LinhaPdf[]): ResultadoLeituraDocumento {
   const linhasTexto = linhasPdf.map(textoLinha);
@@ -117,38 +121,58 @@ function lerExtratoItau(linhasPdf: LinhaPdf[]): ResultadoLeituraDocumento {
   const linhas: LinhaPreviaImportacao[] = [];
   let saldoAnterior: number | null = null;
   let acumulado = 0;
+  let ultimoSaldoDiario: number | null = null;
 
-  for (const texto of linhasTexto) {
-    const m = LINHA_ITAU.exec(texto);
-    if (!m) continue;
-    const [, data, descricao, documento, valorStr] = m;
-    const valor = parseValorBR(valorStr!);
-    if (/^SALDO ANTERIOR$/i.test(descricao!.trim())) { saldoAnterior = valor; acumulado = valor; continue; }
-    // Linhas de resumo diário ("SALDO TOTAL DISPONÍVEL DIA" etc.) não são movimento — não têm
-    // CNPJ/CPF de contraparte e o texto começa por "SALDO". Contá-las duplicaria o saldo do dia.
-    if (!documento && /^SALDO\b/i.test(descricao!.trim())) continue;
+  function registrarLinha(data: string, descricao: string, documento: string | undefined, valor: number) {
     acumulado += valor;
     const debitoCodigo = valor >= 0 ? (contaBanco?.codigo ?? "") : CONTA_TRANSITORIA;
     const creditoCodigo = valor >= 0 ? CONTA_TRANSITORIA : (contaBanco?.codigo ?? "");
     const achadosLinha: AchadoImportacao[] = [{ severidade: "alerta", mensagem: "Contrapartida sugerida automaticamente como 4859 - Conta Transitória. Ajuste a conta correta antes de aprovar." }];
     if (!contaBanco) achadosLinha.push({ severidade: "impedimento", mensagem: "Conta bancária não mapeada — ver achado geral do documento." });
     linhas.push(novaLinhaPrevia({
-      data: paraIso(data!),
+      data: paraIso(data),
       debitoCodigo,
       creditoCodigo,
-      historico: `${descricao!.trim()}${documento ? ` — ${documento}` : ""} (extrato Itaú)`,
+      historico: `${descricao}${documento ? ` — ${documento}` : ""} (extrato Itaú)`,
       documento: documento ?? "",
       valor: Math.abs(valor),
       achados: achadosLinha,
     }));
   }
 
+  for (const texto of linhasTexto) {
+    const m = LINHA_ITAU.exec(texto);
+    if (!m) {
+      // Layout às vezes separa "data + valor" da descrição (ex.: rendimento diário de aplicação
+      // automática) em duas linhas visuais — captura o valor mesmo sem a descrição, pra não
+      // perder centavos e deixar o extrato sem fechar.
+      const semDesc = LINHA_ITAU_SEM_DESCRICAO.exec(texto);
+      if (semDesc) {
+        const [, data, valorStr] = semDesc;
+        registrarLinha(data!, "Lançamento sem descrição capturada pelo layout do PDF (provável rendimento de aplicação automática)", undefined, parseValorBR(valorStr!));
+      }
+      continue;
+    }
+    const [, data, descricao, documento, valorStr] = m;
+    const valor = parseValorBR(valorStr!);
+    if (/^SALDO ANTERIOR$/i.test(descricao!.trim())) { saldoAnterior = valor; acumulado = valor; continue; }
+    // Linhas de resumo diário ("SALDO TOTAL DISPONÍVEL DIA") não são movimento — mas servem de
+    // checkpoint pra conferir o fechamento real do período (o "Saldo total" do cabeçalho é o saldo
+    // atual/do dia da extração, não o saldo em 31 do mês, então não pode ser usado pra isso).
+    if (!documento && /^SALDO\b/i.test(descricao!.trim())) {
+      if (/^SALDO TOTAL DISPON/i.test(descricao!.trim())) ultimoSaldoDiario = valor;
+      continue;
+    }
+    registrarLinha(data!, descricao!.trim(), documento, valor);
+  }
+
+  const saldoReferenciaFechamento = ultimoSaldoDiario ?? saldoTotalInformado;
   if (saldoAnterior === null) {
     achadosDoc.push({ severidade: "alerta", mensagem: "Não encontrei a linha 'SALDO ANTERIOR' — não foi possível conferir o fechamento do extrato." });
-  } else if (saldoTotalInformado === null) {
-    achadosDoc.push({ severidade: "alerta", mensagem: "Não encontrei o 'Saldo total' do cabeçalho — não foi possível conferir o fechamento do extrato." });
-  } else if (Math.abs(acumulado - saldoTotalInformado) > TOLERANCIA_FECHAMENTO) {
-    achadosDoc.push({ severidade: "impedimento", mensagem: `Extrato não fecha: saldo total informado (${brl(saldoTotalInformado)}) não bate com saldo anterior + soma dos lançamentos lidos (${brl(acumulado)}). Não gerar lançamentos até revisar.` });
+  } else if (saldoReferenciaFechamento === null) {
+    achadosDoc.push({ severidade: "alerta", mensagem: "Não encontrei nem o 'Saldo total' do cabeçalho nem um checkpoint 'SALDO TOTAL DISPONÍVEL DIA' — não foi possível conferir o fechamento do extrato." });
+  } else if (Math.abs(acumulado - saldoReferenciaFechamento) > TOLERANCIA_FECHAMENTO) {
+    achadosDoc.push({ severidade: "impedimento", mensagem: `Extrato não fecha: ${ultimoSaldoDiario !== null ? "último checkpoint diário do período" : "saldo total informado no cabeçalho"} (${brl(saldoReferenciaFechamento)}) não bate com saldo anterior + soma dos lançamentos lidos (${brl(acumulado)}). Não gerar lançamentos até revisar.` });
   }
   return { suportado: true, linhas, achados: achadosDoc };
 }

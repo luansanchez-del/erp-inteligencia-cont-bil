@@ -47,6 +47,12 @@ const CONTAS_SOFTDIB: { descBanco: string; codigo: string }[] = [
   { descBanco: "BANCO DO BRASIL SA", codigo: "10" },
   { descBanco: "BRADESCO  C/C", codigo: "9" },
   { descBanco: "BANCO ITAU C/C", codigo: "11" },
+  // Conferidos contra `saldosImplantacao` (nitaplast-implantacao-parte-1.ts) e contra o padrão de
+  // lançamento já usado em julho (nitaplast-bancos-julho.ts) para os mesmos bancos de aplicação.
+  { descBanco: "BRADESCO APLICACAO", codigo: "62" }, // Banco Bradesco (aplicação) — igual ao débito usado em "Aplicação Invest Fácil Bradesco 895" em julho.
+  { descBanco: "BANCO BRADESCO S.A.", codigo: "25001" }, // Banco Bradesco 895 27418-6 (conta "Bradesco energia").
+  { descBanco: "BANCO ITAU APLICACAO", codigo: "25002" }, // Trust DI Aplicação — mesma conta usada como contrapartida direta da 11 em julho.
+  { descBanco: "GREENCRED - COOPERATIVA DE CREDITO", codigo: "21" }, // Banco Greencred (conta principal); RDC/capital (25110/25035/4908) fica para reclassificação manual linha a linha.
 ];
 
 export function contaSoftdibPor(descBanco: string): string | undefined {
