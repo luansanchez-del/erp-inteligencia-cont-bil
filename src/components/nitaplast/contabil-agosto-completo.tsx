@@ -689,6 +689,20 @@ export function DreAgostoPadrao() {
         <Metric label="Despesas operacionais" valor={despesas} />
         <Metric label="Resultado" valor={resultado} />
       </div>
+      <AnaliseVerticalDre
+        agosto={{
+          receitaBruta,
+          deducoes,
+          receitaLiquida,
+          cpv,
+          lucroBruto,
+          despesas,
+          resultadoFinanceiro: arred(receitasFinanceiras - despesasFinanceiras),
+          resultadoOperacional,
+          naoOperacional,
+          resultado,
+        }}
+      />
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
@@ -733,20 +747,6 @@ export function DreAgostoPadrao() {
           </table>
         </CardContent>
       </Card>
-      <AnaliseVerticalDre
-        agosto={{
-          receitaBruta,
-          deducoes,
-          receitaLiquida,
-          cpv,
-          lucroBruto,
-          despesas,
-          resultadoFinanceiro: arred(receitasFinanceiras - despesasFinanceiras),
-          resultadoOperacional,
-          naoOperacional,
-          resultado,
-        }}
-      />
     </div>
   );
 }
