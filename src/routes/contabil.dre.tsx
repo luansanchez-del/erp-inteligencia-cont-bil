@@ -8,6 +8,7 @@ import { useErp } from "@/context/erp-context";
 import { DreCompetenciaAberta } from "@/components/competencia-aberta";
 import { useLancamentosCompetencia } from "@/hooks/use-lancamentos-competencia";
 import { temMotorDedicado } from "@/lib/competencia";
+import { DreAgostoCompleta } from "@/components/nitaplast/contabil-agosto-completo";
 
 export const Route = createFileRoute("/contabil/dre")({ component: DrePage });
 
@@ -43,6 +44,7 @@ function CarregandoDre({ titulo }: { titulo: string }) {
 
 function DrePage() {
   const { empresa, competencia } = useErp();
+  if (competencia.id === "2026-08") return <PageShell><DreAgostoCompleta /></PageShell>;
 
   if (!temMotorDedicado(competencia.id)) {
     return <PageShell><DreAbertaWrapper empresaId={empresa.id} competencia={competencia} /></PageShell>;

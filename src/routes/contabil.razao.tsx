@@ -17,6 +17,7 @@ import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-in
 import { useLancamentosCompetencia } from "@/hooks/use-lancamentos-competencia";
 import { RazaoCompetenciaAberta } from "@/components/competencia-aberta";
 import { temMotorDedicado } from "@/lib/competencia";
+import { RazaoAgostoCompleto } from "@/components/nitaplast/contabil-agosto-completo";
 
 export const Route = createFileRoute("/contabil/razao")({ component: RazaoPage });
 
@@ -29,6 +30,7 @@ function RazaoPage() {
   if (competencia.id === "2026-07") {
     return <PageShell><RazaoJulhoAjustavel /></PageShell>;
   }
+  if (competencia.id === "2026-08") return <PageShell><RazaoAgostoCompleto /></PageShell>;
   if (!temMotorDedicado(competencia.id)) {
     return <PageShell><RazaoAbertaWrapper empresaId={empresa.id} competencia={competencia} /></PageShell>;
   }

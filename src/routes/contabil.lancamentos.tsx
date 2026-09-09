@@ -16,11 +16,13 @@ import { useCentrosCusto } from "@/hooks/use-centros-custo";
 import { useErp } from "@/context/erp-context";
 import { LancamentosCompetenciaAberta } from "@/components/competencia-aberta";
 import { temMotorDedicado } from "@/lib/competencia";
+import { LancamentosAgostoCompleto } from "@/components/nitaplast/contabil-agosto-completo";
 
 export const Route = createFileRoute("/contabil/lancamentos")({ component: LancamentosRoteador });
 
 function LancamentosRoteador() {
   const { empresa, competencia } = useErp();
+  if (competencia.id === "2026-08") return <PageShell><LancamentosAgostoCompleto /></PageShell>;
   if (!temMotorDedicado(competencia.id)) {
     return <PageShell><PageHeader titulo="Lançamentos" descricao={`Competência ${competencia.label} • escrituração direta, sem motor dedicado ainda.`} /><LancamentosCompetenciaAberta empresaId={empresa.id} competencia={competencia} /></PageShell>;
   }

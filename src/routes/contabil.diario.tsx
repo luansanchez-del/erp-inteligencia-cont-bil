@@ -12,6 +12,7 @@ import { useErp } from "@/context/erp-context";
 import { useLancamentosCompetencia } from "@/hooks/use-lancamentos-competencia";
 import { DiarioCompetenciaAberta } from "@/components/competencia-aberta";
 import { temMotorDedicado } from "@/lib/competencia";
+import { DiarioAgostoCompleto } from "@/components/nitaplast/contabil-agosto-completo";
 
 export const Route = createFileRoute("/contabil/diario")({ component: DiarioRoteador });
 
@@ -20,6 +21,7 @@ function chaveData(data: string) { const br = data.match(/^(\d{2})\/(\d{2})\/(\d
 
 function DiarioRoteador() {
   const { empresa, competencia } = useErp();
+  if (competencia.id === "2026-08") return <PageShell><DiarioAgostoCompleto /></PageShell>;
   if (!temMotorDedicado(competencia.id)) {
     return <PageShell><PageHeader titulo="Diário Contábil" descricao={`Competência ${competencia.label} • espelho cronológico dos lançamentos.`} /><DiarioAbertoWrapper empresaId={empresa.id} competencia={competencia} /></PageShell>;
   }

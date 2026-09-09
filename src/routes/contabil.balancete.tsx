@@ -6,6 +6,7 @@ import { BalanceteMaioDominio } from "@/components/nitaplast/balancete-maio-domi
 import { BalanceteCompetenciaAberta } from "@/components/competencia-aberta";
 import { useLancamentosCompetencia } from "@/hooks/use-lancamentos-competencia";
 import { temMotorDedicado } from "@/lib/competencia";
+import { BalanceteAgostoCompleto } from "@/components/nitaplast/contabil-agosto-completo";
 
 export const Route = createFileRoute("/contabil/balancete")({ component: BalancetePage });
 
@@ -23,6 +24,7 @@ function BalancetePage() {
       </PageShell>
     );
   }
+  if (competencia.id === "2026-08") return <PageShell><BalanceteAgostoCompleto /></PageShell>;
 
   if (!temMotorDedicado(competencia.id)) {
     return <PageShell><BalanceteAbertoWrapper empresaId={empresa.id} competencia={competencia} /></PageShell>;
