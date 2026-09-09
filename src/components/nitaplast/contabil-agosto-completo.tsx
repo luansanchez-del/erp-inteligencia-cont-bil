@@ -203,20 +203,6 @@ export function BalanceteAgostoCompleto() {
           </table>
         </CardContent>
       </Card>
-      <AnaliseVerticalDre
-        agosto={{
-          receitaBruta,
-          deducoes,
-          receitaLiquida,
-          cpv,
-          lucroBruto,
-          despesas,
-          resultadoFinanceiro: arred(receitasFinanceiras - despesasFinanceiras),
-          resultadoOperacional,
-          naoOperacional,
-          resultado,
-        }}
-      />
     </div>
   );
 }
@@ -747,6 +733,20 @@ export function DreAgostoPadrao() {
           </table>
         </CardContent>
       </Card>
+      <AnaliseVerticalDre
+        agosto={{
+          receitaBruta,
+          deducoes,
+          receitaLiquida,
+          cpv,
+          lucroBruto,
+          despesas,
+          resultadoFinanceiro: arred(receitasFinanceiras - despesasFinanceiras),
+          resultadoOperacional,
+          naoOperacional,
+          resultado,
+        }}
+      />
     </div>
   );
 }
