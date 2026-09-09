@@ -11,6 +11,7 @@ import { DreJulhoCompleta } from "@/components/nitaplast/dre-julho-completa";
 import { FechamentoNitaplastJulho } from "@/components/nitaplast/fechamento-julho";
 import { FechamentoBancarioJulho } from "@/components/nitaplast/fechamento-bancario-julho";
 import { LalurJulho } from "@/components/nitaplast/lalur-julho";
+import { temBaseContabilCarregada } from "@/lib/bases-contabeis";
 
 const DreJulhoReport = lazy(() => import("@/components/nitaplast/dre-julho-report").then((modulo) => ({ default: modulo.DreJulhoReport })));
 
@@ -100,7 +101,9 @@ export function PageShell({ children }: { children: ReactNode }) {
 
     const balanceteDominioMaioCarregado = competencia.id === "2026-05" && pathname === "/contabil/balancete";
 
-    if (sensivel && competencia.id !== "2026-06" && competencia.id !== "2026-07" && !balanceteDominioMaioCarregado) {
+    const baseGenericaCarregada = temBaseContabilCarregada(empresa.id, competencia.id);
+
+    if (sensivel && competencia.id !== "2026-06" && competencia.id !== "2026-07" && !balanceteDominioMaioCarregado && !baseGenericaCarregada) {
       conteudo = (
         <>
           <PageHeader
