@@ -21,11 +21,10 @@ const nomeConta = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(cod
  * - Bradesco 895 (conta de energia) é a única fonte deste mês com extrato PDF
  *   completo E anexo de obrigações CCEE (Smart Energia) cruzando os mesmos valores
  *   — por isso é o único bloco com lançamentos individuais abaixo.
- * - Itaú Trust DI, Greencred/Uniprime e Maxi DI: sem resumo mensal dedicado
- *   recebido para 08/2026 (só o que aparece dentro do SOFTDIB, já coberto pelo
- *   JSON de importação com conta transitória 4859 como contrapartida, pendente de
- *   reclassificação). Ficam de fora daqui até chegar documentação equivalente à de
- *   julho.
+ * - Itaú Trust DI e Maxi DI: sem resumo mensal dedicado recebido para 08/2026.
+ * - Greencred: posição de títulos em 31/08 recebida posteriormente; como juros e
+ *   IR estão acumulados desde as aplicações, permanece em revisão documental e
+ *   fora do Razão até existir memória do movimento mensal.
  */
 export const controlesBancariosAgosto = {
   bancoBrasil: {
@@ -45,7 +44,34 @@ export const controlesBancariosAgosto = {
     saldoContaCorrenteFinal: 1.00,
     observacao: "Conta dedicada a obrigações CCEE (Câmara de Comercialização de Energia Elétrica), operada via Bradesco Invest Fácil: os recursos entram, são aplicados automaticamente e resgatados na data de vencimento de cada obrigação. Conciliado com o anexo 'Smart Energia' (relatórios de Energia de Reserva, Reserva de Capacidade e Cotas de Energia Nuclear CCEE referência Agosto/2026).",
   },
+  greencred: {
+    status: "revisar",
+    contaContabil: "4908",
+    agenciaConta: "5001 / 70233-1",
+    saldoLiquidoExtrato: 1_536_985.11,
+    jurosAcumuladosTitulos: 224_591.31,
+    irProjetadoAcumulado: 42_953.36,
+    observacao: "Revisão de lançamento: o documento recebido em 09/09/2026 é uma posição dos títulos em 31/08/2026 e apresenta juros e IR acumulados desde as aplicações, não apenas o movimento de agosto. Não gerar partida no Razão até confrontar saldo anterior, aplicações/resgates do mês e memória mensal de rendimento.",
+    fonte: "Greencred Nitaplast.pdf",
+  },
 } as const;
+
+/**
+ * Pendências documentais não entram no Razão até que débito, crédito e valor do
+ * movimento da competência estejam comprovados. Mantê-las separadas evita que
+ * uma posição acumulada seja tratada como fato contábil de agosto.
+ */
+export const revisoesLancamentoAplicacoesAgosto = [
+  {
+    id: "AGO-REV-GREENCRED",
+    instituicao: "Greencred",
+    competencia: "08/2026",
+    status: "revisar",
+    motivo: controlesBancariosAgosto.greencred.observacao,
+    saldoDocumentado: controlesBancariosAgosto.greencred.saldoLiquidoExtrato,
+    contabilizadoNoRazao: false,
+  },
+] as const;
 
 const base = (parcial: Omit<LancamentoIntegrado, "status" | "rastreio"> & { status?: LancamentoIntegrado["status"] }): LancamentoIntegrado => ({
   ...parcial,

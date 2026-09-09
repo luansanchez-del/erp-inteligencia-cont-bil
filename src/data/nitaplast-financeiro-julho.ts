@@ -281,7 +281,7 @@ export const contratosCambioJulhoPendentes = [
 // não existir.
 export const importacoesSemContratoCambioJulho = [
   { fornecedor: "ZHENJIANG INTERNATIONAL", oc: "15889", nf: "93318", duimp: "26BR0000950023-6", referencia: "02-NITA-26", valorAduaneiro: 116323.06, motivo: "O contrato 615923488 é da INV 03-NITA-26 e não liquida esta importação." },
-  { fornecedor: "BASF SE", oc: "16009/16010", nf: "93361", duimp: "26BR0000925014-0", referencia: "3209714898 / 3209714889", valorAduaneiro: 424292.52, motivo: "Nenhum contrato de câmbio correspondente às duas faturas foi localizado entre os documentos disponíveis." },
+  { fornecedor: "BASF SE", oc: "16009/16010", nf: "93361", duimp: "26BR0000925014-0", referencia: "3209714898 / 3209714889", valorAduaneiro: 424292.52, motivo: "Contratos de câmbio localizados posteriormente em agosto: 621680690 e 622836291, vinculados às duas invoices e contabilizados na liquidação de 08/2026." },
 ] as const;
 
 export const variacaoCambialAtivaValidada = arred(cambioJhs93556.variacaoAtiva + variacoesCambioClienteJulho.jhs93461 + variacoesCambioClienteJulho.plasticentro91183);
