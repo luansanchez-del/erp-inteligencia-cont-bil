@@ -10,6 +10,9 @@ import { saldosImplantacao } from "@/data/nitaplast-implantacao";
 import { saldoAberturaAgostoPorConta } from "@/data/nitaplast-saldos-agosto";
 import { estabelecimentoLancamentoNitaplast } from "@/data/nitaplast-estabelecimento";
 import { useLancamentosCompetencia } from "@/hooks/use-lancamentos-competencia";
+import { calcularDreJulhoFinal } from "@/data/nitaplast-dre-julho-final";
+import { lancamentosIntegradosJulhoFinal } from "@/data/nitaplast-razao-julho-final-v2";
+import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const arred = (v: number) => Math.round(v * 100) / 100;
@@ -200,7 +203,165 @@ export function BalanceteAgostoCompleto() {
           </table>
         </CardContent>
       </Card>
+      <AnaliseVerticalDre
+        agosto={{
+          receitaBruta,
+          deducoes,
+          receitaLiquida,
+          cpv,
+          lucroBruto,
+          despesas,
+          resultadoFinanceiro: arred(receitasFinanceiras - despesasFinanceiras),
+          resultadoOperacional,
+          naoOperacional,
+          resultado,
+        }}
+      />
     </div>
+  );
+}
+
+type TotaisAnaliseDre = {
+  receitaBruta: number;
+  deducoes: number;
+  receitaLiquida: number;
+  cpv: number;
+  lucroBruto: number;
+  despesas: number;
+  resultadoFinanceiro: number;
+  resultadoOperacional: number;
+  naoOperacional: number;
+  resultado: number;
+};
+
+function AnaliseVerticalDre({ agosto }: { agosto: TotaisAnaliseDre }) {
+  const controleJulho = useReclassificacoesInteligentes("2026-07");
+  const julho = useMemo(
+    () => calcularDreJulhoFinal(controleJulho.aplicar(lancamentosIntegradosJulhoFinal)).dre,
+    [controleJulho.aplicar],
+  );
+  const baseJulho: TotaisAnaliseDre = {
+    receitaBruta: julho.receitaBruta,
+    deducoes: julho.deducoes,
+    receitaLiquida: julho.receitaLiquida,
+    cpv: julho.custosReconhecidos,
+    lucroBruto: arred(julho.receitaLiquida - julho.custosReconhecidos),
+    despesas: julho.despesasOperacionais,
+    resultadoFinanceiro: arred(julho.receitasFinanceiras - julho.despesasFinanceiras),
+    resultadoOperacional: arred(
+      julho.receitaLiquida -
+        julho.custosReconhecidos -
+        julho.despesasOperacionais -
+        julho.despesasFinanceiras +
+        julho.receitasFinanceiras,
+    ),
+    naoOperacional: julho.resultadoAlienacaoImobilizado,
+    resultado: julho.resultado,
+  };
+  const definicoes: [keyof TotaisAnaliseDre, string][] = [
+    ["receitaBruta", "(+) Receita Operacional Bruta"],
+    ["deducoes", "(-) Deduções da Receita Bruta"],
+    ["receitaLiquida", "(=) Receita Operacional Líquida"],
+    ["cpv", "(-) CPV / CMV Total"],
+    ["lucroBruto", "(=) Lucro Bruto"],
+    ["despesas", "(-) Despesas Operacionais"],
+    ["resultadoFinanceiro", "Resultado Financeiro Líquido"],
+    ["resultadoOperacional", "(=) Resultado Operacional"],
+    ["naoOperacional", "Resultado não operacional"],
+    ["resultado", "(=) Lucro / Prejuízo Líquido"],
+  ];
+  const linhas = definicoes.map(([chave, descricao]) => {
+    const valorJulho = baseJulho[chave];
+    const valorAgosto = agosto[chave];
+    const avJulho = baseJulho.receitaBruta ? (valorJulho / baseJulho.receitaBruta) * 100 : 0;
+    const avAgosto = agosto.receitaBruta ? (valorAgosto / agosto.receitaBruta) * 100 : 0;
+    const diferenca = arred(valorAgosto - valorJulho);
+    const variacao = Math.abs(valorJulho) > 0.004 ? (diferenca / Math.abs(valorJulho)) * 100 : null;
+    const pontosPercentuais = avAgosto - avJulho;
+    const revisar =
+      Math.abs(pontosPercentuais) >= 5 ||
+      (variacao !== null && Math.abs(variacao) >= 30 && Math.abs(diferenca) >= 10_000);
+    return {
+      chave,
+      descricao,
+      valorJulho,
+      valorAgosto,
+      avJulho,
+      avAgosto,
+      diferenca,
+      variacao,
+      pontosPercentuais,
+      revisar,
+    };
+  });
+  const percentual = (valor: number) =>
+    `${valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+  return (
+    <Card className="border-blue-500/30">
+      <CardHeader>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <CardTitle className="text-base">
+              Análise vertical e horizontal — 07/2026 × 08/2026
+            </CardTitle>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Mesmas linhas da DRE oficial. AV = participação sobre a receita bruta; variação p.p.
+              mostra a mudança de peso entre os meses.
+            </p>
+          </div>
+          <Badge variant="outline">
+            {linhas.filter((linha) => linha.revisar).length} linhas para revisão
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="overflow-x-auto">
+        <table className="w-full min-w-[1260px] text-sm">
+          <thead>
+            <tr className="border-b bg-muted/50 text-xs">
+              <th className="p-2 text-left">Composição DRE</th>
+              <th className="p-2 text-right">07/2026</th>
+              <th className="p-2 text-right">AV 07</th>
+              <th className="p-2 text-right">08/2026</th>
+              <th className="p-2 text-right">AV 08</th>
+              <th className="p-2 text-right">Diferença R$</th>
+              <th className="p-2 text-right">Variação %</th>
+              <th className="p-2 text-right">Variação p.p.</th>
+              <th className="p-2">Conferência</th>
+            </tr>
+          </thead>
+          <tbody>
+            {linhas.map((linha) => (
+              <tr key={linha.chave} className={`border-b ${linha.revisar ? "bg-amber-50/50" : ""}`}>
+                <td className="p-2 font-medium">{linha.descricao}</td>
+                <td className="p-2 text-right tabular-nums">{brl.format(linha.valorJulho)}</td>
+                <td className="p-2 text-right tabular-nums">{percentual(linha.avJulho)}</td>
+                <td className="p-2 text-right tabular-nums">{brl.format(linha.valorAgosto)}</td>
+                <td className="p-2 text-right tabular-nums">{percentual(linha.avAgosto)}</td>
+                <td className="p-2 text-right tabular-nums">{brl.format(linha.diferenca)}</td>
+                <td className="p-2 text-right tabular-nums">
+                  {linha.variacao === null ? "—" : percentual(linha.variacao)}
+                </td>
+                <td className="p-2 text-right tabular-nums">{`${linha.pontosPercentuais >= 0 ? "+" : ""}${percentual(linha.pontosPercentuais)}`}</td>
+                <td className="p-2">
+                  {linha.revisar ? (
+                    <Badge variant="outline" className="border-amber-500 text-amber-800">
+                      Revisar composição
+                    </Badge>
+                  ) : (
+                    <span className="text-muted-foreground">Sem desvio relevante</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="mt-4 rounded-md border border-amber-400/50 bg-amber-50/40 p-3 text-sm">
+          <strong>Critério de alerta:</strong> mudança de pelo menos 5 pontos percentuais ou
+          variação mínima de 30% e R$ 10 mil. O alerta direciona a conferência do Razão; não cria
+          lançamento automático.
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
