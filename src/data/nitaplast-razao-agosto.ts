@@ -9,6 +9,8 @@ import { lancamentosIcmsStAgosto } from "./nitaplast-icms-st-agosto";
 import { lancamentosBradescoInvestFacilAgosto } from "./nitaplast-aplicacoes-bradesco-agosto";
 import { lancamentosCambioAgosto } from "./nitaplast-cambio-agosto";
 import { lancamentosDespesasDocumentaisAgosto } from "./nitaplast-despesas-documentais-agosto";
+import { lancamentosFolhaAgosto } from "./nitaplast-folha-agosto";
+import { lancamentosJcpAgosto } from "./nitaplast-jcp-agosto";
 import { lancamentosVersaoJulho } from "./nitaplast-razao-julho-final-v2";
 import type { LancamentoIntegrado } from "./nitaplast-razao-base";
 import {
@@ -16,6 +18,7 @@ import {
   lancamentosComprasCpvAgosto,
   lancamentosDepreciacaoAgosto,
   lancamentosFechamentoEstoqueAgosto,
+  lancamentosFechamentoEstoqueFilialAgosto,
   lancamentosImobilizadoAgosto,
 } from "./nitaplast-cpv-depreciacao-agosto";
 export { saldoAberturaAgostoPorConta } from "./nitaplast-saldos-agosto";
@@ -62,7 +65,10 @@ export const lancamentosIntegradosAgosto: LancamentoIntegrado[] = [
   ...lancamentosRecebimentosClientesAgosto,
   ...lancamentosComprasCpvAgosto,
   ...lancamentosDespesasDocumentaisAgosto,
+  ...lancamentosFolhaAgosto,
+  ...lancamentosJcpAgosto,
   ...lancamentosFechamentoEstoqueAgosto,
+  ...lancamentosFechamentoEstoqueFilialAgosto,
   ...lancamentosImobilizadoAgosto,
   ...lancamentosDepreciacaoAgosto,
   ...lancamentosAmortizacaoAgosto,

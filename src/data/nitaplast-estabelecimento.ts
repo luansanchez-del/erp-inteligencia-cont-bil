@@ -1,4 +1,15 @@
-import type { LancamentoIntegrado } from "./nitaplast-razao-base";
+type LinhaEstabelecimento = {
+  origem?: string | undefined;
+  historico?: string | undefined;
+  documento?: string | undefined;
+  centroCusto?: string | undefined;
+  fonte?: string | undefined;
+  debitoCodigo: string;
+  creditoCodigo: string;
+  cc?: string | undefined;
+  debito?: string | undefined;
+  credito?: string | undefined;
+};
 
 export type EstabelecimentoNitaplast = "Matriz" | "Filial SP" | "Matriz ↔ Filial";
 export type EscopoContaNitaplast = "Matriz" | "Filial SP" | "Matriz + Filial SP";
@@ -32,15 +43,15 @@ export function contaDedicadaFilialNitaplast(codigo: string, descricao?: string)
     || texto.includes("COMERCIAL SAO PAULO");
 }
 
-export function estabelecimentoLancamentoNitaplast(linha: LancamentoIntegrado): EstabelecimentoNitaplast {
+export function estabelecimentoLancamentoNitaplast(linha: LinhaEstabelecimento): EstabelecimentoNitaplast {
   const texto = normalizar([
     linha.origem,
     linha.historico,
     linha.documento,
     linha.centroCusto,
     linha.fonte,
-    linha.debito,
-    linha.credito,
+    linha.debito ?? "",
+    linha.credito ?? "",
   ].join(" "));
 
   const contaFilial = contaDedicadaFilialNitaplast(linha.debitoCodigo, linha.debito)
@@ -64,7 +75,7 @@ export function estabelecimentoLancamentoNitaplast(linha: LancamentoIntegrado): 
  * estabelecimentos não podem transformar conta de resultado da matriz em filial
  * sem evidência do próprio lado; por isso contas/CC/documentos dedicados prevalecem.
  */
-export function estabelecimentoResultadoNitaplast(linha: LancamentoIntegrado, codigoConta: string): "Matriz" | "Filial SP" {
+export function estabelecimentoResultadoNitaplast(linha: LinhaEstabelecimento, codigoConta: string): "Matriz" | "Filial SP" {
   const descricaoLado = codigoConta === linha.debitoCodigo ? linha.debito : linha.credito;
   if (contaDedicadaFilialNitaplast(codigoConta, descricaoLado)) return "Filial SP";
   if (centroCustoFilialNitaplast(linha.cc)) return "Filial SP";

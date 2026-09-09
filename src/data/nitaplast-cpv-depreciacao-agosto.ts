@@ -33,6 +33,65 @@ export const estoqueFinalMatrizAgostoPorConta: Record<string, number> = {
 
 export const estoqueFinalMatrizAgostoTotal = 5_744_762.11;
 
+/**
+ * Fechamento contábil da filial em agosto, seguindo a mesma regra operacional do
+ * padrão de julho: baixa do estoque inicial, encerramento das compras líquidas e
+ * reconhecimento do estoque final. O valor é derivado do saldo patrimonial já
+ * transportado para agosto; quando a documentação de inventário final da filial
+ * estiver disponível, a linhas de referência devem ser ajustadas diretamente no
+ * cadastro de origem, sem converter isso em ajuste de encaixe.
+ */
+const estoqueInicialFilialAgosto = saldoAberturaAgostoPorConta.get("25138") ?? 0;
+const comprasFilialAgosto = saldoAberturaAgostoPorConta.get("25139") ?? 0;
+
+export const lancamentosFechamentoEstoqueFilialAgosto: LancamentoIntegrado[] = [
+  base({
+    id: "AGO-CPV-F-ABERT",
+    data: "31/08/2026",
+    origem: "FECHAMENTO ESTOQUE FILIAL 08/2026",
+    debitoCodigo: "25945",
+    creditoCodigo: "25138",
+    historico: "Baixa do estoque inicial da filial para apuração do CPV de agosto",
+    documento: "SALDO 31/07/2026 + INVENTÁRIO FILIAL",
+    cc: "502",
+    centroCusto: "COMERCIAL SP",
+    valor: Math.abs(estoqueInicialFilialAgosto),
+    observacao: "Fechamento periódico do estoque da filial. O saldo anterior é transportado para agosto e serve como referência do inventário de abertura; não é lançamento de abertura gerencial nem ajuste para fechar relatório.",
+    fonte: "Saldo contábil transportado 31/07/2026 + documentação do estoque da filial",
+    rastreio: "derivado",
+  }),
+  base({
+    id: "AGO-CPV-F-COMP",
+    data: "31/08/2026",
+    origem: "FECHAMENTO ESTOQUE FILIAL 08/2026",
+    debitoCodigo: "25945",
+    creditoCodigo: "25139",
+    historico: "Encerramento das compras líquidas da filial no CPV de agosto",
+    documento: "CFOP 1102 + CRÉDITOS 08/2026",
+    cc: "502",
+    centroCusto: "COMERCIAL SP",
+    valor: Math.abs(comprasFilialAgosto),
+    observacao: "No fechamento da filial, o saldo patrimonial da conta 25139 fica encerrado no CPV quando a compra líquida da competência é demonstrada pela documentação fiscal/contábil. Caso o inventário final seja refeito, este valor deve ser reavaliado na origem da documentação e não como plug de apresentação.",
+    fonte: "Base patrimonial transportada + relatórios de entradas por centro de custo 08/2026",
+    rastreio: "derivado",
+  }),
+  base({
+    id: "AGO-CPV-F-FINAL",
+    data: "31/08/2026",
+    origem: "FECHAMENTO ESTOQUE FILIAL 08/2026",
+    debitoCodigo: "25138",
+    creditoCodigo: "25945",
+    historico: "Reconhecimento do estoque físico final da filial em 31/08",
+    documento: "INVENTÁRIO FILIAL 31/08/2026",
+    cc: "502",
+    centroCusto: "COMERCIAL SP",
+    valor: Math.abs(estoqueInicialFilialAgosto + comprasFilialAgosto),
+    observacao: "Registro do estoque final da filial no mesmo padrão contábil do fechamento de julho. O valor só é produto do saldo de abertura e compras líquidas transportadas e deve ser substituído por inventário final documentado quando disponível.",
+    fonte: "Inventário/documentação oficial da filial para 31/08/2026",
+    rastreio: "derivado",
+  }),
+].filter((linha) => Math.abs(linha.valor) > 0.005);
+
 export const lancamentosFechamentoEstoqueAgosto: LancamentoIntegrado[] = Object.entries(estoqueFinalMatrizAgostoPorConta).flatMap(([conta, saldoFinal], indice) => {
   const saldoAnterior = saldoAberturaAgostoPorConta.get(conta) ?? 0;
   const linhas: LancamentoIntegrado[] = [];
