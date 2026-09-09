@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, ChevronRight, Printer, Search } from "lucide-react";
+import { ChevronDown, ChevronRight, CircleAlert, Printer, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { estruturaBalanceteNitaplast } from "@/data/nitaplast-balancete-estrutura";
@@ -14,6 +14,10 @@ import { useLancamentosCompetencia } from "@/hooks/use-lancamentos-competencia";
 import { calcularDreJulhoFinal } from "@/data/nitaplast-dre-julho-final";
 import { lancamentosIntegradosJulhoFinal } from "@/data/nitaplast-razao-julho-final-v2";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
+import {
+  estoqueFinalMatrizAgostoTotal,
+  resumoCpvDepreciacaoAgosto,
+} from "@/data/nitaplast-cpv-depreciacao-agosto";
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const arred = (v: number) => Math.round(v * 100) / 100;
@@ -596,6 +600,41 @@ export function DreAgostoPadrao() {
     resultadoOperacional = arred(lucroBruto - despesas - despesasFinanceiras + receitasFinanceiras);
   const naoOperacional = arred(Math.max(0, credito("4736")) - Math.max(0, mov("4760"))),
     resultado = arred(resultadoOperacional + naoOperacional);
+  const impactoCustoPorEstabelecimento = (estabelecimento: "Matriz" | "Filial SP") =>
+    arred(
+      lancamentos.reduce((total, lancamento) => {
+        if (estabelecimentoLancamentoNitaplast(lancamento) !== estabelecimento) return total;
+        return (
+          total +
+          (custos.includes(lancamento.debitoCodigo) ? lancamento.valor : 0) -
+          (custos.includes(lancamento.creditoCodigo) ? lancamento.valor : 0)
+        );
+      }, 0),
+    );
+  const cpvMatriz = impactoCustoPorEstabelecimento("Matriz");
+  const cpvFilial = impactoCustoPorEstabelecimento("Filial SP");
+  const contasEstoqueMatriz = ["25133", "25134", "25135", "25136", "25137"];
+  const estoqueInicialMatriz = arred(
+    contasEstoqueMatriz.reduce(
+      (total, conta) => total + (saldoAberturaAgostoPorConta.get(conta) ?? 0),
+      0,
+    ),
+  );
+  const cpvBaseEstoque = arred(
+    estoqueInicialMatriz +
+      resumoCpvDepreciacaoAgosto.comprasBrutasCpv -
+      estoqueFinalMatrizAgostoTotal,
+  );
+  const demaisCustosDocumentados = arred(cpvMatriz - cpvBaseEstoque);
+  const memoriaCpvAgosto: [string, number][] = [
+    ["Estoque inicial — Matriz", estoqueInicialMatriz],
+    ["(+) Compras documentadas que compõem o custo", resumoCpvDepreciacaoAgosto.comprasBrutasCpv],
+    ["(-) Estoque final — Matriz", -estoqueFinalMatrizAgostoTotal],
+    ["(+) Demais movimentos documentados de custo no Razão", demaisCustosDocumentados],
+    ["(=) CPV Matriz", cpvMatriz],
+    ["(=) CPV Filial SP", cpvFilial],
+    ["(=) CPV / CMV Total", cpv],
+  ];
   type Linha = { id: string; descricao: string; valor: number; nivel: 0 | 1; pai?: string };
   const detalhes = (prefixo: string, pai: string, contas: string[]): Linha[] =>
     contas
@@ -680,66 +719,134 @@ export function DreAgostoPadrao() {
   return (
     <div className="grid gap-5">
       <Header
-        titulo="DRE detalhada - Nitaplast 08/2026"
-        descricao="Razão → Balancete → DRE. Mesmo formato contábil da competência anterior."
+        titulo="DRE calculada - Nitaplast 08/2026"
+        descricao="Razão → Balancete → DRE · Matriz e Filial SP sempre identificadas."
       />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <Metric label="Receita bruta" valor={receitaBruta} />
-        <Metric label="Receita líquida" valor={receitaLiquida} />
-        <Metric label="CPV / CMV" valor={cpv} />
-        <Metric label="Despesas operacionais" valor={despesas} />
-        <Metric label="Resultado" valor={resultado} />
+        <Metric label="Receita Operacional Bruta" valor={receitaBruta} />
+        <Metric label="CPV Matriz" valor={cpvMatriz} />
+        <Metric label="CPV Filial SP" valor={cpvFilial} />
+        <Metric label="Resultado não operacional" valor={naoOperacional} />
+        <Metric label="Lucro / Prejuízo líquido" valor={resultado} />
       </div>
+      <Card className="border-blue-500/30 bg-blue-500/5">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <CircleAlert className="mt-0.5 size-5 text-blue-700" />
+            <div>
+              <p className="font-semibold">Regra única aplicada</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Documentos e evidências → lançamentos → Razão → Balancete → DRE. Centro de custo e
+                estabelecimento abrem a gestão; não criam fato contábil.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       <Tabs defaultValue="composicao" className="grid gap-3">
         <TabsList className="w-fit">
           <TabsTrigger value="composicao">Composição da DRE</TabsTrigger>
           <TabsTrigger value="analise">Análise vertical e horizontal</TabsTrigger>
         </TabsList>
         <TabsContent value="composicao">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Demonstração do Resultado do Exercício — 08/2026
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/40">
-                    <th className="p-2 text-left">Descrição</th>
-                    <th className="p-2 text-right">Valor</th>
-                    <th className="p-2 text-right">% Receita</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {linhas
-                    .filter((l) => !l.pai || abertas.has(l.pai))
-                    .map((l) => (
-                      <tr key={l.id} className={`border-b ${l.nivel === 0 ? "font-semibold" : ""}`}>
-                        <td className={`p-2 ${l.nivel === 1 ? "pl-10" : ""}`}>
-                          {pais.has(l.id) ? (
-                            <button className="mr-2 inline-flex" onClick={() => alternar(l.id)}>
-                              {abertas.has(l.id) ? (
-                                <ChevronDown className="size-4" />
-                              ) : (
-                                <ChevronRight className="size-4" />
-                              )}
-                            </button>
-                          ) : null}
-                          {l.descricao}
-                        </td>
-                        <td className="p-2 text-right tabular-nums">{brl.format(l.valor)}</td>
-                        <td className="p-2 text-right tabular-nums">
-                          {receitaBruta
-                            ? `${((l.valor / receitaBruta) * 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`
-                            : "0,00%"}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
+          <div className="grid gap-5">
+            <Card className="border-amber-500/40 bg-amber-50/40">
+              <CardHeader>
+                <CardTitle className="text-base">
+                  Memória temporária IRPJ/CSLL — composição do CPV
+                </CardTitle>
+                <CardDescription>
+                  Relatório explicativo para conferência. Não cria lançamento e não altera o
+                  resultado contábil.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <tbody>
+                      {memoriaCpvAgosto.map(([descricao, valor], index) => (
+                        <tr
+                          key={descricao}
+                          className={`border-b last:border-0 ${index === memoriaCpvAgosto.length - 1 ? "font-bold" : ""}`}
+                        >
+                          <td className="py-2">{descricao}</td>
+                          <td className="py-2 text-right tabular-nums">{brl.format(valor)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Fórmula: estoque inicial + compras − estoque final + demais custos documentados. O
+                  saldo final permanece no estoque patrimonial. A composição da Filial é exibida
+                  somente pelos movimentos efetivamente presentes no Razão.
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">
+                  Demonstração do Resultado do Exercício — 08/2026
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/40">
+                      <th className="p-2 text-left">Descrição</th>
+                      <th className="p-2 text-right">Valor</th>
+                      <th className="p-2 text-right">% Receita</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {linhas
+                      .filter((l) => !l.pai || abertas.has(l.pai))
+                      .map((l) => (
+                        <tr
+                          key={l.id}
+                          className={`border-b ${l.nivel === 0 ? "font-semibold" : ""}`}
+                        >
+                          <td className={`p-2 ${l.nivel === 1 ? "pl-10" : ""}`}>
+                            {pais.has(l.id) ? (
+                              <button className="mr-2 inline-flex" onClick={() => alternar(l.id)}>
+                                {abertas.has(l.id) ? (
+                                  <ChevronDown className="size-4" />
+                                ) : (
+                                  <ChevronRight className="size-4" />
+                                )}
+                              </button>
+                            ) : null}
+                            {l.descricao}
+                          </td>
+                          <td className="p-2 text-right tabular-nums">{brl.format(l.valor)}</td>
+                          <td className="p-2 text-right tabular-nums">
+                            {receitaBruta
+                              ? `${((l.valor / receitaBruta) * 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`
+                              : "0,00%"}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+            <Card className="border-amber-400/50 bg-amber-50/40">
+              <CardContent className="pt-5">
+                <div className="flex gap-3">
+                  <CircleAlert className="mt-0.5 size-5 text-amber-700" />
+                  <div>
+                    <p className="font-semibold">Pendências de rastreabilidade</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Nenhum valor é criado ou rateado por aproximação. Greencred permanece em
+                      revisão de lançamento; contratos de câmbio sem vínculo definitivo e a
+                      composição de estoque da Filial permanecem pendentes de conciliação
+                      documental.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
         <TabsContent value="analise">
           <AnaliseVerticalDre
