@@ -1,6 +1,10 @@
 import { lancamentosBancariosSegurosAgosto } from "./nitaplast-bancos-agosto";
 import { lancamentosProvisaoImpostosAgosto } from "./nitaplast-provisao-impostos-agosto";
 import { lancamentosRecebimentosClientesAgosto } from "./nitaplast-recebimentos-clientes-agosto";
+import {
+  lancamentosDevolucoesVendasAgosto,
+  lancamentosReceitasAgosto,
+} from "./nitaplast-receitas-agosto";
 import { lancamentosIcmsStAgosto } from "./nitaplast-icms-st-agosto";
 import { lancamentosBradescoInvestFacilAgosto } from "./nitaplast-aplicacoes-bradesco-agosto";
 import { lancamentosCambioAgosto } from "./nitaplast-cambio-agosto";
@@ -20,22 +24,24 @@ export { saldoAberturaAgostoPorConta } from "./nitaplast-saldos-agosto";
  * em julho por decisão do contador. A inversão é exata e mantém referência ao
  * lançamento original; não é uma nova estimativa nem um ajuste de encaixe.
  */
-export const estornosVersaoJulhoEmAgosto: LancamentoIntegrado[] = lancamentosVersaoJulho.map((original) => ({
-  ...original,
-  id: `AGO-EST-${original.id}`,
-  data: "01/08/2026",
-  origem: "ESTORNO LANÇAMENTO DE VERSÃO 07/2026",
-  debitoCodigo: original.creditoCodigo,
-  debito: original.credito,
-  creditoCodigo: original.debitoCodigo,
-  credito: original.debito,
-  historico: `Estorno programado de ${original.id} — ${original.historico}`,
-  documento: `ESTORNO ${original.documento}`,
-  status: "validado",
-  observacao: `Estorno integral e exato do lançamento temporário ${original.id}, conforme decisão do contador registrada em 24/08/2026.`,
-  rastreio: "derivado",
-  fonte: `Referência contábil: ${original.id} / ${original.fonte}`,
-}));
+export const estornosVersaoJulhoEmAgosto: LancamentoIntegrado[] = lancamentosVersaoJulho.map(
+  (original) => ({
+    ...original,
+    id: `AGO-EST-${original.id}`,
+    data: "01/08/2026",
+    origem: "ESTORNO LANÇAMENTO DE VERSÃO 07/2026",
+    debitoCodigo: original.creditoCodigo,
+    debito: original.credito,
+    creditoCodigo: original.debitoCodigo,
+    credito: original.debito,
+    historico: `Estorno programado de ${original.id} — ${original.historico}`,
+    documento: `ESTORNO ${original.documento}`,
+    status: "validado",
+    observacao: `Estorno integral e exato do lançamento temporário ${original.id}, conforme decisão do contador registrada em 24/08/2026.`,
+    rastreio: "derivado",
+    fonte: `Referência contábil: ${original.id} / ${original.fonte}`,
+  }),
+);
 
 /**
  * Fonte contábil única de 08/2026. Toda tela do período deve derivar desta base,
@@ -50,6 +56,8 @@ export const lancamentosIntegradosAgosto: LancamentoIntegrado[] = [
   ...lancamentosIcmsStAgosto,
   ...lancamentosBradescoInvestFacilAgosto,
   ...lancamentosCambioAgosto,
+  ...lancamentosReceitasAgosto,
+  ...lancamentosDevolucoesVendasAgosto,
   ...lancamentosRecebimentosClientesAgosto,
   ...lancamentosComprasCpvAgosto,
   ...lancamentosFechamentoEstoqueAgosto,
