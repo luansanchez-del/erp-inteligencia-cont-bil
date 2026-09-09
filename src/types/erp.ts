@@ -201,6 +201,40 @@ export interface ItemDossieImportacao {
   status: StatusDossieImportacao;
   criadoEm: string;
   aprovadoEm?: string | undefined;
+  /** Preenchido quando a prévia deste item foi revisada e virou lançamento. */
+  lancamentosGeradosIds?: string[] | undefined;
+}
+
+/**
+ * Severidade de um achado da leitura de documento, no vocabulário do
+ * fechamento contábil: impedimento bloqueia a geração do lançamento,
+ * alerta exige atenção mas permite seguir mediante revisão, informação é
+ * só contexto.
+ */
+export type SeveridadeAchado = "impedimento" | "alerta" | "informacao";
+
+export interface AchadoImportacao {
+  severidade: SeveridadeAchado;
+  mensagem: string;
+}
+
+/** Uma linha candidata a lançamento, extraída de um documento de origem. */
+export interface LinhaPreviaImportacao {
+  id: string;
+  data: string;
+  debitoCodigo: string;
+  creditoCodigo: string;
+  historico: string;
+  documento: string;
+  valor: number;
+  achados: AchadoImportacao[];
+}
+
+/** Resultado de um leitor de documento: linhas propostas + achados gerais. */
+export interface ResultadoLeituraDocumento {
+  suportado: boolean;
+  linhas: LinhaPreviaImportacao[];
+  achados: AchadoImportacao[];
 }
 
 export interface Integracao {

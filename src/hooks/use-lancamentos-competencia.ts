@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 
 const STORAGE_KEY = "erp-lancamentos-competencia-v1";
 
+export type OrigemLancamentoCompetencia = "manual" | "importado";
+
 export type LancamentoCompetencia = {
   id: string;
   empresaId: string;
@@ -15,9 +17,12 @@ export type LancamentoCompetencia = {
   centroCusto: string;
   valor: number;
   criadoEm: string;
+  origem: OrigemLancamentoCompetencia;
+  /** Quando origem = "importado": id do item em `ItemDossieImportacao` que gerou este lançamento. */
+  origemDossieId?: string | undefined;
 };
 
-export type DadosLancamentoCompetencia = Omit<LancamentoCompetencia, "id" | "empresaId" | "competenciaId" | "criadoEm">;
+export type DadosLancamentoCompetencia = Omit<LancamentoCompetencia, "id" | "empresaId" | "competenciaId" | "criadoEm" | "origem" | "origemDossieId">;
 
 function carregarTodos(): LancamentoCompetencia[] {
   try {
@@ -55,13 +60,15 @@ export function useLancamentosCompetencia(empresaId: string, competenciaId: stri
     [todos, empresaId, competenciaId],
   );
 
-  function registrar(dados: DadosLancamentoCompetencia): LancamentoCompetencia {
+  function registrar(dados: DadosLancamentoCompetencia, origem: OrigemLancamentoCompetencia = "manual", origemDossieId?: string): LancamentoCompetencia {
     const registro: LancamentoCompetencia = {
       ...dados,
-      id: `MAN-${competenciaId}-${Date.now()}`,
+      id: `${origem === "importado" ? "IMP" : "MAN"}-${competenciaId}-${Date.now()}-${Math.round(Math.random() * 1e6)}`,
       empresaId,
       competenciaId,
       criadoEm: new Date().toISOString(),
+      origem,
+      origemDossieId,
     };
     persistir([...todos, registro]);
     return registro;
