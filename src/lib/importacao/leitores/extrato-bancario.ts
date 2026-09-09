@@ -1,23 +1,7 @@
 import type { AchadoImportacao, LinhaPreviaImportacao, ResultadoLeituraDocumento } from "@/types/erp";
 import { contaBancoPor } from "./bancos-plano";
+import { CONTA_TRANSITORIA, TOLERANCIA_FECHAMENTO, brl, novaLinhaPrevia, parseValorBR } from "./constantes";
 import { textoLinha, type LinhaPdf } from "./pdf-linhas";
-
-const CONTA_TRANSITORIA = "4859";
-const TOLERANCIA_FECHAMENTO = 0.01;
-
-function parseValorBR(valor: string): number {
-  return Number(valor.replace(/\./g, "").replace(",", "."));
-}
-
-function brl(valor: number) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor);
-}
-
-let seq = 0;
-function novaLinha(dados: Omit<LinhaPreviaImportacao, "id" | "achados"> & { achados?: AchadoImportacao[] }): LinhaPreviaImportacao {
-  seq += 1;
-  return { id: `PREVIA-${Date.now()}-${seq}`, achados: [], ...dados };
-}
 
 type Banco = "bb" | "bradesco" | "itau" | "unipreme" | "desconhecido";
 
@@ -93,7 +77,7 @@ function lerExtratoBancoBrasil(linhasPdf: LinhaPdf[]): ResultadoLeituraDocumento
     const creditoCodigo = sinal === "C" ? CONTA_TRANSITORIA : (contaBanco?.codigo ?? "");
     const achadosLinha: AchadoImportacao[] = [{ severidade: "alerta", mensagem: "Contrapartida sugerida automaticamente como 4859 - Conta Transitória. Ajuste a conta correta antes de aprovar." }];
     if (!contaBanco) achadosLinha.push({ severidade: "impedimento", mensagem: "Conta bancária não mapeada — ver achado geral do documento." });
-    ultimaLinha = novaLinha({ data: paraIso(data!), debitoCodigo, creditoCodigo, historico: `${historico} (extrato BB)`, documento: documento!, valor: Math.abs(valorAssinado), achados: achadosLinha });
+    ultimaLinha = novaLinhaPrevia({ data: paraIso(data!), debitoCodigo, creditoCodigo, historico: `${historico} (extrato BB)`, documento: documento!, valor: Math.abs(valorAssinado), achados: achadosLinha });
     linhas.push(ultimaLinha);
     if (saldoStr && saldoSinal) {
       const saldoLinha = parseValorBR(saldoStr) * (saldoSinal === "D" ? -1 : 1);
@@ -148,7 +132,7 @@ function lerExtratoItau(linhasPdf: LinhaPdf[]): ResultadoLeituraDocumento {
     const creditoCodigo = valor >= 0 ? CONTA_TRANSITORIA : (contaBanco?.codigo ?? "");
     const achadosLinha: AchadoImportacao[] = [{ severidade: "alerta", mensagem: "Contrapartida sugerida automaticamente como 4859 - Conta Transitória. Ajuste a conta correta antes de aprovar." }];
     if (!contaBanco) achadosLinha.push({ severidade: "impedimento", mensagem: "Conta bancária não mapeada — ver achado geral do documento." });
-    linhas.push(novaLinha({
+    linhas.push(novaLinhaPrevia({
       data: paraIso(data!),
       debitoCodigo,
       creditoCodigo,

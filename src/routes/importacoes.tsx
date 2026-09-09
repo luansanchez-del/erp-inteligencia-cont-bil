@@ -11,6 +11,8 @@ import { useErp } from "@/context/erp-context";
 import { calcularHashArquivo, carregarDossieImportacao, salvarDossieImportacao } from "@/lib/dossie-importacao";
 import { extrairLinhasPdf } from "@/lib/importacao/leitores/pdf-extrator-navegador";
 import { lerExtratoBancario } from "@/lib/importacao/leitores/extrato-bancario";
+import { lerExtratoSoftdib } from "@/lib/importacao/leitores/extrato-softdib";
+import { lerTextoArquivo } from "@/lib/importacao/leitores/texto-arquivo";
 import { carregarPreviaImportacao, salvarPreviaImportacao } from "@/lib/importacao/previas";
 import type { CategoriaFonteImportacao, FluxoImportacao, FormatoImportacao, ItemDossieImportacao } from "@/types/erp";
 
@@ -64,10 +66,9 @@ function ImportacoesPage() {
       const id = `IMP-${Date.now()}-${adicionados}-${hash.slice(0, 8)}`;
       proximos.unshift({ id, empresaId: empresa.id, competenciaId: competencia.id, fluxo, categoria, formato: tipo, arquivo: arquivo.name, tamanho: arquivo.size, tipoMime: arquivo.type || "application/octet-stream", hash, ultimaModificacao: arquivo.lastModified, finalidade: definicao.finalidade ?? "fonte", podeGerarLancamento: definicao.finalidade !== "conferencia" && categoria !== "plano_contas", status: repetido ? "duplicado" : "aguardando_conferencia", criadoEm: new Date().toISOString() });
       repetido ? duplicados++ : adicionados++;
-      if (!repetido && categoria === "bancos" && tipo === "PDF") {
+      if (!repetido && categoria === "bancos" && (tipo === "PDF" || tipo === "CSV")) {
         try {
-          const linhasPdf = await extrairLinhasPdf(arquivo);
-          const resultado = lerExtratoBancario(linhasPdf);
+          const resultado = tipo === "PDF" ? lerExtratoBancario(await extrairLinhasPdf(arquivo)) : lerExtratoSoftdib(await lerTextoArquivo(arquivo));
           salvarPreviaImportacao(id, resultado);
           if (resultado.suportado) lidos++;
         } catch {
@@ -114,7 +115,7 @@ function ImportacoesPage() {
     {itemPrevia && previaArmazenada ? (
       <PreviaImportacao item={itemPrevia} resultado={previaArmazenada.resultado} empresaId={empresa.id} competenciaId={competencia.id} onGerado={(ids) => marcarLancamentosGerados(itemPrevia.id, ids)} />
     ) : null}
-    <Card className="border-amber-500/30 bg-amber-50/40"><CardHeader><CardTitle className="text-base">4. Leitura e validação</CardTitle><CardDescription>Extrato bancário (categoria "Extratos e movimentações bancárias", em PDF) já é lido automaticamente ao subir o arquivo. Aprove o item pra ver a prévia editável — nada vira lançamento sem você revisar e clicar em "Gerar lançamentos".</CardDescription></CardHeader><CardContent className="text-sm"><p><strong>Cobertura atual:</strong> Banco do Brasil e Itaú têm leitor validado contra extratos reais. Bradesco, Unipreme e qualquer PDF sem camada de texto (digitalizado) ainda ficam marcados como "não suportado" — lance manualmente por enquanto. As demais categorias (fiscal, folha, tributos, estoque etc.) continuam só como evidência de conferência, sem geração automática de lançamento.</p></CardContent></Card>
+    <Card className="border-amber-500/30 bg-amber-50/40"><CardHeader><CardTitle className="text-base">4. Leitura e validação</CardTitle><CardDescription>Extrato bancário (categoria "Extratos e movimentações bancárias") já é lido automaticamente ao subir o arquivo, em PDF ou CSV. Aprove o item pra ver a prévia editável — nada vira lançamento sem você revisar e clicar em "Gerar lançamentos".</CardDescription></CardHeader><CardContent className="text-sm"><p><strong>Cobertura atual:</strong> PDF do Banco do Brasil validado contra extrato real. CSV "EXTRATO MOVIMENTO — SISTEMA CLIENTE SOFTDIB" cobre BB, Bradesco C/C e Itaú C/C num arquivo só (contas de aplicação e Greencred ainda ficam bloqueadas até mapear a conta contábil). PDF do Itaú lê mas ainda não fecha o extrato inteiro — fica bloqueado. Bradesco em PDF e qualquer PDF sem camada de texto (digitalizado, ex. Unipreme) seguem "não suportado". As demais categorias (fiscal, folha, tributos, estoque etc.) continuam só como evidência de conferência, sem geração automática de lançamento.</p></CardContent></Card>
   </PageShell>;
 }
 

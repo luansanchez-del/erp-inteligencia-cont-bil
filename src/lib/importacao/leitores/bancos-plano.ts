@@ -34,3 +34,22 @@ export function contaBancoPor(banco: ContaBancoConhecida["banco"], agencia: stri
   const cc = normalizar(conta);
   return CONTAS_BANCO.find((item) => item.banco === banco && normalizar(item.agencia) === ag && (normalizar(item.conta) === cc || normalizar(item.conta).replace(/^0+/, "") === cc.replace(/^0+/, "")));
 }
+
+/**
+ * Mapeamento pelo nome de banco como aparece no export "EXTRATO MOVIMENTO —
+ * SISTEMA CLIENTE SOFTDIB" (ERP interno da Nitaplast) — esse arquivo não traz
+ * agência/conta por linha, só a descrição do banco. Conferido cruzando os 11
+ * movimentos "BANCO DO BRASIL SA" do CSV contra o extrato BB em PDF já
+ * validado (mesmas datas/valores). Descrição não mapeada aqui também vira
+ * impedimento — nunca supõe qual conta é.
+ */
+const CONTAS_SOFTDIB: { descBanco: string; codigo: string }[] = [
+  { descBanco: "BANCO DO BRASIL SA", codigo: "10" },
+  { descBanco: "BRADESCO  C/C", codigo: "9" },
+  { descBanco: "BANCO ITAU C/C", codigo: "11" },
+];
+
+export function contaSoftdibPor(descBanco: string): string | undefined {
+  const alvo = normalizar(descBanco);
+  return CONTAS_SOFTDIB.find((item) => normalizar(item.descBanco) === alvo)?.codigo;
+}
