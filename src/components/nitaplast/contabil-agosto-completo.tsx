@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/page-header";
 import { BalancetePrintSummary } from "@/components/balancete-print-summary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { estruturaBalanceteNitaplast } from "@/data/nitaplast-balancete-estrutura";
+import { estruturaBalanceteNitaplast, type LinhaEstruturaBalancete } from "@/data/nitaplast-balancete-estrutura";
+import { contasPosImplantacao } from "@/data/nitaplast-balancete-julho-engine";
 import { saldosImplantacao } from "@/data/nitaplast-implantacao";
 import { saldoAberturaAgostoPorConta } from "@/data/nitaplast-saldos-agosto";
 import { estabelecimentoLancamentoNitaplast } from "@/data/nitaplast-estabelecimento";
@@ -24,7 +25,23 @@ import {
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const arred = (v: number) => Math.round(v * 100) / 100;
 const info = new Map(saldosImplantacao.map((x) => [x.conta, x]));
-const analiticas = estruturaBalanceteNitaplast.filter((x) => x.tipo === "A");
+const contasEstruturaBase = new Set(estruturaBalanceteNitaplast.map((x) => x.conta));
+// Contas que nasceram depois da implantação de 31/05 (mesma lista usada no motor de
+// julho): sem isso, movimentos legítimos e documentados caem na conta de encaixe
+// "9.9.99 - Conta não encontrada no plano" em vez da classificação real.
+const estruturaBalanceteCompleta: LinhaEstruturaBalancete[] = [
+  ...estruturaBalanceteNitaplast,
+  ...contasPosImplantacao
+    .filter(([conta]) => !contasEstruturaBase.has(conta))
+    .map(([conta, classificacao, descricao]) => ({
+      conta,
+      tipo: "A" as const,
+      classificacao,
+      descricao,
+      nivel: classificacao.split(".").length,
+    })),
+];
+const analiticas = estruturaBalanceteCompleta.filter((x) => x.tipo === "A");
 const contasEstrutura = new Set(analiticas.map((x) => x.conta));
 
 function useBase() {
@@ -73,7 +90,7 @@ function calcular(lancamentos: ReturnType<typeof useBase>["lancamentos"]) {
       descricao: info.get(c)?.descricao ?? "Conta não encontrada no plano",
       nivel: 9,
     }));
-  const estrutura = [...estruturaBalanceteNitaplast, ...extras];
+  const estrutura = [...estruturaBalanceteCompleta, ...extras];
   const valores = new Map(
     [...analiticas, ...extras].map((a) => {
       const m = mov.get(a.conta) ?? { d: 0, c: 0, n: 0 };
