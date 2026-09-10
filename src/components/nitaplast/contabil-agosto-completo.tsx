@@ -747,6 +747,57 @@ function calcularResultadoAgosto(lancamentos: ReturnType<typeof useBase>["lancam
   };
 }
 
+// Mesmo conceito das categorias de despesas operacionais já usadas em julho e no
+// DRE Report (categoriasDespesas de relatorios.dre.tsx): algumas contas saem por
+// natureza (industrialização, depreciação, veículos, comércio exterior), o resto
+// é agrupado pelo centro de custo real do lançamento de agosto.
+const ccAdministrativasAgosto = new Set(["301", "302", "303", "304", "305", "306"]);
+const ccComerciaisAgosto = new Set(["201", "203", "204", "205", "210"]);
+const ccProducaoAgosto = new Set(["101", "102", "103", "104", "106", "107", "108", "110", "111", "10014", "10032", "19999"]);
+const ccFilialAgosto = new Set(["501", "502", "503", "504", "505"]);
+type ItemDespesaAgosto = { conta: string; descricao: string; classificacao: string; valor: number };
+const categoriasDespesasAgostoDefs: [string, string][] = [
+  ["industrializacao", "Despesas com Industrialização"],
+  ["depreciacao", "Despesas com Imobilizado"],
+  ["veiculos", "Despesas com Veículos"],
+  ["comex", "Despesas com Comércio Exterior"],
+  ["administrativas", "Despesas Administrativas"],
+  ["comerciais", "Despesas Comerciais"],
+  ["producao", "Despesas Produção"],
+  ["filial", "Despesas Comercial SP"],
+  ["outras", "Outras despesas operacionais sem classificação gerencial"],
+];
+function categorizarDespesasAgosto(lancamentos: ReturnType<typeof useBase>["lancamentos"], operacionais: string[]) {
+  const operacionaisSet = new Set(operacionais);
+  const porCategoria = new Map<string, Map<string, ItemDespesaAgosto>>();
+  const somar = (categoria: string, conta: string, delta: number) => {
+    const contas = porCategoria.get(categoria) ?? new Map<string, ItemDespesaAgosto>();
+    const atual = contas.get(conta) ?? { conta, descricao: info.get(conta)?.descricao ?? "Conta não encontrada no plano", classificacao: info.get(conta)?.classificacao ?? "9.9.99", valor: 0 };
+    atual.valor = arred(atual.valor + delta);
+    contas.set(conta, atual);
+    porCategoria.set(categoria, contas);
+  };
+  const categoriaDaConta = (conta: string, cc: string): string => {
+    const classificacao = info.get(conta)?.classificacao ?? "";
+    if (conta === "25937") return "industrializacao";
+    if (classificacao.startsWith("5.7.01.011")) return "depreciacao";
+    if (classificacao.startsWith("5.7.01.015") || classificacao.startsWith("5.7.05")) return "veiculos";
+    if (conta === "25070") return "comex";
+    if (ccFilialAgosto.has(cc)) return "filial";
+    if (ccAdministrativasAgosto.has(cc)) return "administrativas";
+    if (ccComerciaisAgosto.has(cc)) return "comerciais";
+    if (ccProducaoAgosto.has(cc)) return "producao";
+    return "outras";
+  };
+  for (const l of lancamentos) {
+    if (operacionaisSet.has(l.debitoCodigo)) somar(categoriaDaConta(l.debitoCodigo, l.cc), l.debitoCodigo, l.valor);
+    if (operacionaisSet.has(l.creditoCodigo)) somar(categoriaDaConta(l.creditoCodigo, l.cc), l.creditoCodigo, -l.valor);
+  }
+  const total = (categoria: string) => arred([...(porCategoria.get(categoria)?.values() ?? [])].reduce((s, x) => s + x.valor, 0));
+  const itens = (categoria: string) => [...(porCategoria.get(categoria)?.values() ?? [])].filter((x) => Math.abs(x.valor) > 0.004);
+  return { total, itens };
+}
+
 export function DreAgostoPadrao() {
   const { lancamentos } = useBase();
   const [abertas, setAbertas] = useState(
@@ -793,7 +844,7 @@ export function DreAgostoPadrao() {
     ["(=) CPV Filial SP", cpvFilial],
     ["(=) CPV / CMV Total", cpv],
   ];
-  type Linha = { id: string; descricao: string; valor: number; nivel: 0 | 1; pai?: string };
+  type Linha = { id: string; descricao: string; valor: number; nivel: 0 | 1 | 2; pai?: string };
   const detalhes = (prefixo: string, pai: string, contas: string[]): Linha[] =>
     contas
       .filter((c) => Math.abs(mov(c)) > 0.004)
@@ -804,6 +855,25 @@ export function DreAgostoPadrao() {
         nivel: 1,
         pai,
       }));
+  const categoriasDespesas = categorizarDespesasAgosto(lancamentos, operacionais);
+  const totalCategorizado = arred(categoriasDespesasAgostoDefs.reduce((s, [id]) => s + categoriasDespesas.total(id), 0));
+  if (Math.abs(totalCategorizado - despesas) > 0.01) {
+    throw new Error(`Categorização das despesas operacionais de agosto não fecha com o Razão: ${totalCategorizado.toFixed(2)} / ${despesas.toFixed(2)}.`);
+  }
+  const linhasCategoriasDespesas: Linha[] = categoriasDespesasAgostoDefs.flatMap(([id, descricao]) => {
+    const valorCategoria = categoriasDespesas.total(id);
+    if (Math.abs(valorCategoria) < 0.005) return [];
+    return [
+      { id: `desp-cat-${id}`, descricao, valor: valorCategoria, nivel: 1 as const, pai: "despesas" },
+      ...categoriasDespesas.itens(id).map((item) => ({
+        id: `desp-cat-${id}-${item.conta}`,
+        descricao: `${item.conta} - ${item.descricao}`,
+        valor: item.valor,
+        nivel: 2 as const,
+        pai: `desp-cat-${id}`,
+      })),
+    ];
+  });
   const linhas: Linha[] = [
     { id: "receita", descricao: "(+) Receita Operacional Bruta", valor: receitaBruta, nivel: 0 },
     {
@@ -832,7 +902,7 @@ export function DreAgostoPadrao() {
     ...detalhes("cpv", "custos", custos),
     { id: "lucro-bruto", descricao: "(=) Lucro Bruto", valor: lucroBruto, nivel: 0 },
     { id: "despesas", descricao: "(-) Despesas Operacionais", valor: despesas, nivel: 0 },
-    ...detalhes("desp", "despesas", operacionais),
+    ...linhasCategoriasDespesas,
     {
       id: "financeiro",
       descricao: "Resultado Financeiro",
@@ -867,7 +937,19 @@ export function DreAgostoPadrao() {
     },
     { id: "resultado", descricao: "(=) Lucro / Prejuízo Líquido", valor: resultado, nivel: 0 },
   ];
-  const pais = new Set(["receita", "deducoes", "custos", "despesas", "financeiro"]);
+  const pais = new Set([
+    "receita", "deducoes", "custos", "despesas", "financeiro",
+    ...categoriasDespesasAgostoDefs.map(([id]) => `desp-cat-${id}`),
+  ]);
+  const paiPorId = new Map(linhas.map((l) => [l.id, l.pai]));
+  function linhaVisivel(l: Linha) {
+    let pai = l.pai;
+    while (pai) {
+      if (!abertas.has(pai)) return false;
+      pai = paiPorId.get(pai);
+    }
+    return true;
+  }
   const alternar = (id: string) =>
     setAbertas((a) => {
       const n = new Set(a);
@@ -958,13 +1040,13 @@ export function DreAgostoPadrao() {
                   </thead>
                   <tbody>
                     {linhas
-                      .filter((l) => !l.pai || abertas.has(l.pai))
+                      .filter(linhaVisivel)
                       .map((l) => (
                         <tr
                           key={l.id}
                           className={`border-b ${l.nivel === 0 ? "font-semibold" : ""}`}
                         >
-                          <td className={`p-2 ${l.nivel === 1 ? "pl-10" : ""}`}>
+                          <td className={`p-2 ${l.nivel === 1 ? "pl-10" : l.nivel === 2 ? "pl-16 text-muted-foreground" : ""}`}>
                             {pais.has(l.id) ? (
                               <button className="mr-2 inline-flex" onClick={() => alternar(l.id)}>
                                 {abertas.has(l.id) ? (
