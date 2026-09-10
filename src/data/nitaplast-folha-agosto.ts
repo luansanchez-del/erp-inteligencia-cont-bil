@@ -103,15 +103,22 @@ export const lancamentosFolhaAgosto: LancamentoIntegrado[] = folhaAgostoDetalhe.
   adicionar("ATR", "1634", "4014", "descontos de atrasos e saídas", colaborador.atraso ?? 0, "Desconto informado na relação de cálculo.");
   adicionar("VANT", "4014", "1634", "vantagem/estouro do mês", colaborador.vantagem ?? 0, "Vantagem informada na relação de cálculo.");
   adicionar("ADT", "1634", "312", "baixa de adiantamento salarial", colaborador.adiantamento ?? 0, "Desconto de adiantamento salarial informado na folha.");
+  adicionar("ADT-FER", "1634", "312", "baixa de adiantamento de férias", colaborador.adiantamentoFerias ?? 0, "Desconto de adiantamento de férias informado na folha (código 890), pago antes do fechamento. Conferido no extrato/SOFTDIB Itaú: matrícula 30281 (Emerson) com pagamento de 07/08 estornado no mesmo dia e refeito em 14/08 (efeito líquido em caixa é um único débito de R$ 1.519,03), matrícula 30323 (Jussara) pago em 07/08 sem intercorrência. Sem localização confirmada do pagamento da matrícula 30319 (Carolina) nos extratos Itaú/Bradesco até o momento; lançamento mantido pelo valor do relatório de folha, pendente de referência bancária.");
   adicionar("BEN", "1634", "25263", "descontos de plano de saúde e benefícios", colaborador.descontosBeneficios ?? 0, "Mensalidades e coparticipações discriminadas nos dados adicionais da folha.");
   adicionar("CONS", "1634", "25231", "consignado, pensão judicial ou Crédito do Trabalhador", (colaborador.consignado ?? 0) + (colaborador.pensao ?? 0), "Desconto a repassar conforme a relação de cálculo. A natureza individual permanece rastreada pelo documento do colaborador.");
   adicionar("INSS", "1634", "25227", "INSS descontado", colaborador.inssNormal, "INSS normal retido na folha.");
   adicionar("INSS-FER", "25237", "25227", "INSS sobre férias", colaborador.inssFerias ?? 0, "Retenção previdenciária sobre férias; o bruto de férias permanece vinculado à provisão já constituída.");
   adicionar("INSS-13", "25238", "25227", "INSS sobre 13º proporcional", colaborador.inssDecimo ?? 0, "Retenção previdenciária sobre 13º proporcional da rescisão.");
   adicionar("SAL-FAM", "25227", "1634", "salário-família", colaborador.salarioFamilia ?? 0, "Benefício informado na rescisão e compensável na contribuição previdenciária.");
-  adicionar("ENC", "4020", "25227", "encargos patronais, terceiros e GILRAT", arred(colaborador.baseEncargos * 0.273), "Carga patronal de 27,3% aplicada sobre a base INSS Empresa do relatório: 20% patronal + terceiros + GILRAT.");
+  const taxaEncargos = colaborador.unidade === "Matriz" ? 0.273 : 0.268;
+  const feriasBrutas = colaborador.feriasBrutas ?? 0;
+  const baseEncargosNormal = colaborador.baseEncargos - feriasBrutas;
+  adicionar("ENC", "4020", "25227", "encargos patronais, terceiros e GILRAT", arred(baseEncargosNormal * taxaEncargos), `Carga patronal de ${(taxaEncargos * 100).toFixed(1)}% aplicada sobre a base INSS Empresa do relatório (excluída a parcela de férias do mês, já provisionada): 20% patronal + terceiros + GILRAT. Alíquota conforme Resumo de Contribuições do relatório de ${colaborador.unidade === "Matriz" ? "matriz (GILRAT 1,5%)" : "filial (GILRAT 1,0%)"}; corrige lançamento anterior que aplicava 27,3% a toda a folha, inclusive à filial.`);
+  if (feriasBrutas > 0) {
+    adicionar("ENC-FER-PROV", "25230", "25227", "encargos patronais sobre férias, já provisionados", arred(feriasBrutas * taxaEncargos), `Encargos patronais sobre o bruto de férias do mês (R$ ${feriasBrutas.toFixed(2)}) pagos com a baixa da provisão mensal já constituída (ver AGO-PROV-${colaborador.unidade === "Matriz" ? "matriz" : "filial"}-ferias-${colaborador.matricula}-*-ENCARGOS), em vez de nova despesa: o valor já foi reconhecido mês a mês na provisão.`);
+  }
   adicionar("FGTS", "4021", "25228", "FGTS mensal", colaborador.fgts, "FGTS mensal informado na folha.");
-  adicionar("FGTS-FER", "4021", "25228", "FGTS sobre férias", colaborador.fgtsFerias ?? 0, "FGTS sobre férias informado na folha.");
+  adicionar("FGTS-FER", "25230", "25228", "FGTS sobre férias, já provisionado", colaborador.fgtsFerias ?? 0, `FGTS sobre férias informado na folha; baixado da provisão mensal já constituída (ver AGO-PROV-${colaborador.unidade === "Matriz" ? "matriz" : "filial"}-ferias-${colaborador.matricula}-*-ENCARGOS) em vez de lançado como nova despesa, evitando duplicar o encargo já provisionado.`);
   adicionar("FGTS-MES-ANT", "4021", "25228", "FGTS normal do mês anterior na rescisão", colaborador.fgtsMesAnterior ?? 0, "FGTS do mês anterior informado no demonstrativo rescisório.");
   adicionar("FGTS-RES", "4021", "25228", "FGTS rescisório do mês", colaborador.fgtsRescisao ?? 0, "FGTS rescisório informado no demonstrativo de rescisão.");
   adicionar("FGTS-13-RES", "4021", "25228", "FGTS rescisório sobre 13º", colaborador.fgtsDecimo ?? 0, "FGTS sobre 13º proporcional informado no demonstrativo de rescisão.");
@@ -151,7 +158,7 @@ export const resumoFolhaAgosto = {
   inssSeguradosMatriz: 4225.77,
   inssSeguradosFilial: 1005.71,
   encargosPatronaisTerceirosGilratMatriz: 12112.19,
-  encargosPatronaisTerceirosGilratFilial: 3172.98,
+  encargosPatronaisTerceirosGilratFilial: 3114.82,
   dctfwebMatriz: 16337.96,
   dctfwebFilial: 4120.53,
   funcionarios: 16,

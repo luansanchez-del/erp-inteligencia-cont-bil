@@ -10,6 +10,7 @@ import { lancamentosBradescoInvestFacilAgosto } from "./nitaplast-aplicacoes-bra
 import { lancamentosCambioAgosto } from "./nitaplast-cambio-agosto";
 import { lancamentosDespesasDocumentaisAgosto } from "./nitaplast-despesas-documentais-agosto";
 import { lancamentosFolhaAgosto } from "./nitaplast-folha-agosto";
+import { lancamentosProvisoesAgosto } from "./nitaplast-provisoes-agosto";
 import { lancamentosJcpAgosto } from "./nitaplast-jcp-agosto";
 import { lancamentosVersaoJulho } from "./nitaplast-razao-julho-final-v2";
 import type { LancamentoIntegrado } from "./nitaplast-razao-base";
@@ -66,6 +67,7 @@ export const lancamentosIntegradosAgosto: LancamentoIntegrado[] = [
   ...lancamentosComprasCpvAgosto,
   ...lancamentosDespesasDocumentaisAgosto,
   ...lancamentosFolhaAgosto,
+  ...lancamentosProvisoesAgosto,
   ...lancamentosJcpAgosto,
   ...lancamentosFechamentoEstoqueAgosto,
   ...lancamentosFechamentoEstoqueFilialAgosto,
