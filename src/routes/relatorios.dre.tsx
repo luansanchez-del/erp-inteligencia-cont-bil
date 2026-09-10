@@ -10,8 +10,12 @@ import {
 } from "@/data/nitaplast-fechamento-despesas-junho";
 import { calcularCreditosFederaisDespesas } from "@/data/nitaplast-fechamento-creditos-federais-junho";
 import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
+import { useErp } from "@/context/erp-context";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
+import { useLancamentosCompetencia } from "@/hooks/use-lancamentos-competencia";
+import { DreCompetenciaAberta } from "@/components/competencia-aberta";
+import { DreAgostoPadrao } from "@/components/nitaplast/contabil-agosto-completo";
 import { exportarExcel } from "@/lib/exportar-excel";
 
 export const Route = createFileRoute("/relatorios/dre")({
@@ -21,8 +25,20 @@ export const Route = createFileRoute("/relatorios/dre")({
       { name: "description", content: "Demonstração do Resultado calculada exclusivamente pelo Razão e Balancete." },
     ],
   }),
-  component: DreReportPage,
+  component: DreReportRoteador,
 });
+
+function DreReportRoteador() {
+  const { empresa, competencia } = useErp();
+  if (competencia.id === "2026-08") return <PageShell><DreAgostoPadrao /></PageShell>;
+  if (competencia.id !== "2026-06") return <PageShell><DreAbertaWrapper empresaId={empresa.id} competencia={competencia} /></PageShell>;
+  return <DreReportPage />;
+}
+
+function DreAbertaWrapper({ empresaId, competencia }: { empresaId: string; competencia: ReturnType<typeof useErp>["competencia"] }) {
+  const { lancamentos } = useLancamentosCompetencia(empresaId, competencia.id);
+  return <DreCompetenciaAberta lancamentos={lancamentos} competencia={competencia} />;
+}
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const pct = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

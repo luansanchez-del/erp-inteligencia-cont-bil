@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { CheckCircle2, Download, FileSpreadsheet, Printer, Search } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { CheckCircle2, Download, FileSpreadsheet, Printer, Search, TriangleAlert } from "lucide-react";
 import { PageHeader, PageShell } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { calcularBalanceteCcJunho, type LinhaBalanceteCcJunho } from "@/data/nitaplast-balancete-cc-junho";
 import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
+import { useErp } from "@/context/erp-context";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 import { usePrintMode } from "@/hooks/use-print-mode";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
@@ -20,8 +21,37 @@ export const Route = createFileRoute("/relatorios/balancete-centro-custo")({
       { name: "description", content: "Balancete de junho de 2026 aberto por centro de custo a partir do Razão fechado." },
     ],
   }),
-  component: BalanceteCentroCustoReportPage,
+  component: BalanceteCentroCustoRoteador,
 });
+
+function BalanceteCentroCustoRoteador() {
+  const { competencia } = useErp();
+  if (competencia.id !== "2026-06") {
+    return (
+      <PageShell>
+        <PageHeader
+          titulo="Balancete por Centro de Custo"
+          descricao={`Competência ${competencia.label} · esta abertura gerencial por centro de custo ainda existe só para 06/2026.`}
+        />
+        <Card className="border-amber-500/40 bg-amber-50/40">
+          <CardContent className="flex gap-3 pt-6">
+            <TriangleAlert className="mt-0.5 size-5 shrink-0 text-amber-700" />
+            <div>
+              <p className="font-medium">Esta abertura por centro de custo ainda não existe para {competencia.label}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Foi montada só para 06/2026, a partir do Balancete por Centro de Custos de 05/2026. Para {competencia.label}, use o Balancete normal (sem abertura por CC) — o centro de custo de cada lançamento já aparece na coluna correspondente.
+              </p>
+              <Button asChild size="sm" variant="outline" className="mt-3">
+                <Link to="/contabil/balancete">Abrir Balancete</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </PageShell>
+    );
+  }
+  return <BalanceteCentroCustoReportPage />;
+}
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const eps = 0.005;

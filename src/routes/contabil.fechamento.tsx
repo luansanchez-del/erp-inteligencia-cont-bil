@@ -6,11 +6,51 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { gerarCsvLoteContabilJunho, montarLoteContabilJunho } from "@/data/nitaplast-lote-final-junho";
 import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
+import { useErp } from "@/context/erp-context";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
 import { FechamentoManualJunho } from "@/components/nitaplast/fechamento-manual-junho";
 
-export const Route = createFileRoute("/contabil/fechamento")({ component: FechamentoPage });
+export const Route = createFileRoute("/contabil/fechamento")({ component: FechamentoRoteador });
+
+function FechamentoRoteador() {
+  const { competencia } = useErp();
+  if (competencia.id !== "2026-06") {
+    return (
+      <PageShell>
+        <PageHeader
+          titulo="Central de Fechamento Contábil"
+          descricao={`Competência ${competencia.label} · este painel é específico do lote final de 06/2026 (planilha manual de fechamento + CSV de importação por centro de custo).`}
+        />
+        <Card className="border-amber-500/40 bg-amber-50/40">
+          <CardContent className="flex gap-3 pt-6">
+            <TriangleAlert className="mt-0.5 size-5 shrink-0 text-amber-700" />
+            <div>
+              <p className="font-medium">Esta tela ainda não existe para {competencia.label}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                O lote final em CSV por centro de custo foi montado só para a competência 06/2026, a partir da planilha manual daquele fechamento. Para {competencia.label}, use o Fechamento Assistido, que já segue a competência selecionada.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {acessos.map((item) => (
+            <Card key={item.to} className="transition-colors hover:border-primary/40">
+              <CardHeader>
+                <div className="flex items-start gap-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-md bg-primary/10 text-primary"><item.icon className="size-5" /></span>
+                  <div><CardTitle className="text-base">{item.titulo}</CardTitle><CardDescription className="mt-1">{item.descricao}</CardDescription></div>
+                </div>
+              </CardHeader>
+              <CardContent><Button asChild variant="outline" className="w-full"><Link to={item.to}>Abrir</Link></Button></CardContent>
+            </Card>
+          ))}
+        </div>
+      </PageShell>
+    );
+  }
+  return <FechamentoPage />;
+}
 
 const acessos = [
   { titulo: "Fechamento assistido", descricao: "Cobertura documental e pontos internos de revisão.", to: "/contabil/fechamento-assistido" as const, icon: FileCheck2 },

@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/page-header";
+import { BalancetePrintSummary } from "@/components/balancete-print-summary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { estruturaBalanceteNitaplast } from "@/data/nitaplast-balancete-estrutura";
 import { saldosImplantacao } from "@/data/nitaplast-implantacao";
@@ -117,98 +119,116 @@ function calcular(lancamentos: ReturnType<typeof useBase>["lancamentos"]) {
   });
 }
 
+const POR_PAGINA_BALANCETE = 50;
+
+function LinhaBalanceteAgosto({ linha }: { linha: ReturnType<typeof calcular>[number] }) {
+  return (
+    <tr className={`border-b ${linha.tipo === "S" ? "bg-muted/20 font-semibold print:bg-white" : ""}`}>
+      <td className="p-2 font-mono">{linha.conta}</td>
+      <td className="p-2">{linha.tipo}</td>
+      <td className="p-2 font-mono text-xs">{linha.classificacao}</td>
+      <td className="p-2">{linha.descricao}</td>
+      <Money valor={linha.sa} />
+      <Money valor={linha.d} />
+      <Money valor={linha.c} />
+      <Money valor={linha.mov} />
+      <Money valor={linha.sf} strong />
+      <td className="p-2 text-right print:hidden">
+        {linha.tipo === "A" ? (
+          <Button asChild size="sm" variant="outline">
+            <Link to="/contabil/razao" search={{ conta: linha.conta } as never}>Abrir Razão</Link>
+          </Button>
+        ) : (
+          "—"
+        )}
+      </td>
+    </tr>
+  );
+}
+
+function Money({ valor, strong = false }: { valor: number; strong?: boolean }) {
+  return <td className={`p-2 text-right tabular-nums ${strong ? "font-semibold" : ""}`}>{Math.abs(valor) < 0.005 ? "-" : valor < 0 ? `(${brl.format(Math.abs(valor))})` : brl.format(valor)}</td>;
+}
+
 export function BalanceteAgostoCompleto() {
   const { lancamentos } = useBase();
   const linhas = useMemo(() => calcular(lancamentos), [lancamentos]);
   const [busca, setBusca] = useState("");
-  const q = busca.toLowerCase();
-  const vis = linhas.filter(
-    (x) =>
-      Math.abs(x.sa) + Math.abs(x.d) + Math.abs(x.c) + Math.abs(x.sf) > 0.004 &&
-      (!q || `${x.conta} ${x.classificacao} ${x.descricao}`.toLowerCase().includes(q)),
+  const [pagina, setPagina] = useState(1);
+  const [soAnaliticas, setSoAnaliticas] = useState(false);
+  const [soMovimento, setSoMovimento] = useState(false);
+  const filtradas = useMemo(() => {
+    const q = busca.trim().toLocaleLowerCase("pt-BR");
+    return linhas.filter(
+      (x) =>
+        (!soAnaliticas || x.tipo === "A") &&
+        (!soMovimento || x.n > 0) &&
+        (!q || `${x.conta} ${x.classificacao} ${x.descricao}`.toLocaleLowerCase("pt-BR").includes(q)),
+    );
+  }, [linhas, busca, soAnaliticas, soMovimento]);
+  const totalPaginas = Math.max(1, Math.ceil(filtradas.length / POR_PAGINA_BALANCETE));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const paginaLinhas = filtradas.slice((paginaAtual - 1) * POR_PAGINA_BALANCETE, paginaAtual * POR_PAGINA_BALANCETE);
+  const linhasResumo = useMemo(
+    () => linhas.map((x) => ({ tipo: x.tipo, conta: x.conta, classificacao: x.classificacao, descricao: x.descricao, saldoAnterior: x.sa, debitos: x.d, creditos: x.c, saldoAtual: x.sf })),
+    [linhas],
   );
-  const total = arred(lancamentos.reduce((s, x) => s + x.valor, 0));
   return (
-    <div className="grid gap-5">
-      <Header
-        titulo="Balancete consolidado - Nitaplast"
-        descricao="Razão → Balancete → DRE. Saldos anteriores de 07/2026 e movimento contábil de 08/2026."
+    <>
+      <PageHeader
+        titulo="Balancete — 08/2026"
+        descricao="Saldo anterior de 07/2026 transportado, movimento da competência e saldo atual. Matriz + Filial SP."
+        acoes={<Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}><Printer className="size-4" />Imprimir / PDF</Button>}
       />
-      <div className="grid gap-3 sm:grid-cols-4">
-        <Metric label="Débitos 08" valor={total} />
-        <Metric label="Créditos 08" valor={total} />
-        <Metric label="Diferença contábil" valor={0} />
-        <Metric
-          label="Saldo analítico assinado"
-          valor={arred(linhas.filter((x) => x.tipo === "A").reduce((s, x) => s + x.sf, 0))}
-        />
-      </div>
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between gap-3">
-            <CardTitle>Balancete 08/2026 · {linhas.length} linhas</CardTitle>
-            <div className="flex gap-2">
-              <Input
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                placeholder="Buscar conta"
-              />
-              <Button variant="outline" onClick={() => window.print()}>
-                <Printer className="mr-2 size-4" />
-                Imprimir
-              </Button>
+      <Card className="print:border-0 print:shadow-none">
+        <CardHeader className="print:px-0">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-base">Balancete consolidado — Nitaplast</CardTitle>
+              <CardDescription>Razão → Balancete → DRE. Mesma estrutura do plano de contas da matriz.</CardDescription>
+            </div>
+            <div className="flex w-full flex-wrap gap-2 sm:w-auto print:hidden">
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
+                <Input className="pl-9 sm:w-80" value={busca} onChange={(event) => { setBusca(event.target.value); setPagina(1); }} placeholder="Buscar conta, classificação ou descrição" />
+              </div>
+              <Button variant={soAnaliticas ? "default" : "outline"} onClick={() => { setSoAnaliticas((valor) => !valor); setPagina(1); }}>Somente analíticas</Button>
+              <Button variant={soMovimento ? "default" : "outline"} onClick={() => { setSoMovimento((valor) => !valor); setPagina(1); }}>Somente movimento</Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent className="overflow-x-auto print:px-0 print:hidden">
           <table className="w-full min-w-[1350px] text-sm">
             <thead>
-              <tr className="border-b bg-muted">
-                <th className="p-2 text-left">Conta</th>
-                <th> S/A </th>
-                <th className="text-left">Classificação</th>
-                <th className="text-left">Descrição</th>
-                <th>Saldo anterior</th>
-                <th>Débito</th>
-                <th>Crédito</th>
-                <th>Movimento</th>
-                <th>Saldo atual</th>
-                <th>Detalhe</th>
+              <tr className="border-b bg-muted/40 text-left text-xs">
+                <th className="p-2">Conta</th><th className="p-2">S/A</th><th className="p-2">Classificação</th><th className="p-2">Descrição</th><th className="p-2 text-right">Saldo anterior</th><th className="p-2 text-right">Débitos</th><th className="p-2 text-right">Créditos</th><th className="p-2 text-right">Movimento</th><th className="p-2 text-right">Saldo atual</th><th className="p-2 text-right">Detalhe</th>
               </tr>
             </thead>
-            <tbody>
-              {vis.map((x) => (
-                <tr
-                  key={`${x.tipo}-${x.conta}`}
-                  className={`border-b ${x.tipo === "S" ? "bg-muted/30 font-semibold" : ""}`}
-                >
-                  <td className="p-2 font-mono">{x.conta}</td>
-                  <td className="text-center">{x.tipo}</td>
-                  <td className="font-mono">{x.classificacao}</td>
-                  <td>{x.descricao}</td>
-                  {[x.sa, x.d, x.c, x.mov, x.sf].map((v, i) => (
-                    <td key={i} className="p-2 text-right tabular-nums">
-                      {brl.format(arred(v))}
-                    </td>
-                  ))}
-                  <td>
-                    {x.tipo === "A" ? (
-                      <Button asChild size="sm" variant="outline">
-                        <Link to="/contabil/razao" search={{ conta: x.conta } as never}>
-                          Abrir Razão
-                        </Link>
-                      </Button>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+            <tbody>{paginaLinhas.map((linha) => <LinhaBalanceteAgosto key={`${linha.tipo}-${linha.conta}`} linha={linha} />)}</tbody>
           </table>
         </CardContent>
+        {/* Só pra impressão/PDF: todas as linhas filtradas de uma vez, sem paginação — a tabela acima é limitada por página na tela. */}
+        <CardContent className="hidden print:block print:px-0">
+          <table className="w-full text-sm print:text-[9px]">
+            <thead>
+              <tr className="border-b bg-muted/40 text-left text-xs print:bg-white">
+                <th className="p-2">Conta</th><th className="p-2">S/A</th><th className="p-2">Classificação</th><th className="p-2">Descrição</th><th className="p-2 text-right">Saldo anterior</th><th className="p-2 text-right">Débitos</th><th className="p-2 text-right">Créditos</th><th className="p-2 text-right">Movimento</th><th className="p-2 text-right">Saldo atual</th>
+              </tr>
+            </thead>
+            <tbody>{filtradas.map((linha) => <LinhaBalanceteAgosto key={`${linha.tipo}-${linha.conta}`} linha={linha} />)}</tbody>
+          </table>
+          <BalancetePrintSummary linhas={linhasResumo} />
+        </CardContent>
+        <CardContent className="flex items-center justify-between border-t pt-4 print:hidden">
+          <span className="text-xs text-muted-foreground">{filtradas.length} linhas encontradas</span>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" disabled={paginaAtual === 1} onClick={() => setPagina((valor) => valor - 1)}>Anterior</Button>
+            <span className="text-xs">Página {paginaAtual} de {totalPaginas}</span>
+            <Button size="sm" variant="outline" disabled={paginaAtual === totalPaginas} onClick={() => setPagina((valor) => valor + 1)}>Próxima</Button>
+          </div>
+        </CardContent>
       </Card>
-    </div>
+    </>
   );
 }
 

@@ -7,12 +7,28 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { lancamentosIntegrados } from "@/data/nitaplast-razao-integrado";
+import { useErp } from "@/context/erp-context";
 import { useNitaplastJunho } from "@/hooks/use-nitaplast-junho";
 import { usePrintMode } from "@/hooks/use-print-mode";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
+import { useLancamentosCompetencia } from "@/hooks/use-lancamentos-competencia";
+import { DiarioCompetenciaAberta } from "@/components/competencia-aberta";
+import { DiarioAgostoCompleto } from "@/components/nitaplast/contabil-agosto-completo";
 import { exportarExcel } from "@/lib/exportar-excel";
 
-export const Route = createFileRoute("/relatorios/diario")({ component: DiarioReportPage });
+export const Route = createFileRoute("/relatorios/diario")({ component: DiarioReportRoteador });
+
+function DiarioReportRoteador() {
+  const { empresa, competencia } = useErp();
+  if (competencia.id === "2026-08") return <PageShell><DiarioAgostoCompleto /></PageShell>;
+  if (competencia.id !== "2026-06") return <PageShell><DiarioAbertaWrapper empresaId={empresa.id} competencia={competencia} /></PageShell>;
+  return <DiarioReportPage />;
+}
+
+function DiarioAbertaWrapper({ empresaId, competencia }: { empresaId: string; competencia: ReturnType<typeof useErp>["competencia"] }) {
+  const { lancamentos } = useLancamentosCompetencia(empresaId, competencia.id);
+  return <DiarioCompetenciaAberta lancamentos={lancamentos} competencia={competencia} />;
+}
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const POR_PAGINA = 100;
