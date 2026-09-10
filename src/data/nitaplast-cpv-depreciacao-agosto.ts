@@ -36,13 +36,12 @@ export const estoqueFinalMatrizAgostoTotal = 5_744_762.11;
 /**
  * Fechamento contábil da filial em agosto, seguindo a mesma regra operacional do
  * padrão de julho: baixa do estoque inicial, encerramento das compras líquidas e
- * reconhecimento do estoque final. O valor é derivado do saldo patrimonial já
- * transportado para agosto; quando a documentação de inventário final da filial
- * estiver disponível, a linhas de referência devem ser ajustadas diretamente no
- * cadastro de origem, sem converter isso em ajuste de encaixe.
+ * reconhecimento do estoque final documentado no inventário da filial, página 11.
+ * O encerramento das compras ainda depende da conciliação fiscal da competência.
  */
 const estoqueInicialFilialAgosto = saldoAberturaAgostoPorConta.get("25138") ?? 0;
 const comprasFilialAgosto = saldoAberturaAgostoPorConta.get("25139") ?? 0;
+export const estoqueFinalFilialAgostoTotal = 218_373.04;
 
 export const lancamentosFechamentoEstoqueFilialAgosto: LancamentoIntegrado[] = [
   base({
@@ -85,10 +84,10 @@ export const lancamentosFechamentoEstoqueFilialAgosto: LancamentoIntegrado[] = [
     documento: "INVENTÁRIO FILIAL 31/08/2026",
     cc: "502",
     centroCusto: "COMERCIAL SP",
-    valor: Math.abs(estoqueInicialFilialAgosto + comprasFilialAgosto),
-    observacao: "Registro do estoque final da filial no mesmo padrão contábil do fechamento de julho. O valor só é produto do saldo de abertura e compras líquidas transportadas e deve ser substituído por inventário final documentado quando disponível.",
-    fonte: "Inventário/documentação oficial da filial para 31/08/2026",
-    rastreio: "derivado",
+    valor: estoqueFinalFilialAgostoTotal,
+    observacao: `Inventário com data de referência 31/08/2026, emitido em 04/09/2026 às 14:33, página 11: produto acabado, 5.051 peças, 22.195,379 kg e total de R$ 218.373,04. Correção documental do lançamento AGO-CPV-F-FINAL, preservado com o mesmo ID: o valor anterior de R$ ${arred(Math.abs(estoqueInicialFilialAgosto + comprasFilialAgosto)).toFixed(2)} era calculado pela soma dos saldos transportados, sem inventário final. A correção não valida o encerramento das compras da competência.`,
+    fonte: "C:/082026/FILIAL - AGO 26/REGISTRO INVENTARIO ESTOQUE.pdf — página 11, total geral e resumo PA, referência 31/08/2026",
+    rastreio: "documento",
   }),
 ].filter((linha) => Math.abs(linha.valor) > 0.005);
 
