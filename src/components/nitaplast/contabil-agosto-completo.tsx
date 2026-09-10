@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, ChevronRight, CircleAlert, Printer, Search } from "lucide-react";
+import { ChevronDown, ChevronRight, CircleAlert, Download, Printer, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +12,12 @@ import { estruturaBalanceteNitaplast, type LinhaEstruturaBalancete } from "@/dat
 import { contasPosImplantacao } from "@/data/nitaplast-balancete-julho-engine";
 import { saldosImplantacao } from "@/data/nitaplast-implantacao";
 import { saldoAberturaAgostoPorConta } from "@/data/nitaplast-saldos-agosto";
-import { estabelecimentoLancamentoNitaplast } from "@/data/nitaplast-estabelecimento";
+import {
+  escopoContaBalanceteNitaplast,
+  estabelecimentoLancamentoNitaplast,
+  type EscopoContaNitaplast,
+  type EstabelecimentoNitaplast,
+} from "@/data/nitaplast-estabelecimento";
 import { useLancamentosCompetencia } from "@/hooks/use-lancamentos-competencia";
 import { calcularDreJulhoFinal } from "@/data/nitaplast-dre-julho-final";
 import { lancamentosIntegradosJulhoFinal } from "@/data/nitaplast-razao-julho-final-v2";
@@ -43,6 +48,25 @@ const estruturaBalanceteCompleta: LinhaEstruturaBalancete[] = [
 ];
 const analiticas = estruturaBalanceteCompleta.filter((x) => x.tipo === "A");
 const contasEstrutura = new Set(analiticas.map((x) => x.conta));
+function grupoClassificacaoAgosto(classificacao: string): string {
+  if (classificacao.startsWith("1")) return "Ativo";
+  if (classificacao.startsWith("2")) return "Passivo e patrimônio líquido";
+  if (classificacao.startsWith("4")) return "Receitas acumuladas";
+  if (classificacao.startsWith("5")) return "Custos e despesas acumulados";
+  return "Outros";
+}
+function combinarEscoposAgosto(escopos: Iterable<EscopoContaNitaplast>): EscopoContaNitaplast {
+  let matriz = false;
+  let filial = false;
+  for (const e of escopos) {
+    if (e === "Matriz") matriz = true;
+    else if (e === "Filial SP") filial = true;
+    else { matriz = true; filial = true; }
+  }
+  if (matriz && filial) return "Matriz + Filial SP";
+  if (filial) return "Filial SP";
+  return "Matriz";
+}
 
 function useBase() {
   return useLancamentosCompetencia("nitaplast-matriz", "2026-08");
@@ -58,12 +82,12 @@ function Header({ titulo, descricao }: { titulo: string; descricao: string }) {
     </div>
   );
 }
-function Metric({ label, valor }: { label: string; valor: number }) {
+function Metric({ label, valor, money = true }: { label: string; valor: number; money?: boolean }) {
   return (
     <Card>
       <CardContent className="pt-5">
         <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="mt-1 text-xl font-semibold tabular-nums">{brl.format(valor)}</p>
+        <p className="mt-1 text-xl font-semibold tabular-nums">{money ? brl.format(valor) : valor.toLocaleString("pt-BR")}</p>
       </CardContent>
     </Card>
   );
@@ -71,15 +95,24 @@ function Metric({ label, valor }: { label: string; valor: number }) {
 
 function calcular(lancamentos: ReturnType<typeof useBase>["lancamentos"]) {
   const mov = new Map<string, { d: number; c: number; n: number }>();
+  const estabs = new Map<string, Set<EstabelecimentoNitaplast>>();
+  const addEst = (conta: string, e: EstabelecimentoNitaplast) => {
+    const s = estabs.get(conta) ?? new Set<EstabelecimentoNitaplast>();
+    s.add(e);
+    estabs.set(conta, s);
+  };
   for (const l of lancamentos) {
+    const e = estabelecimentoLancamentoNitaplast(l);
     const d = mov.get(l.debitoCodigo) ?? { d: 0, c: 0, n: 0 };
     d.d += l.valor;
     d.n++;
     mov.set(l.debitoCodigo, d);
+    addEst(l.debitoCodigo, e);
     const c = mov.get(l.creditoCodigo) ?? { d: 0, c: 0, n: 0 };
     c.c += l.valor;
     c.n++;
     mov.set(l.creditoCodigo, c);
+    addEst(l.creditoCodigo, e);
   }
   const extras = [...mov.keys()]
     .filter((c) => !contasEstrutura.has(c))
@@ -95,6 +128,7 @@ function calcular(lancamentos: ReturnType<typeof useBase>["lancamentos"]) {
     [...analiticas, ...extras].map((a) => {
       const m = mov.get(a.conta) ?? { d: 0, c: 0, n: 0 };
       const sa = saldoAberturaAgostoPorConta.get(a.conta) ?? 0;
+      const estabelecimento = escopoContaBalanceteNitaplast(a.conta, a.descricao, estabs.get(a.conta) ?? []);
       return [
         a.conta,
         {
@@ -104,12 +138,14 @@ function calcular(lancamentos: ReturnType<typeof useBase>["lancamentos"]) {
           mov: arred(m.d - m.c),
           sf: arred(sa + m.d - m.c),
           n: m.n,
+          estabelecimento,
         },
       ] as const;
     }),
   );
   return estrutura.map((x) => {
-    if (x.tipo === "A") return { ...x, ...valores.get(x.conta)! };
+    const grupo = grupoClassificacaoAgosto(x.classificacao);
+    if (x.tipo === "A") return { ...x, grupo, ...valores.get(x.conta)! };
     const filhas = [...valores]
       .filter(([conta]) => {
         const a = [...analiticas, ...extras].find((y) => y.conta === conta);
@@ -121,6 +157,7 @@ function calcular(lancamentos: ReturnType<typeof useBase>["lancamentos"]) {
       .map(([, v]) => v);
     return {
       ...x,
+      grupo,
       ...filhas.reduce(
         (t, v) => ({
           sa: t.sa + v.sa,
@@ -132,29 +169,27 @@ function calcular(lancamentos: ReturnType<typeof useBase>["lancamentos"]) {
         }),
         { sa: 0, d: 0, c: 0, mov: 0, sf: 0, n: 0 },
       ),
+      estabelecimento: combinarEscoposAgosto(filhas.map((v) => v.estabelecimento)),
     };
   });
 }
 
-const POR_PAGINA_BALANCETE = 50;
-
 function LinhaBalanceteAgosto({ linha }: { linha: ReturnType<typeof calcular>[number] }) {
   return (
-    <tr className={`border-b ${linha.tipo === "S" ? "bg-muted/20 font-semibold print:bg-white" : ""}`}>
+    <tr className={`border-b ${linha.tipo === "S" ? "bg-muted/40 font-semibold" : ""}`}>
       <td className="p-2 font-mono">{linha.conta}</td>
       <td className="p-2">{linha.tipo}</td>
       <td className="p-2 font-mono text-xs">{linha.classificacao}</td>
       <td className="p-2">{linha.descricao}</td>
+      <td className="p-2 font-medium">{linha.estabelecimento}</td>
       <Money valor={linha.sa} />
       <Money valor={linha.d} />
       <Money valor={linha.c} />
       <Money valor={linha.mov} />
       <Money valor={linha.sf} strong />
-      <td className="p-2 text-right print:hidden">
+      <td className="p-2">
         {linha.tipo === "A" ? (
-          <Button asChild size="sm" variant="outline">
-            <Link to="/contabil/razao" search={{ conta: linha.conta } as never}>Abrir Razão</Link>
-          </Button>
+          <Button size="sm" variant="outline" onClick={() => window.location.assign(`/contabil/razao?conta=${encodeURIComponent(linha.conta)}`)}>Abrir Razão</Button>
         ) : (
           "—"
         )}
@@ -164,88 +199,142 @@ function LinhaBalanceteAgosto({ linha }: { linha: ReturnType<typeof calcular>[nu
 }
 
 function Money({ valor, strong = false }: { valor: number; strong?: boolean }) {
-  return <td className={`p-2 text-right tabular-nums ${strong ? "font-semibold" : ""}`}>{Math.abs(valor) < 0.005 ? "-" : valor < 0 ? `(${brl.format(Math.abs(valor))})` : brl.format(valor)}</td>;
+  return <td className={`p-2 text-right tabular-nums ${strong ? "font-semibold" : ""}`}>{valor < 0 ? `(${brl.format(Math.abs(valor))})` : brl.format(valor)}</td>;
+}
+
+type CelulaCsvAgosto = string | number;
+function exportarCsvAgosto(nome: string, linhas: CelulaCsvAgosto[][], sep = ";") {
+  const celula = (valor: CelulaCsvAgosto) =>
+    typeof valor === "number" ? valor.toFixed(2).replace(".", ",") : `"${String(valor).replaceAll('"', '""')}"`;
+  const texto = linhas.map((linha) => linha.map(celula).join(sep)).join("\n");
+  const blob = new Blob(["﻿", texto], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = nome;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 export function BalanceteAgostoCompleto() {
   const { lancamentos } = useBase();
   const linhas = useMemo(() => calcular(lancamentos), [lancamentos]);
+  const revisao = useMemo(() => lancamentos.filter((l) => l.status === "revisar").length, [lancamentos]);
+  // Agosto ainda não tem o mecanismo de reclassificação inteligente de julho; o
+  // slot fica na mesma posição do layout, mas sempre zerado até existir essa opção.
+  const reclassificacoes = 0;
+  const conferencia = useMemo(() => {
+    const analiticasCalculadas = linhas.filter((x) => x.tipo === "A");
+    const totalDebitos = arred(lancamentos.reduce((s, x) => s + x.valor, 0));
+    const somaMovimentosAnaliticos = arred(analiticasCalculadas.reduce((s, x) => s + x.mov, 0));
+    const somaSaldoAtualAnalitico = arred(analiticasCalculadas.reduce((s, x) => s + x.sf, 0));
+    const contasRazaoSemEstrutura = analiticasCalculadas.filter((x) => x.classificacao === "9.9.99").map((x) => x.conta);
+    return {
+      totalDebitos,
+      totalCreditos: totalDebitos,
+      diferencaDebitosCreditos: 0,
+      somaMovimentosAnaliticos,
+      somaSaldoAtualAnalitico,
+      contasRazaoSemEstrutura,
+    };
+  }, [lancamentos, linhas]);
+  const fechado = Math.abs(conferencia.diferencaDebitosCreditos) < 0.01 && Math.abs(conferencia.somaMovimentosAnaliticos) < 0.01 && Math.abs(conferencia.somaSaldoAtualAnalitico) < 0.01 && conferencia.contasRazaoSemEstrutura.length === 0;
   const [busca, setBusca] = useState("");
-  const [pagina, setPagina] = useState(1);
-  const [soAnaliticas, setSoAnaliticas] = useState(false);
+  const [grupo, setGrupo] = useState("todos");
   const [soMovimento, setSoMovimento] = useState(false);
+  const [zeradas, setZeradas] = useState(false);
+  const [estab, setEstab] = useState("todos");
   const filtradas = useMemo(() => {
     const q = busca.trim().toLocaleLowerCase("pt-BR");
-    return linhas.filter(
-      (x) =>
-        (!soAnaliticas || x.tipo === "A") &&
-        (!soMovimento || x.n > 0) &&
-        (!q || `${x.conta} ${x.classificacao} ${x.descricao}`.toLocaleLowerCase("pt-BR").includes(q)),
-    );
-  }, [linhas, busca, soAnaliticas, soMovimento]);
-  const totalPaginas = Math.max(1, Math.ceil(filtradas.length / POR_PAGINA_BALANCETE));
-  const paginaAtual = Math.min(pagina, totalPaginas);
-  const paginaLinhas = filtradas.slice((paginaAtual - 1) * POR_PAGINA_BALANCETE, paginaAtual * POR_PAGINA_BALANCETE);
+    return linhas.filter((x) => {
+      const zero = Math.abs(x.sa) < 0.005 && Math.abs(x.d) < 0.005 && Math.abs(x.c) < 0.005 && Math.abs(x.sf) < 0.005;
+      if (!zeradas && zero) return false;
+      if (soMovimento && x.n === 0) return false;
+      if (grupo !== "todos" && x.grupo !== grupo) return false;
+      if (estab !== "todos" && x.estabelecimento !== estab) return false;
+      if (q && !`${x.conta} ${x.classificacao} ${x.descricao} ${x.estabelecimento}`.toLocaleLowerCase("pt-BR").includes(q)) return false;
+      return true;
+    });
+  }, [linhas, busca, grupo, soMovimento, zeradas, estab]);
   const linhasResumo = useMemo(
     () => linhas.map((x) => ({ tipo: x.tipo, conta: x.conta, classificacao: x.classificacao, descricao: x.descricao, saldoAnterior: x.sa, debitos: x.d, creditos: x.c, saldoAtual: x.sf })),
     [linhas],
   );
+  const csv = () => {
+    const analiticasCsv = filtradas.filter((x) => x.tipo === "A");
+    const total = (campo: "sa" | "d" | "c" | "sf") => arred(analiticasCsv.reduce((s, x) => s + x[campo], 0));
+    exportarCsvAgosto("Balancete_Nitaplast_08-2026.csv", [
+      ["Conta", "S/A", "Classificação", "Descrição", "Estabelecimento", "Saldo anterior", "Débito", "Crédito", "Movimento", "Saldo atual"],
+      ...filtradas.map((x) => [x.conta, x.tipo, x.classificacao, x.descricao, x.estabelecimento, x.sa, x.d, x.c, x.mov, x.sf]),
+      ["", "", "", "TOTAL DAS CONTAS ANALÍTICAS", "", total("sa"), total("d"), total("c"), "", total("sf")],
+    ]);
+  };
   return (
-    <>
+    <div className="grid gap-5">
       <PageHeader
-        titulo="Balancete — 08/2026"
-        descricao="Saldo anterior de 07/2026 transportado, movimento da competência e saldo atual. Matriz + Filial SP."
-        acoes={<Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}><Printer className="size-4" />Imprimir / PDF</Button>}
+        titulo="Balancete consolidado - Nitaplast"
+        descricao="Razão → Balancete → DRE. A DRE de 08/2026 lê o movimento mensal deste Balancete."
+        acoes={<div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" className="gap-2" onClick={csv}><Download className="size-4" />Exportar CSV</Button><Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}><Printer className="size-4" />Imprimir / PDF</Button><Badge variant="outline">Matriz + Filial SP · 08/2026</Badge></div>}
       />
-      <Card className="print:border-0 print:shadow-none">
-        <CardHeader className="print:px-0">
+      <Card className="border-blue-500/30 bg-blue-500/5">
+        <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-5 text-sm">
+          <div><strong>Resumo do Balancete.</strong> Saldo anterior transportado de 07/2026 e movimentos mensais originados no Razão.</div>
+          <Badge variant="outline">{linhas.length} linhas · {linhas.filter((x) => x.tipo === "A").length} analíticas</Badge>
+        </CardContent>
+      </Card>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+        <Metric label="Partidas do Razão" valor={lancamentos.length} money={false} />
+        <Metric label="Débitos 08" valor={conferencia.totalDebitos} />
+        <Metric label="Créditos 08" valor={conferencia.totalCreditos} />
+        <Metric label="Diferença contábil" valor={conferencia.diferencaDebitosCreditos} />
+        <Metric label="Em revisão" valor={revisao} money={false} />
+        <Metric label="Reclassificações" valor={reclassificacoes} money={false} />
+      </div>
+      <Card className={fechado ? "border-emerald-500/40 bg-emerald-50/40" : "border-amber-500/50 bg-amber-50/40"}>
+        <CardContent className="pt-5 text-sm">
+          <strong>Conferência contábil: {fechado ? "FECHADO" : "REVISAR"}.</strong> Débitos − Créditos: <strong>{brl.format(conferencia.diferencaDebitosCreditos)}</strong> · soma do movimento das contas analíticas: <strong>{brl.format(conferencia.somaMovimentosAnaliticos)}</strong> · soma assinada do saldo final analítico: <strong>{brl.format(conferencia.somaSaldoAtualAnalitico)}</strong>. Para conferir se o Balancete zera, some somente as linhas <strong>A (analíticas)</strong> com seus sinais; não some linhas sintéticas + analíticas, pois isso duplica os mesmos saldos.
+          {conferencia.contasRazaoSemEstrutura.length > 0 ? <span className="mt-2 block font-semibold text-amber-800">Contas do Razão ausentes na estrutura do Balancete: {conferencia.contasRazaoSemEstrutura.join(", ")}</span> : null}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <CardTitle className="text-base">Balancete consolidado — Nitaplast</CardTitle>
-              <CardDescription>Razão → Balancete → DRE. Mesma estrutura do plano de contas da matriz.</CardDescription>
-            </div>
-            <div className="flex w-full flex-wrap gap-2 sm:w-auto print:hidden">
-              <div className="relative">
-                <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
-                <Input className="pl-9 sm:w-80" value={busca} onChange={(event) => { setBusca(event.target.value); setPagina(1); }} placeholder="Buscar conta, classificação ou descrição" />
-              </div>
-              <Button variant={soAnaliticas ? "default" : "outline"} onClick={() => { setSoAnaliticas((valor) => !valor); setPagina(1); }}>Somente analíticas</Button>
-              <Button variant={soMovimento ? "default" : "outline"} onClick={() => { setSoMovimento((valor) => !valor); setPagina(1); }}>Somente movimento</Button>
+            <CardTitle className="text-base">Balancete 08/2026</CardTitle>
+            <div className="relative w-full sm:w-96">
+              <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
+              <Input className="pl-9" value={busca} onChange={(event) => setBusca(event.target.value)} placeholder="Buscar conta, estabelecimento ou descrição" />
             </div>
           </div>
         </CardHeader>
-        <CardContent className="overflow-x-auto print:px-0 print:hidden">
-          <table className="w-full min-w-[1350px] text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left text-xs">
-                <th className="p-2">Conta</th><th className="p-2">S/A</th><th className="p-2">Classificação</th><th className="p-2">Descrição</th><th className="p-2 text-right">Saldo anterior</th><th className="p-2 text-right">Débitos</th><th className="p-2 text-right">Créditos</th><th className="p-2 text-right">Movimento</th><th className="p-2 text-right">Saldo atual</th><th className="p-2 text-right">Detalhe</th>
-              </tr>
-            </thead>
-            <tbody>{paginaLinhas.map((linha) => <LinhaBalanceteAgosto key={`${linha.tipo}-${linha.conta}`} linha={linha} />)}</tbody>
-          </table>
-        </CardContent>
-        {/* Só pra impressão/PDF: todas as linhas filtradas de uma vez, sem paginação — a tabela acima é limitada por página na tela. */}
-        <CardContent className="hidden print:block print:px-0">
-          <table className="w-full text-sm print:text-[9px]">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left text-xs print:bg-white">
-                <th className="p-2">Conta</th><th className="p-2">S/A</th><th className="p-2">Classificação</th><th className="p-2">Descrição</th><th className="p-2 text-right">Saldo anterior</th><th className="p-2 text-right">Débitos</th><th className="p-2 text-right">Créditos</th><th className="p-2 text-right">Movimento</th><th className="p-2 text-right">Saldo atual</th>
-              </tr>
-            </thead>
-            <tbody>{filtradas.map((linha) => <LinhaBalanceteAgosto key={`${linha.tipo}-${linha.conta}`} linha={linha} />)}</tbody>
-          </table>
+        <CardContent>
+          <div className="mb-4 flex flex-wrap gap-2">
+            <Button size="sm" variant={grupo === "todos" ? "default" : "outline"} onClick={() => setGrupo("todos")}>Todos</Button>
+            <Button size="sm" variant={grupo === "Ativo" ? "default" : "outline"} onClick={() => setGrupo("Ativo")}>Ativo</Button>
+            <Button size="sm" variant={grupo === "Passivo e patrimônio líquido" ? "default" : "outline"} onClick={() => setGrupo("Passivo e patrimônio líquido")}>Passivo e PL</Button>
+            <Button size="sm" variant={grupo === "Receitas acumuladas" ? "default" : "outline"} onClick={() => setGrupo("Receitas acumuladas")}>Receitas</Button>
+            <Button size="sm" variant={grupo === "Custos e despesas acumulados" ? "default" : "outline"} onClick={() => setGrupo("Custos e despesas acumulados")}>Custos e despesas</Button>
+            <Button size="sm" variant={soMovimento ? "default" : "outline"} onClick={() => setSoMovimento((v) => !v)}>Somente com movimento</Button>
+            <Button size="sm" variant={zeradas ? "default" : "outline"} onClick={() => setZeradas((v) => !v)}>Exibir zeradas</Button>
+            <select value={estab} onChange={(event) => setEstab(event.target.value)} className="h-9 rounded-md border bg-background px-3 text-sm">
+              <option value="todos">Todos os estabelecimentos</option>
+              <option value="Matriz">Matriz</option>
+              <option value="Filial SP">Filial SP</option>
+              <option value="Matriz + Filial SP">Matriz + Filial SP</option>
+            </select>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1500px] text-sm">
+              <thead>
+                <tr className="border-b bg-muted text-left text-xs">
+                  <th className="p-2">Conta</th><th className="p-2">S/A</th><th className="p-2">Classificação</th><th className="p-2">Descrição</th><th className="p-2">Estabelecimento</th><th className="p-2 text-right">Saldo anterior</th><th className="p-2 text-right">Débito</th><th className="p-2 text-right">Crédito</th><th className="p-2 text-right">Movimento</th><th className="p-2 text-right">Saldo atual</th><th className="p-2">Detalhe</th>
+                </tr>
+              </thead>
+              <tbody>{filtradas.map((linha) => <LinhaBalanceteAgosto key={`${linha.tipo}-${linha.conta}-${linha.classificacao}`} linha={linha} />)}</tbody>
+            </table>
+          </div>
           <BalancetePrintSummary linhas={linhasResumo} />
         </CardContent>
-        <CardContent className="flex items-center justify-between border-t pt-4 print:hidden">
-          <span className="text-xs text-muted-foreground">{filtradas.length} linhas encontradas</span>
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" disabled={paginaAtual === 1} onClick={() => setPagina((valor) => valor - 1)}>Anterior</Button>
-            <span className="text-xs">Página {paginaAtual} de {totalPaginas}</span>
-            <Button size="sm" variant="outline" disabled={paginaAtual === totalPaginas} onClick={() => setPagina((valor) => valor + 1)}>Próxima</Button>
-          </div>
-        </CardContent>
       </Card>
-    </>
+    </div>
   );
 }
 
