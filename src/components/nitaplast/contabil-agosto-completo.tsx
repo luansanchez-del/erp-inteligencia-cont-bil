@@ -21,6 +21,7 @@ import {
 import { useLancamentosCompetencia } from "@/hooks/use-lancamentos-competencia";
 import { calcularDreJulhoFinal } from "@/data/nitaplast-dre-julho-final";
 import { lancamentosIntegradosJulhoFinal } from "@/data/nitaplast-razao-julho-final-v2";
+import { saldoAnteriorResultadoJulho2026 } from "@/data/nitaplast-resultado-transportado";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
 import {
   estoqueFinalMatrizAgostoTotal,
@@ -238,6 +239,20 @@ export function BalanceteAgostoCompleto() {
     };
   }, [lancamentos, linhas]);
   const fechado = Math.abs(conferencia.diferencaDebitosCreditos) < 0.01 && Math.abs(conferencia.somaMovimentosAnaliticos) < 0.01 && Math.abs(conferencia.somaSaldoAtualAnalitico) < 0.01 && conferencia.contasRazaoSemEstrutura.length === 0;
+  // O resultado do mês precisa vir do mesmo motor do DRE (calcularResultadoAgosto),
+  // não da soma genérica das linhas do Balancete — senão o Resumo diverge do DRE
+  // Oficial. O saldo anterior encadeia com o resultado do exercício transportado
+  // de julho (mesma cadeia maio → junho → julho de nitaplast-resultado-transportado.ts).
+  const { resultado: resultadoAgosto } = useMemo(() => calcularResultadoAgosto(lancamentos), [lancamentos]);
+  const controleJulhoResultado = useReclassificacoesInteligentes("2026-07");
+  const resultadoJulho = useMemo(
+    () => calcularDreJulhoFinal(controleJulhoResultado.aplicar(lancamentosIntegradosJulhoFinal)).dre.resultado,
+    [controleJulhoResultado.aplicar],
+  );
+  // dre.resultado é positivo quando há lucro; o Resumo guarda resultado credor
+  // como valor negativo (mesma convenção usada no encadeamento maio→junho→julho
+  // de nitaplast-resultado-transportado.ts), por isso subtrai em vez de somar.
+  const saldoAnteriorResultadoAgosto = arred(saldoAnteriorResultadoJulho2026 - resultadoJulho);
   const [busca, setBusca] = useState("");
   const [grupo, setGrupo] = useState("todos");
   const [soMovimento, setSoMovimento] = useState(false);
@@ -331,7 +346,7 @@ export function BalanceteAgostoCompleto() {
               <tbody>{filtradas.map((linha) => <LinhaBalanceteAgosto key={`${linha.tipo}-${linha.conta}-${linha.classificacao}`} linha={linha} />)}</tbody>
             </table>
           </div>
-          <BalancetePrintSummary linhas={linhasResumo} />
+          <BalancetePrintSummary linhas={linhasResumo} resultadoContabil={{ saldoAnterior: saldoAnteriorResultadoAgosto, movimentoMes: arred(-resultadoAgosto) }} />
         </CardContent>
       </Card>
     </div>
@@ -677,11 +692,9 @@ const contasReceitasFinanceirasAgosto = new Set([
   "25101",
 ]);
 
-export function DreAgostoPadrao() {
-  const { lancamentos } = useBase();
-  const [abertas, setAbertas] = useState(
-    new Set(["receita", "deducoes", "custos", "despesas", "financeiro"]),
-  );
+// Compartilhado entre o DRE e o Resumo do Balancete: os dois precisam do mesmo
+// resultado do mês de agosto, calculado uma única vez a partir do Razão.
+function calcularResultadoAgosto(lancamentos: ReturnType<typeof useBase>["lancamentos"]) {
   const mov = (conta: string) =>
     arred(
       lancamentos.reduce(
@@ -726,6 +739,25 @@ export function DreAgostoPadrao() {
     resultadoOperacional = arred(lucroBruto - despesas - despesasFinanceiras + receitasFinanceiras);
   const naoOperacional = arred(Math.max(0, credito("4736")) - Math.max(0, mov("4760"))),
     resultado = arred(resultadoOperacional + naoOperacional);
+  return {
+    mov, credito, custos, operacionais, financeiras,
+    receitaProducao, receitaRevenda, receitaBruta, deducoes, receitaLiquida,
+    cpv, despesas, despesasFinanceiras, receitasFinanceiras,
+    lucroBruto, resultadoOperacional, naoOperacional, resultado,
+  };
+}
+
+export function DreAgostoPadrao() {
+  const { lancamentos } = useBase();
+  const [abertas, setAbertas] = useState(
+    new Set(["receita", "deducoes", "custos", "despesas", "financeiro"]),
+  );
+  const {
+    mov, credito, custos, operacionais, financeiras,
+    receitaProducao, receitaRevenda, receitaBruta, deducoes, receitaLiquida,
+    cpv, despesas, despesasFinanceiras, receitasFinanceiras,
+    lucroBruto, resultadoOperacional, naoOperacional, resultado,
+  } = calcularResultadoAgosto(lancamentos);
   const impactoCustoPorEstabelecimento = (estabelecimento: "Matriz" | "Filial SP") =>
     arred(
       lancamentos.reduce((total, lancamento) => {
