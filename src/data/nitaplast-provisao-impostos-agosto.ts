@@ -32,8 +32,8 @@ const nome = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(codigo) 
  * Apuração oficial — provavelmente ajustes/estornos que não passam por este
  * relatório). O restante (residual de cada imposto, ver `residualNaoMapeado`)
  * fica na conta transitória (4859), marcado "revisar":
- *   - ICMS: 2 códigos gerenciais sem qualquer precedente em junho (01.01.001 e
- *     11.03.002) somam R$ 14.762,95 do residual de R$ 15.118,15;
+ *   - ICMS: identificado por completo (ver `creditoIcmsTransferenciaAgosto`) —
+ *     não é mais residual, não fica em 4859;
  *   - IPI/PIS/COFINS: a diferença entre o total do CSV de entradas e o total
  *     do Registro de Apuração oficial (a fonte de maior autoridade fiscal).
  *
@@ -86,13 +86,32 @@ const creditoPorConta: CreditoPorConta[] = [
 ];
 
 export const residualNaoMapeado = {
-  icms: 15_118.15,
+  icms: 0,
   ipi: 0,
   pis: 544.49,
   cofins: 2_507.98,
 } as const;
 
-export const lancamentosProvisaoImpostosAgosto: LancamentoIntegrado[] = impostos.flatMap(({ chave, sigla, contaSobreVendas, contaARecolher }) => {
+/**
+ * O que antes ficava "sem conta real" no ICMS (R$ 15.118,15) foi conferido
+ * documento a documento contra o CSV de entradas: são 7 notas emitidas pela
+ * própria Nitaplast para si mesma (CFOP/NOP 2151 e 2152, gerenciais 01.01.001
+ * "Venda de Mercadorias Mercado Interno" e 11.03.002 "Transferência de
+ * Produtos para Filial") — ICMS de transferência interna Matriz → Filial, não
+ * crédito de compra de terceiro. Mesmo fato e mesma conta de trânsito (25140)
+ * que julho já usou nos dois lados (nitaplast-razao-julho-final-base.ts,
+ * JUL-ICMS-M-TRANSF e JUL-ICMS-F-CRED).
+ */
+export const creditoIcmsTransferenciaAgosto = {
+  total: 15_118.15,
+  documentos: [
+    { gerencial: "01.01.001", descricao: "Venda de Mercadorias Mercado Interno (NOP 2152)", quantidade: 6, valor: 14_559.36 },
+    { gerencial: "11.03.002", descricao: "Transferência de Produtos para Filial (NOP 2151)", quantidade: 1, valor: 558.79 },
+  ],
+} as const;
+
+export const lancamentosProvisaoImpostosAgosto: LancamentoIntegrado[] = [
+  ...impostos.flatMap(({ chave, sigla, contaSobreVendas, contaARecolher }) => {
   const { debitoSaidas } = apuracaoImpostosAgosto[chave];
 
   const linhasCredito = creditoPorConta
@@ -154,7 +173,22 @@ export const lancamentosProvisaoImpostosAgosto: LancamentoIntegrado[] = impostos
     ...linhasCredito,
     ...linhaResidual,
   ];
-});
+  }),
+  base({
+    id: "AGO-TAX-ICMS-TRANSF",
+    data: "31/08/2026",
+    origem: "APURAÇÃO ICMS 08/2026",
+    debitoCodigo: "1541",
+    creditoCodigo: "25140",
+    historico: "ICMS de transferências internas Matriz → Filial (NOP 2151/2152)",
+    documento: "NF 8851, 8856, 8869, 8907, 8922, 8881 / NOP 2151-2152",
+    cc: "0",
+    centroCusto: "SEM CENTRO DE CUSTO",
+    valor: creditoIcmsTransferenciaAgosto.total,
+    observacao: "Antes classificado como crédito sem conta real, parado na conta transitória 4859. Identificado documento a documento no CSV de entradas: 7 notas emitidas pela própria Nitaplast para si mesma (gerenciais 01.01.001 e 11.03.002), ICMS de transferência interna Matriz → Filial — não crédito de compra de terceiro. Mesma conta de trânsito (25140) usada em julho para o mesmo fato.",
+    fonte: "RELATATORIO DETALHADO ENTRADAS POR CENTRO DE CUSTO - SOFTDIB 082026.csv",
+  }),
+];
 
 export const resumoProvisaoImpostosAgosto = {
   aRecolher: {
