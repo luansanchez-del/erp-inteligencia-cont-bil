@@ -21,6 +21,16 @@ export const lancamentosComprasCpvAgosto: LancamentoIntegrado[] = [
     base({ id: "AGO-CUSTO-MP-IMP", data: "31/08/2026", origem: "ENTRADAS POR CC 08/2026", debitoCodigo: "3093", creditoCodigo: "25116", historico: "Matéria-prima e insumos de importação — NF 94222 — Greatland Valve", documento: "NF 94222 / NOP 3101 / CC 209 / 1 documento", cc: "209", centroCusto: "IMPORTAÇÃO", valor: 454_046.67, status: "revisar", observacao: "NF 94222, emitida em 18/08/2026, fornecedor Greatland Valve Company Limited, foi localizada no relatório fiscal de entradas de agosto. O valor integra a compra de matéria-prima importada; permanece em revisão até vincular o contrato de câmbio e a DI próprios. Não corresponde aos contratos BASF das NFs 93361.", fonte: "RELATORIO DETALHADO ENTRADAS POR CENTRO DE CUSTO - SOFTDIB 082026.csv + RESUMO NOTAS FISCAIS ENTRADA.csv" }),
   base({ id: "AGO-CUSTO-MAT-IND-M", data: "31/08/2026", origem: "ENTRADAS POR CC 08/2026", debitoCodigo: "3244", creditoCodigo: "1496", historico: "Materiais indiretos — Matriz/Produção", documento: "11.01.002 / CC 102 / 2 documentos", cc: "102", centroCusto: "PRODUÇÃO", valor: 197_800.39, observacao: "Valor bruto após exclusão dos NOPs de retorno/transferência adotada no fechamento anterior.", fonte: "RELATATORIO DETALHADO ENTRADAS POR CENTRO DE CUSTO - SOFTDIB 082026.csv" }),
   base({ id: "AGO-CUSTO-MAT-IND-V", data: "31/08/2026", origem: "ENTRADAS POR CC 08/2026", debitoCodigo: "3244", creditoCodigo: "1496", historico: "Materiais indiretos — Vendas", documento: "11.01.002 / CC 201 / 2 documentos", cc: "201", centroCusto: "VENDAS", valor: 44_534.68, observacao: "Valor bruto após exclusão dos NOPs de retorno/transferência adotada no fechamento anterior.", fonte: "RELATATORIO DETALHADO ENTRADAS POR CENTRO DE CUSTO - SOFTDIB 082026.csv" }),
+  // Compras de mercadoria para revenda da Filial SP em agosto, CFOP 1102, extraídas de
+  // RESUMO NOTAS FISCAIS ENTRADA.csv (C:/082026/FILIAL - AGO 26). Mesmo tratamento aplicado
+  // em julho (nitaplast-razao-julho-final-base.ts): só CFOP 1102 compõe compra nova; CFOP
+  // 2152 é transferência interna Matriz → Filial e não é tratado como aquisição de terceiro.
+  base({ id: "AGO-CUSTO-REV-F-01", data: "10/08/2026", origem: "ENTRADAS FILIAL 08/2026", debitoCodigo: "25139", creditoCodigo: "1496", historico: "Compra filial - ROCHLING PLASTICOS DE ENGENHARIA DO B", documento: "NF 16636 série 1 / CFOP 1102", cc: "201", centroCusto: "VENDAS", valor: 6_008.13, observacao: "Valor bruto; créditos de ICMS/IPI contabilizados separadamente contra a mesma conta de custo.", fonte: "RESUMO NOTAS FISCAIS ENTRADA.csv — FILIAL AGO 26" }),
+  base({ id: "AGO-CUSTO-REV-F-02", data: "13/08/2026", origem: "ENTRADAS FILIAL 08/2026", debitoCodigo: "25139", creditoCodigo: "1496", historico: "Compra filial - ATHOS METAIS LTDA", documento: "NF 11912 série 1 / CFOP 1102", cc: "201", centroCusto: "VENDAS", valor: 3_500, observacao: "Valor bruto; créditos de ICMS/IPI contabilizados separadamente contra a mesma conta de custo.", fonte: "RESUMO NOTAS FISCAIS ENTRADA.csv — FILIAL AGO 26" }),
+  base({ id: "AGO-CUSTO-REV-F-03", data: "17/08/2026", origem: "ENTRADAS FILIAL 08/2026", debitoCodigo: "25139", creditoCodigo: "1496", historico: "Compra filial - POLYROOF BRASIL LTDA", documento: "NF 1822 série 1 / CFOP 1102", cc: "201", centroCusto: "VENDAS", valor: 1_004.34, observacao: "Valor bruto; créditos de ICMS/IPI contabilizados separadamente contra a mesma conta de custo.", fonte: "RESUMO NOTAS FISCAIS ENTRADA.csv — FILIAL AGO 26" }),
+  base({ id: "AGO-CUSTO-REV-F-04", data: "26/08/2026", origem: "ENTRADAS FILIAL 08/2026", debitoCodigo: "25139", creditoCodigo: "1496", historico: "Compra filial - POLIFLUOR IND COM PLASTICOS LTDA", documento: "NF 89863 série 1 / CFOP 1102", cc: "201", centroCusto: "VENDAS", valor: 14_804.74, observacao: "Valor bruto; créditos de ICMS/IPI contabilizados separadamente contra a mesma conta de custo.", fonte: "RESUMO NOTAS FISCAIS ENTRADA.csv — FILIAL AGO 26" }),
+  base({ id: "AGO-CUSTO-REV-F-05", data: "26/08/2026", origem: "ENTRADAS FILIAL 08/2026", debitoCodigo: "25139", creditoCodigo: "1496", historico: "Compra filial - POLIFLUOR IND COM PLASTICOS LTDA", documento: "NF 89903 série 1 / CFOP 1102", cc: "201", centroCusto: "VENDAS", valor: 2_751.96, observacao: "Valor bruto; créditos de ICMS/IPI contabilizados separadamente contra a mesma conta de custo.", fonte: "RESUMO NOTAS FISCAIS ENTRADA.csv — FILIAL AGO 26" }),
+  base({ id: "AGO-CUSTO-REV-F-06", data: "26/08/2026", origem: "ENTRADAS FILIAL 08/2026", debitoCodigo: "25139", creditoCodigo: "1496", historico: "Compra filial - LUCC INDUSTRIA E COMERCIO DE PLASTICO", documento: "NF 54039 série 1 / CFOP 1102", cc: "201", centroCusto: "VENDAS", valor: 3_450, observacao: "Valor bruto; créditos de ICMS/IPI contabilizados separadamente contra a mesma conta de custo.", fonte: "RESUMO NOTAS FISCAIS ENTRADA.csv — FILIAL AGO 26" }),
 ];
 
 export const estoqueFinalMatrizAgostoPorConta: Record<string, number> = {
@@ -42,6 +52,13 @@ export const estoqueFinalMatrizAgostoTotal = 5_744_762.11;
 const estoqueInicialFilialAgosto = saldoAberturaAgostoPorConta.get("25138") ?? 0;
 const comprasFilialAgosto = saldoAberturaAgostoPorConta.get("25139") ?? 0;
 export const estoqueFinalFilialAgostoTotal = 218_373.04;
+
+/** Compras de mercadoria para revenda da Filial SP documentadas na própria competência de agosto (CFOP 1102), distintas do saldo patrimonial arrastado de competências anteriores fechado em AGO-CPV-F-COMP. */
+const comprasFilialDocumentadasAgosto = arred(
+  lancamentosComprasCpvAgosto
+    .filter((linha) => linha.id.startsWith("AGO-CUSTO-REV-F-"))
+    .reduce((total, linha) => total + linha.valor, 0),
+);
 
 export const lancamentosFechamentoEstoqueFilialAgosto: LancamentoIntegrado[] = [
   base({
@@ -73,6 +90,20 @@ export const lancamentosFechamentoEstoqueFilialAgosto: LancamentoIntegrado[] = [
     observacao: "No fechamento da filial, o saldo patrimonial da conta 25139 fica encerrado no CPV quando a compra líquida da competência é demonstrada pela documentação fiscal/contábil. Caso o inventário final seja refeito, este valor deve ser reavaliado na origem da documentação e não como plug de apresentação.",
     fonte: "Base patrimonial transportada + relatórios de entradas por centro de custo 08/2026",
     rastreio: "derivado",
+  }),
+  base({
+    id: "AGO-CPV-F-COMP-DOC",
+    data: "31/08/2026",
+    origem: "FECHAMENTO ESTOQUE FILIAL 08/2026",
+    debitoCodigo: "25945",
+    creditoCodigo: "25139",
+    historico: "Encerramento das compras documentadas de agosto da filial no CPV",
+    documento: "CFOP 1102 08/2026 / 6 documentos",
+    cc: "502",
+    centroCusto: "COMERCIAL SP",
+    valor: comprasFilialDocumentadasAgosto,
+    observacao: "Compras líquidas da própria competência de agosto, documentadas por 6 NFs de CFOP 1102 (AGO-CUSTO-REV-F-01 a 06): R$ 31.519,17. Distinto da linha AGO-CPV-F-COMP, que encerra o saldo patrimonial acumulado de competências anteriores, ainda pendente de conciliação fiscal.",
+    fonte: "RESUMO NOTAS FISCAIS ENTRADA.csv — FILIAL AGO 26",
   }),
   base({
     id: "AGO-CPV-F-FINAL",
