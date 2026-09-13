@@ -43,6 +43,7 @@ import { Route as ContabilRazaoAplicacoesRouteImport } from './routes/contabil.r
 import { Route as EmpresasIndexRouteImport } from './routes/empresas.index'
 import { Route as EmpresasIdRouteImport } from './routes/empresas.$id'
 import { Route as EmpresasNovaRouteImport } from './routes/empresas.nova'
+import { Route as RelatoriosAnaliseHorizontalVerticalRouteImport } from './routes/relatorios.analise-horizontal-vertical'
 import { Route as RelatoriosBalanceteCentroCustoRouteImport } from './routes/relatorios.balancete-centro-custo'
 import { Route as RelatoriosDiarioRouteImport } from './routes/relatorios.diario'
 import { Route as RelatoriosDreRouteImport } from './routes/relatorios.dre'
@@ -221,6 +222,12 @@ const EmpresasNovaRoute = EmpresasNovaRouteImport.update({
   path: '/empresas/nova',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RelatoriosAnaliseHorizontalVerticalRoute =
+  RelatoriosAnaliseHorizontalVerticalRouteImport.update({
+    id: '/analise-horizontal-vertical',
+    path: '/analise-horizontal-vertical',
+    getParentRoute: () => RelatoriosRoute,
+  } as any)
 const RelatoriosBalanceteCentroCustoRoute =
   RelatoriosBalanceteCentroCustoRouteImport.update({
     id: '/balancete-centro-custo',
@@ -283,6 +290,7 @@ export interface FileRoutesByFullPath {
   '/contabil/razao-aplicacoes': typeof ContabilRazaoAplicacoesRoute
   '/empresas/$id': typeof EmpresasIdRoute
   '/empresas/nova': typeof EmpresasNovaRoute
+  '/relatorios/analise-horizontal-vertical': typeof RelatoriosAnaliseHorizontalVerticalRoute
   '/relatorios/balancete-centro-custo': typeof RelatoriosBalanceteCentroCustoRoute
   '/relatorios/diario': typeof RelatoriosDiarioRoute
   '/relatorios/dre': typeof RelatoriosDreRoute
@@ -324,6 +332,7 @@ export interface FileRoutesByTo {
   '/contabil/razao-aplicacoes': typeof ContabilRazaoAplicacoesRoute
   '/empresas/$id': typeof EmpresasIdRoute
   '/empresas/nova': typeof EmpresasNovaRoute
+  '/relatorios/analise-horizontal-vertical': typeof RelatoriosAnaliseHorizontalVerticalRoute
   '/relatorios/balancete-centro-custo': typeof RelatoriosBalanceteCentroCustoRoute
   '/relatorios/diario': typeof RelatoriosDiarioRoute
   '/relatorios/dre': typeof RelatoriosDreRoute
@@ -366,6 +375,7 @@ export interface FileRoutesById {
   '/contabil/razao-aplicacoes': typeof ContabilRazaoAplicacoesRoute
   '/empresas/$id': typeof EmpresasIdRoute
   '/empresas/nova': typeof EmpresasNovaRoute
+  '/relatorios/analise-horizontal-vertical': typeof RelatoriosAnaliseHorizontalVerticalRoute
   '/relatorios/balancete-centro-custo': typeof RelatoriosBalanceteCentroCustoRoute
   '/relatorios/diario': typeof RelatoriosDiarioRoute
   '/relatorios/dre': typeof RelatoriosDreRoute
@@ -409,6 +419,7 @@ export interface FileRouteTypes {
     | '/contabil/razao-aplicacoes'
     | '/empresas/$id'
     | '/empresas/nova'
+    | '/relatorios/analise-horizontal-vertical'
     | '/relatorios/balancete-centro-custo'
     | '/relatorios/diario'
     | '/relatorios/dre'
@@ -450,6 +461,7 @@ export interface FileRouteTypes {
     | '/contabil/razao-aplicacoes'
     | '/empresas/$id'
     | '/empresas/nova'
+    | '/relatorios/analise-horizontal-vertical'
     | '/relatorios/balancete-centro-custo'
     | '/relatorios/diario'
     | '/relatorios/dre'
@@ -491,6 +503,7 @@ export interface FileRouteTypes {
     | '/contabil/razao-aplicacoes'
     | '/empresas/$id'
     | '/empresas/nova'
+    | '/relatorios/analise-horizontal-vertical'
     | '/relatorios/balancete-centro-custo'
     | '/relatorios/diario'
     | '/relatorios/dre'
@@ -776,6 +789,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EmpresasNovaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/relatorios/analise-horizontal-vertical': {
+      id: '/relatorios/analise-horizontal-vertical'
+      path: '/analise-horizontal-vertical'
+      fullPath: '/relatorios/analise-horizontal-vertical'
+      preLoaderRoute: typeof RelatoriosAnaliseHorizontalVerticalRouteImport
+      parentRoute: typeof RelatoriosRoute
+    }
     '/relatorios/balancete-centro-custo': {
       id: '/relatorios/balancete-centro-custo'
       path: '/balancete-centro-custo'
@@ -827,6 +847,7 @@ const AdministracaoRouteWithChildren = AdministracaoRoute._addFileChildren(
 )
 
 interface RelatoriosRouteChildren {
+  RelatoriosAnaliseHorizontalVerticalRoute: typeof RelatoriosAnaliseHorizontalVerticalRoute
   RelatoriosBalanceteCentroCustoRoute: typeof RelatoriosBalanceteCentroCustoRoute
   RelatoriosDiarioRoute: typeof RelatoriosDiarioRoute
   RelatoriosDreRoute: typeof RelatoriosDreRoute
@@ -834,6 +855,8 @@ interface RelatoriosRouteChildren {
 }
 
 const RelatoriosRouteChildren: RelatoriosRouteChildren = {
+  RelatoriosAnaliseHorizontalVerticalRoute:
+    RelatoriosAnaliseHorizontalVerticalRoute,
   RelatoriosBalanceteCentroCustoRoute: RelatoriosBalanceteCentroCustoRoute,
   RelatoriosDiarioRoute: RelatoriosDiarioRoute,
   RelatoriosDreRoute: RelatoriosDreRoute,

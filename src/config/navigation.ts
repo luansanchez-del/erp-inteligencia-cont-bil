@@ -73,6 +73,7 @@ export const navGroups: NavGroup[] = [
     icon: FileBarChart,
     items: [
       { label: "DRE Report", to: "/relatorios/dre" },
+      { label: "Análise Horizontal e Vertical", to: "/relatorios/analise-horizontal-vertical" },
       { label: "Razão Report", to: "/relatorios/razao" },
       { label: "Diário Report", to: "/relatorios/diario" },
       { label: "Balancete Report", to: "/contabil/balancete" },

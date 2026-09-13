@@ -1108,3 +1108,35 @@ export function DreAgostoPadrao() {
     </div>
   );
 }
+
+/** Mesma análise da aba "Análise vertical e horizontal" da DRE, como tela própria para o menu Relatórios. */
+export function AnaliseHorizontalVerticalAgosto() {
+  const { lancamentos } = useBase();
+  const {
+    receitaBruta, deducoes, receitaLiquida, cpv, despesas,
+    despesasFinanceiras, receitasFinanceiras,
+    lucroBruto, resultadoOperacional, naoOperacional, resultado,
+  } = calcularResultadoAgosto(lancamentos);
+  return (
+    <div className="grid gap-5">
+      <Header
+        titulo="Análise Horizontal e Vertical - Nitaplast 08/2026"
+        descricao="Mesma DRE oficial de agosto, comparada contra julho/2026 (mesmas linhas, sem lançamento próprio)."
+      />
+      <AnaliseVerticalDre
+        agosto={{
+          receitaBruta,
+          deducoes,
+          receitaLiquida,
+          cpv,
+          lucroBruto,
+          despesas,
+          resultadoFinanceiro: arred(receitasFinanceiras - despesasFinanceiras),
+          resultadoOperacional,
+          naoOperacional,
+          resultado,
+        }}
+      />
+    </div>
+  );
+}
