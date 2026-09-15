@@ -21,16 +21,19 @@ const nome = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(codigo) 
  *   Desc            140.063,90  (desconto concedido)
  *   Vlr.Rec       3.287.059,82  (valor líquido efetivamente recebido = o que entrou no banco)
  *
- * IMPORTANTE — o que este lançamento cobre e o que não cobre:
- * - Cobre o valor líquido recebido (Vlr.Rec), que é exatamente o que bateu
- *   nos extratos bancários e já está lançado do lado do banco.
+ * IMPORTANTE — o que estes lançamentos cobrem e o que não cobrem:
+ * - AGO-REC-CLI-PRINCIPAL cobre o valor líquido recebido (Vlr.Rec), que é
+ *   exatamente o que bateu nos extratos bancários e já está lançado do lado
+ *   do banco.
+ * - AGO-REC-CLI-JUROS-ATIVOS reclassifica os juros de mora recebidos
+ *   (R$ 1.010,10) de Duplicatas a Receber para Juros Ativos (25095), seguindo
+ *   o mesmo padrão já usado em junho/2026 (`nitaplast-juros-ativos-junho.ts`:
+ *   D 25111 / C 25095). Não mexe no banco, só reclassifica dentro do Razão.
  * - NÃO desmembra o desconto concedido (R$ 140.063,90) em despesa financeira
- *   nem os juros recebidos (R$ 1.010,10) em receita financeira — ainda não
- *   tenho confirmado, num fechamento real anterior, qual conta do plano usa
- *   Nitaplast para desconto concedido/juros ativos sobre duplicatas (não
- *   apareceu em `nitaplast-lancamentos-fiscais-junho.ts`). Lançar isso exigiria
+ *   — ainda não há, em nenhum fechamento real anterior (nem junho), conta do
+ *   plano confirmada para desconto concedido a clientes. Lançar isso exigiria
  *   inventar código de conta, o que a regra do projeto proíbe. Fica como
- *   próximo passo, com o valor cheio provisoriamente batendo contra 25111.
+ *   pendência, com o valor cheio provisoriamente batendo contra 25111.
  * - Há uma diferença residual de ~R$ 5.500 entre o total líquido recebido e o
  *   que a fórmula (duplicata - saldo aberto + juros - desconto) indicaria —
  *   corresponde a um pequeno número de títulos com Vlr.Rec "0,00" no
@@ -71,7 +74,21 @@ export const lancamentosRecebimentosClientesAgosto: LancamentoIntegrado[] = [
     cc: "0",
     centroCusto: "SEM CENTRO DE CUSTO",
     valor: resumoRecebimentosClientesAgosto.vlrRecebidoLiquido,
-    observacao: "Reclassifica da conta transitória (contrapartida provisória dos créditos bancários já lançados via SOFTDIB) para duplicatas a receber. Desconto concedido (R$ 140.063,90) e juros recebidos (R$ 1.010,10) ainda não desmembrados em contas de despesa/receita financeira — sem precedente de conta confirmada em junho.",
+    observacao: "Reclassifica da conta transitória (contrapartida provisória dos créditos bancários já lançados via SOFTDIB) para duplicatas a receber. Juros recebidos (R$ 1.010,10) são reclassificados à parte (ver AGO-REC-CLI-JUROS-ATIVOS). Desconto concedido (R$ 140.063,90) ainda não desmembrado em despesa financeira — sem precedente de conta confirmada.",
+    fonte: "Títulos Liquidados 08/2026 (CONSOLIDADO), RCR450, 38 páginas.",
+  }),
+  base({
+    id: "AGO-REC-CLI-JUROS-ATIVOS",
+    data: "31/08/2026",
+    origem: "RECLASSIFICAÇÃO RECEBIMENTOS COM JUROS 08/2026",
+    debitoCodigo: CONTA_DUPLICATAS_A_RECEBER,
+    creditoCodigo: "25095",
+    historico: "Reclassificação da parcela de juros ativa contida nos recebimentos de duplicatas de agosto/2026",
+    documento: "TÍTULOS LIQUIDADOS 08/2026 - Total Geral",
+    cc: "901",
+    centroCusto: "RECEITAS FINANCEIRAS",
+    valor: resumoRecebimentosClientesAgosto.vlrJurosRecebidos,
+    observacao: "Não altera banco. Reclassifica da conta de Duplicatas a Receber a parcela de juros de mora recebidos (Vlr.Juros do relatório Títulos Liquidados), seguindo o mesmo padrão usado em junho/2026 (nitaplast-juros-ativos-junho.ts, conta 25095 — Juros Ativos).",
     fonte: "Títulos Liquidados 08/2026 (CONSOLIDADO), RCR450, 38 páginas.",
   }),
 ];

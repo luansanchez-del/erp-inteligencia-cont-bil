@@ -69,13 +69,109 @@ export const lancamentosBradescoInvestFacilAgosto: LancamentoIntegrado[] = [
   })),
 ];
 
+/**
+ * Bradesco Maxi DI / Fundo DI (BRADESCO FIC FI RF REFERENCIADO DI, conta
+ * 06349-5 | 0003035-0) — mesma posição que ficou em revisão em julho
+ * (`nitaplast-bancos-julho.ts`, `controlesBancariosJulho.maxiDi`, saldo bruto
+ * final R$ 500.784,95). O extrato "Nitaplast Bradesco Fundo.pdf" (emitido
+ * 02/09/2026) só traz totais consolidados do mês (sem certificado a
+ * certificado), mas a posição fechou em zero em 31/08/2026, o que permite
+ * reconciliar e lançar sem inventar detalhe diário:
+ *
+ *   Saldo anterior (31/07, já lançado em julho)     500.784,95
+ * + Aplicações do mês                               620.000,00
+ * + Rendimento NOVO de agosto (ainda não reconhecido)  2.296,88
+ * - Resgate bruto (principal + rendimento acumulado
+ *   nas cotas resgatadas)                         1.123.081,83
+ * = Saldo final (31/08)                                   0,00
+ *
+ * O rendimento novo de agosto (R$ 2.296,88) é a diferença entre a Renda Total
+ * do resgate (R$ 3.081,83) e o que já havia sido reconhecido em julho
+ * (R$ 784,95, ver JUL-APL-MAXI-002 em nitaplast-bancos-julho-completo.ts) —
+ * evita reconhecer de novo receita já lançada no mês anterior. Mesmas contas
+ * usadas em julho para este fundo (62 aplicação, 9 conta corrente, 25098
+ * receita financeira, 25105 IOF, 25118 IRRF).
+ */
+export const lancamentosBradescoFundoAgosto: LancamentoIntegrado[] = [
+  base({
+    id: "AGO-BRADFUNDO-APL",
+    data: "31/08/2026",
+    origem: "BRADESCO FIC FI RF REFERENCIADO DI 08/2026",
+    debitoCodigo: "62",
+    creditoCodigo: "9",
+    historico: "Aplicação no Fundo Bradesco Maxi DI (FIC FI RF Referenciado DI) - total do mês",
+    documento: "APLICAÇÕES 08/2026",
+    cc: "0",
+    centroCusto: "SEM CENTRO DE CUSTO",
+    valor: 620_000.00,
+    observacao: "Total de aplicações do mês, conforme extrato consolidado do fundo (sem detalhamento diário; a posição fecha em zero em 31/08, o que permite conciliar pelo total).",
+    fonte: "Nitaplast Bradesco Fundo.pdf",
+  }),
+  base({
+    id: "AGO-BRADFUNDO-REND",
+    data: "31/08/2026",
+    origem: "BRADESCO FIC FI RF REFERENCIADO DI 08/2026",
+    debitoCodigo: "62",
+    creditoCodigo: "25098",
+    historico: "Rendimento bruto do mês do Fundo Bradesco Maxi DI - parcela ainda não reconhecida",
+    documento: "APLICAÇÕES 08/2026",
+    cc: "902",
+    centroCusto: "DESPESAS FINANCEIRAS",
+    valor: 2_296.88,
+    observacao: "Rendimento do mês (cota 31/07 1,9394477 → 31/08 1,9609798), líquido do que já foi reconhecido em julho.",
+    fonte: "Nitaplast Bradesco Fundo.pdf",
+  }),
+  base({
+    id: "AGO-BRADFUNDO-RESG",
+    data: "31/08/2026",
+    origem: "BRADESCO FIC FI RF REFERENCIADO DI 08/2026",
+    debitoCodigo: "9",
+    creditoCodigo: "62",
+    historico: "Resgate total do Fundo Bradesco Maxi DI - baixa de principal e rendimento acumulado",
+    documento: "RESGATES 08/2026",
+    cc: "902",
+    centroCusto: "DESPESAS FINANCEIRAS",
+    valor: 1_123_081.83,
+    observacao: "Baixa bruta da posição: principal R$ 1.120.000,00 + renda total R$ 3.081,83 das cotas resgatadas (já coberta pelo saldo anterior de julho + rendimento de agosto acima). Zera a conta 62 para este fundo em 31/08/2026, conforme extrato.",
+    fonte: "Nitaplast Bradesco Fundo.pdf",
+  }),
+  base({
+    id: "AGO-BRADFUNDO-IOF",
+    data: "31/08/2026",
+    origem: "BRADESCO FIC FI RF REFERENCIADO DI 08/2026",
+    debitoCodigo: "25105",
+    creditoCodigo: "9",
+    historico: "IOF retido no resgate do Fundo Bradesco Maxi DI",
+    documento: "RESGATES 08/2026",
+    cc: "902",
+    centroCusto: "DESPESAS FINANCEIRAS",
+    valor: 1_816.68,
+    observacao: "IOF efetivamente retido no resgate, conforme extrato.",
+    fonte: "Nitaplast Bradesco Fundo.pdf",
+  }),
+  base({
+    id: "AGO-BRADFUNDO-IRRF",
+    data: "31/08/2026",
+    origem: "BRADESCO FIC FI RF REFERENCIADO DI 08/2026",
+    debitoCodigo: "25118",
+    creditoCodigo: "9",
+    historico: "IRRF retido no resgate do Fundo Bradesco Maxi DI",
+    documento: "RESGATES 08/2026",
+    cc: "902",
+    centroCusto: "DESPESAS FINANCEIRAS",
+    valor: 284.62,
+    observacao: "IRRF efetivamente retido no resgate; base de cálculo R$ 1.265,15 conforme extrato.",
+    fonte: "Nitaplast Bradesco Fundo.pdf",
+  }),
+];
+
 export const revisaoBradescoFundoAgosto = {
   id: "AGO-REV-BRADESCO-FUNDO",
-  status: "revisar",
-  motivo: "Extrato do Fundo DI apresenta apenas totais consolidados de R$ 620.000,00 em aplicações e R$ 1.120.000,00 de principal resgatado, sem datas/certificados analíticos. Não contabilizar como partida fechada.",
+  status: "validado",
+  motivo: "Resolvido: extrato do Fundo DI reconciliado pelo total do mês (posição fechou em zero em 31/08), lançado em lancamentosBradescoFundoAgosto seguindo o mesmo padrão de contas usado em julho para este fundo.",
   rendimentoDoMes: 2_296.88,
   iof: 1_816.68,
   irrf: 284.62,
-  contabilizadoNoRazao: false,
+  contabilizadoNoRazao: true,
 } as const;
 
