@@ -822,6 +822,25 @@ export function DreAgostoPadrao() {
     );
   const cpvMatriz = impactoCustoPorEstabelecimento("Matriz");
   const cpvFilial = impactoCustoPorEstabelecimento("Filial SP");
+  const receitaContaPorEstabelecimento = (conta: string, estabelecimento: "Matriz" | "Filial SP") =>
+    arred(
+      lancamentos.reduce((total, lancamento) => {
+        if (estabelecimentoLancamentoNitaplast(lancamento) !== estabelecimento) return total;
+        if (lancamento.creditoCodigo === conta) return total + lancamento.valor;
+        if (lancamento.debitoCodigo === conta) return total - lancamento.valor;
+        return total;
+      }, 0),
+    );
+  const receitaProducaoMatriz = receitaContaPorEstabelecimento("2606", "Matriz");
+  const receitaProducaoFilial = receitaContaPorEstabelecimento("2606", "Filial SP");
+  const receitaRevendaMatriz = receitaContaPorEstabelecimento("2655", "Matriz");
+  const receitaRevendaFilial = receitaContaPorEstabelecimento("2655", "Filial SP");
+  if (Math.abs(arred(receitaProducaoMatriz + receitaProducaoFilial) - receitaProducao) > 0.01) {
+    throw new Error(`Receita Venda Produção Matriz + Filial não concilia com o Razão: ${(receitaProducaoMatriz + receitaProducaoFilial).toFixed(2)} / ${receitaProducao.toFixed(2)}.`);
+  }
+  if (Math.abs(arred(receitaRevendaMatriz + receitaRevendaFilial) - receitaRevenda) > 0.01) {
+    throw new Error(`Receita Revenda Matriz + Filial não concilia com o Razão: ${(receitaRevendaMatriz + receitaRevendaFilial).toFixed(2)} / ${receitaRevenda.toFixed(2)}.`);
+  }
   const contasEstoqueMatriz = ["25133", "25134", "25135", "25136", "25137"];
   const estoqueInicialMatriz = arred(
     contasEstoqueMatriz.reduce(
@@ -877,16 +896,30 @@ export function DreAgostoPadrao() {
   const linhas: Linha[] = [
     { id: "receita", descricao: "(+) Receita Operacional Bruta", valor: receitaBruta, nivel: 0 },
     {
-      id: "receita-prod",
-      descricao: "Receita Venda Produção",
-      valor: receitaProducao,
+      id: "receita-prod-matriz",
+      descricao: "Receita Venda Produção Matriz",
+      valor: receitaProducaoMatriz,
       nivel: 1,
       pai: "receita",
     },
     {
-      id: "receita-rev",
-      descricao: "Receita Revenda",
-      valor: receitaRevenda,
+      id: "receita-rev-matriz",
+      descricao: "Receita Revenda Matriz",
+      valor: receitaRevendaMatriz,
+      nivel: 1,
+      pai: "receita",
+    },
+    {
+      id: "receita-prod-filial",
+      descricao: "Receita Venda Produção Filial",
+      valor: receitaProducaoFilial,
+      nivel: 1,
+      pai: "receita",
+    },
+    {
+      id: "receita-rev-filial",
+      descricao: "Receita Revenda Filial",
+      valor: receitaRevendaFilial,
       nivel: 1,
       pai: "receita",
     },
