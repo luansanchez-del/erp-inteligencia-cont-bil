@@ -78,6 +78,28 @@ const impostos: Imposto[] = [
   { chave: "cofins", sigla: "COFINS", contaSobreVendas: "2830", contaARecolher: "1552" },
 ];
 
+// Débito bruto das saídas (ICMS e IPI) rateado por centro de custo real,
+// extraído de "RESUMO NOTAS FISCAIS SAIDA.csv" (fonte oficial, por CFOP/NF-e
+// real, mesma família de relatório já usada nas entradas). Os totais batem
+// exatamente com o Registro de Apuração oficial (ICMS R$ 256.359,87, IPI
+// R$ 165.329,89), centavo a centavo — conferido em 15/09/2026.
+//
+// PIS/COFINS ficam FORA deste rateio: esse CSV oficial não tem coluna de
+// PIS/COFINS (só ICMS/ICMS-ST/ISS/IPI). Os valores por nota existem no
+// relatório detalhado "RELATATORIO DETALHADO SAIDAS POR CENTRO DE CUSTO -
+// SOFTDIB", mas os campos V.Pis/V.Cofins vêm quebrados em múltiplas linhas de
+// forma irregular no PDF (mesmo tipo de risco de atribuição errada já visto
+// na conferência dos títulos de clientes de agosto) — não lancei o rateio por
+// esse motivo. PIS/COFINS sobre vendas continuam num único lançamento sem CC,
+// como pendência separada.
+type DebitoSaidasPorCC = { cc: string; centroCusto: string; icms: number; ipi: number };
+const debitoSaidasPorCC: DebitoSaidasPorCC[] = [
+  { cc: "201", centroCusto: "VENDAS", icms: 253_707.31, ipi: 165_329.89 },
+  { cc: "102", centroCusto: "PRODUÇÃO", icms: 2_297.40, ipi: 0 },
+  { cc: "0", centroCusto: "SEM CENTRO DE CUSTO", icms: 355.16, ipi: 0 },
+];
+const IMPOSTOS_COM_DEBITO_RATEADO = new Set<Imposto["chave"]>(["icms", "ipi"]);
+
 // Crédito de entradas rateado por conta real, extraído do CSV de entradas por
 // CC de agosto/2026 via a tabela de tradução gerencial+CC → conta de junho.
 type CreditoPorConta = { conta: string; icms: number; ipi: number; pis: number; cofins: number };
@@ -163,21 +185,44 @@ export const lancamentosProvisaoImpostosAgosto: LancamentoIntegrado[] = [
         ]
       : [];
 
+  const linhasDebito: LancamentoIntegrado[] = IMPOSTOS_COM_DEBITO_RATEADO.has(chave)
+    ? debitoSaidasPorCC
+        .filter((linha) => linha[chave as "icms" | "ipi"] > 0.01)
+        .map((linha, i) =>
+          base({
+            id: `AGO-TAX-SAI-${sigla}-${String(i + 1).padStart(2, "0")}`,
+            data: "31/08/2026",
+            origem: `APURAÇÃO ${sigla} 08/2026`,
+            debitoCodigo: contaSobreVendas,
+            creditoCodigo: contaARecolher,
+            historico: `${sigla} sobre vendas - débito bruto apurado em agosto/2026 (CC ${linha.cc} - ${linha.centroCusto})`,
+            documento: `APURAÇÃO ${sigla} 08/2026`,
+            cc: linha.cc,
+            centroCusto: linha.centroCusto,
+            valor: linha[chave as "icms" | "ipi"],
+            observacao: "Débito bruto das saídas rateado por centro de custo real, extraído do CSV oficial de saídas por CFOP/NF-e (RESUMO NOTAS FISCAIS SAIDA.csv). Bate exatamente com o Registro de Apuração oficial.",
+            fonte: "RESUMO NOTAS FISCAIS SAIDA.csv",
+          }),
+        )
+    : [
+        base({
+          id: `AGO-TAX-SAI-${sigla}`,
+          data: "31/08/2026",
+          origem: `APURAÇÃO ${sigla} 08/2026`,
+          debitoCodigo: contaSobreVendas,
+          creditoCodigo: contaARecolher,
+          historico: `${sigla} sobre vendas - débito bruto apurado em agosto/2026`,
+          documento: `APURAÇÃO ${sigla} 08/2026`,
+          cc: "0",
+          centroCusto: "SEM CENTRO DE CUSTO",
+          valor: debitoSaidas,
+          observacao: "Débito bruto das saídas do período (Registro de Apuração, coluna Valor do Imposto). Rateio por centro de custo pendente: o CSV oficial de saídas não tem coluna de PIS/COFINS (só ICMS/IPI); o relatório detalhado por documento tem os valores, mas com campos quebrados em múltiplas linhas de forma irregular no PDF, com risco real de atribuição errada por nota.",
+          fonte: `REGISTRO APURAÇÃO ${sigla}.pdf`,
+        }),
+      ];
+
   return [
-    base({
-      id: `AGO-TAX-SAI-${sigla}`,
-      data: "31/08/2026",
-      origem: `APURAÇÃO ${sigla} 08/2026`,
-      debitoCodigo: contaSobreVendas,
-      creditoCodigo: contaARecolher,
-      historico: `${sigla} sobre vendas - débito bruto apurado em agosto/2026`,
-      documento: `APURAÇÃO ${sigla} 08/2026`,
-      cc: "0",
-      centroCusto: "SEM CENTRO DE CUSTO",
-      valor: debitoSaidas,
-      observacao: "Débito bruto das saídas do período (Registro de Apuração, coluna Valor do Imposto). Rateio por centro de custo pendente, igual às saídas fiscais de junho.",
-      fonte: `REGISTRO APURAÇÃO ${sigla}.pdf`,
-    }),
+    ...linhasDebito,
     ...linhasCredito,
     ...linhaResidual,
   ];
@@ -196,7 +241,82 @@ export const lancamentosProvisaoImpostosAgosto: LancamentoIntegrado[] = [
     observacao: "Antes classificado como crédito sem conta real, parado na conta transitória 4859. Identificado documento a documento no CSV de entradas: 7 notas emitidas pela própria Nitaplast para si mesma (gerenciais 01.01.001 e 11.03.002), ICMS de transferência interna Matriz → Filial — não crédito de compra de terceiro. Mesma conta de trânsito (25140) usada em julho para o mesmo fato.",
     fonte: "RELATATORIO DETALHADO ENTRADAS POR CENTRO DE CUSTO - SOFTDIB 082026.csv",
   }),
+
+  // ICMS/IPI da Filial SP (CNPJ 82.295.817/0003-60) — achado em 15/09/2026: a
+  // apuração de agosto tem pasta e documentos próprios ("FILIAL - AGO 26"),
+  // completamente separados da Matriz (pasta FISCAL raiz, CNPJ 0001-07), e
+  // nunca tinha sido incorporada ao fechamento. Débito bruto conferido pelo
+  // CSV oficial de saídas da Filial (RESUMO NOTAS FISCAIS SAIDA.csv, bate com
+  // o Registro de Apuração ICMS/IPI próprio da Filial). Contas e padrão
+  // idênticos aos usados em julho para o mesmo fato (JUL-ICMS-F-DEB/CRED,
+  // JUL-TAX-IPI-F): ICMS via 25054↔25235, IPI via 25055↔25236, cc 502 -
+  // COMERCIAL SP (mesmo critério de julho: débito e crédito da Filial em
+  // linha única, sem abrir por CC interno).
+  base({
+    id: "AGO-ICMS-F-DEB",
+    data: "31/08/2026",
+    origem: "APURAÇÃO ICMS FILIAL 08/2026",
+    debitoCodigo: "25054",
+    creditoCodigo: "25235",
+    historico: "ICMS sobre vendas - débito bruto da Filial SP em agosto/2026",
+    documento: "APURAÇÃO ICMS FILIAL 08/2026",
+    cc: "502",
+    centroCusto: "COMERCIAL SP",
+    valor: 60_722.15,
+    observacao: "Débito bruto das saídas da Filial SP, extraído do CSV oficial de saídas por CFOP/NF-e (RESUMO NOTAS FISCAIS SAIDA.csv da Filial). Bate com o Registro de Apuração ICMS próprio da Filial (pasta FILIAL - AGO 26).",
+    fonte: "RESUMO NOTAS FISCAIS SAIDA.csv (Filial SP) + REGISTRO APURAÇÃO ICMS.pdf (Filial SP)",
+  }),
+  base({
+    id: "AGO-ICMS-F-CRED-COMPRAS",
+    data: "31/08/2026",
+    origem: "APURAÇÃO ICMS FILIAL 08/2026",
+    debitoCodigo: "25235",
+    creditoCodigo: "25140",
+    historico: "ICMS sobre compras da Filial SP em agosto/2026 (crédito de entradas)",
+    documento: "APURAÇÃO ICMS FILIAL 08/2026",
+    cc: "502",
+    centroCusto: "COMERCIAL SP",
+    valor: 15_057.71,
+    status: "revisar",
+    observacao: "Crédito de ICMS sobre compras da Filial, extraído do CSV oficial de entradas por CFOP/NF-e (RESUMO NOTAS FISCAIS ENTRADA.csv da Filial). Cobre só a parcela de compras — julho também somava fretes e transferências internas no crédito total da Filial (R$ 80.876,62 compras + R$ 1.095,30 fretes + R$ 14.612,97 transferências); a parcela de fretes e a do lado Filial da transferência interna Matriz→Filial (contrapartida de AGO-TAX-ICMS-TRANSF) ainda não foram identificadas para agosto — pendente.",
+    fonte: "RESUMO NOTAS FISCAIS ENTRADA.csv (Filial SP)",
+  }),
+  base({
+    id: "AGO-IPI-F-DEB",
+    data: "31/08/2026",
+    origem: "APURAÇÃO IPI FILIAL 08/2026",
+    debitoCodigo: "25055",
+    creditoCodigo: "25236",
+    historico: "IPI faturado - débito bruto da Filial SP em agosto/2026",
+    documento: "APURAÇÃO IPI FILIAL 08/2026",
+    cc: "502",
+    centroCusto: "COMERCIAL SP",
+    valor: 19_728.46,
+    observacao: "Débito bruto das saídas da Filial SP, extraído do CSV oficial de saídas por CFOP/NF-e (RESUMO NOTAS FISCAIS SAIDA.csv da Filial). Bate com o Registro de Apuração IPI próprio da Filial (pasta FILIAL - AGO 26).",
+    fonte: "RESUMO NOTAS FISCAIS SAIDA.csv (Filial SP) + REGISTRO APURAÇÃO IPI.pdf (Filial SP)",
+  }),
+  base({
+    id: "AGO-IPI-F-CRED-COMPRAS",
+    data: "31/08/2026",
+    origem: "APURAÇÃO IPI FILIAL 08/2026",
+    debitoCodigo: "25236",
+    creditoCodigo: "25139",
+    historico: "IPI sobre compras da Filial SP em agosto/2026 (crédito de entradas)",
+    documento: "APURAÇÃO IPI FILIAL 08/2026",
+    cc: "502",
+    centroCusto: "COMERCIAL SP",
+    valor: 2_045.81,
+    status: "revisar",
+    observacao: "Crédito de IPI sobre compras da Filial, extraído do CSV oficial de entradas por CFOP/NF-e. Não existe conta redutora dedicada para IPI sobre compras (diferente do ICMS, que tem a 25140); creditado direto contra 25139 - Compra de Mercadoria para revenda - Filial, mesmo padrão usado para o crédito de IPI da Matriz contra conta real de compras.",
+    fonte: "RESUMO NOTAS FISCAIS ENTRADA.csv (Filial SP)",
+  }),
 ];
+
+export const resumoProvisaoImpostosFilialAgosto = {
+  icms: { debitoSaidas: 60_722.15, creditoComprasIdentificado: 15_057.71 },
+  ipi: { debitoSaidas: 19_728.46, creditoComprasIdentificado: 2_045.81 },
+  observacao: "Descoberto em 15/09/2026: a apuração de ICMS/IPI da Filial SP (pasta própria FILIAL - AGO 26, CNPJ 0003-60) nunca tinha sido incorporada ao fechamento de agosto — só a Matriz estava lançada. Débito bruto e crédito de compras agora lançados; crédito de fretes e da transferência interna Matriz→Filial ainda pendentes de identificação.",
+} as const;
 
 export const resumoProvisaoImpostosAgosto = {
   aRecolher: {
