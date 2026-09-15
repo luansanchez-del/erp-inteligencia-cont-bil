@@ -45,15 +45,26 @@ export const estoqueFinalMatrizAgostoTotal = 5_744_762.11;
 
 /**
  * Fechamento contábil da filial em agosto, seguindo a mesma regra operacional do
- * padrão de julho: baixa do estoque inicial, encerramento das compras líquidas e
- * reconhecimento do estoque final documentado no inventário da filial, página 11.
- * O encerramento das compras ainda depende da conciliação fiscal da competência.
+ * padrão de julho: baixa do estoque inicial, encerramento das compras líquidas
+ * DA PRÓPRIA COMPETÊNCIA e reconhecimento do estoque final documentado no
+ * inventário da filial, página 11.
+ *
+ * Achado em 15/09/2026 (CPV Filial maior que a receita da Filial): a conta 25139
+ * carrega um saldo patrimonial acumulado de competências anteriores (R$ 420.540,54
+ * na abertura de agosto). Julho já enfrentou o mesmo saldo e decidiu, documentado
+ * em nitaplast-razao-julho-final-base.ts (JUL-CPV-F-COMP): fechar no CPV só o
+ * MOVIMENTO da própria competência, mantendo o saldo anterior patrimonial "até
+ * conciliação, sem contaminar o resultado". Um lançamento anterior aqui
+ * (AGO-CPV-F-COMP) quebrava essa regra ao fechar o saldo de abertura inteiro
+ * (que é exatamente esse mesmo saldo legado, nunca reconciliado) no CPV de
+ * agosto — foi removido. Só AGO-CPV-F-COMP-DOC (compras de agosto,
+ * documentadas) fecha no CPV; o saldo acumulado continua patrimonial na 25139,
+ * pendente de conciliação, como julho já decidiu.
  */
 const estoqueInicialFilialAgosto = saldoAberturaAgostoPorConta.get("25138") ?? 0;
-const comprasFilialAgosto = saldoAberturaAgostoPorConta.get("25139") ?? 0;
 export const estoqueFinalFilialAgostoTotal = 218_373.04;
 
-/** Compras de mercadoria para revenda da Filial SP documentadas na própria competência de agosto (CFOP 1102), distintas do saldo patrimonial arrastado de competências anteriores fechado em AGO-CPV-F-COMP. */
+/** Compras de mercadoria para revenda da Filial SP documentadas na própria competência de agosto (CFOP 1102) — a única parcela que fecha no CPV de agosto (ver nota acima sobre o saldo acumulado de competências anteriores). */
 const comprasFilialDocumentadasAgosto = arred(
   lancamentosComprasCpvAgosto
     .filter((linha) => linha.id.startsWith("AGO-CUSTO-REV-F-"))
@@ -77,21 +88,6 @@ export const lancamentosFechamentoEstoqueFilialAgosto: LancamentoIntegrado[] = [
     rastreio: "derivado",
   }),
   base({
-    id: "AGO-CPV-F-COMP",
-    data: "31/08/2026",
-    origem: "FECHAMENTO ESTOQUE FILIAL 08/2026",
-    debitoCodigo: "25945",
-    creditoCodigo: "25139",
-    historico: "Encerramento das compras líquidas da filial no CPV de agosto",
-    documento: "CFOP 1102 + CRÉDITOS 08/2026",
-    cc: "502",
-    centroCusto: "COMERCIAL SP",
-    valor: Math.abs(comprasFilialAgosto),
-    observacao: "No fechamento da filial, o saldo patrimonial da conta 25139 fica encerrado no CPV quando a compra líquida da competência é demonstrada pela documentação fiscal/contábil. Caso o inventário final seja refeito, este valor deve ser reavaliado na origem da documentação e não como plug de apresentação.",
-    fonte: "Base patrimonial transportada + relatórios de entradas por centro de custo 08/2026",
-    rastreio: "derivado",
-  }),
-  base({
     id: "AGO-CPV-F-COMP-DOC",
     data: "31/08/2026",
     origem: "FECHAMENTO ESTOQUE FILIAL 08/2026",
@@ -102,7 +98,7 @@ export const lancamentosFechamentoEstoqueFilialAgosto: LancamentoIntegrado[] = [
     cc: "502",
     centroCusto: "COMERCIAL SP",
     valor: comprasFilialDocumentadasAgosto,
-    observacao: "Compras líquidas da própria competência de agosto, documentadas por 6 NFs de CFOP 1102 (AGO-CUSTO-REV-F-01 a 06): R$ 31.519,17. Distinto da linha AGO-CPV-F-COMP, que encerra o saldo patrimonial acumulado de competências anteriores, ainda pendente de conciliação fiscal.",
+    observacao: "Compras líquidas da própria competência de agosto, documentadas por 6 NFs de CFOP 1102 (AGO-CUSTO-REV-F-01 a 06): R$ 31.519,17. Único encerramento de compras no CPV de agosto — o saldo acumulado de competências anteriores (R$ 420.540,54 na abertura) permanece patrimonial na 25139, pendente de conciliação, mesmo critério de julho (JUL-CPV-F-COMP).",
     fonte: "RESUMO NOTAS FISCAIS ENTRADA.csv — FILIAL AGO 26",
   }),
   base({
@@ -116,7 +112,7 @@ export const lancamentosFechamentoEstoqueFilialAgosto: LancamentoIntegrado[] = [
     cc: "502",
     centroCusto: "COMERCIAL SP",
     valor: estoqueFinalFilialAgostoTotal,
-    observacao: `Inventário com data de referência 31/08/2026, emitido em 04/09/2026 às 14:33, página 11: produto acabado, 5.051 peças, 22.195,379 kg e total de R$ 218.373,04. Correção documental do lançamento AGO-CPV-F-FINAL, preservado com o mesmo ID: o valor anterior de R$ ${arred(Math.abs(estoqueInicialFilialAgosto + comprasFilialAgosto)).toFixed(2)} era calculado pela soma dos saldos transportados, sem inventário final. A correção não valida o encerramento das compras da competência.`,
+    observacao: "Inventário com data de referência 31/08/2026, emitido em 04/09/2026 às 14:33, página 11: produto acabado, 5.051 peças, 22.195,379 kg e total de R$ 218.373,04. Correção documental do lançamento AGO-CPV-F-FINAL, preservado com o mesmo ID: o valor anterior de R$ 997.936,86 era calculado pela soma dos saldos transportados (estoque inicial + saldo acumulado da 25139), sem inventário final. A correção não valida o encerramento das compras da competência.",
     fonte: "C:/082026/FILIAL - AGO 26/REGISTRO INVENTARIO ESTOQUE.pdf — página 11, total geral e resumo PA, referência 31/08/2026",
     rastreio: "documento",
   }),
