@@ -310,12 +310,85 @@ export const lancamentosProvisaoImpostosAgosto: LancamentoIntegrado[] = [
     observacao: "Crédito de IPI sobre compras da Filial, extraído do CSV oficial de entradas por CFOP/NF-e. Não existe conta redutora dedicada para IPI sobre compras (diferente do ICMS, que tem a 25140); creditado direto contra 25139 - Compra de Mercadoria para revenda - Filial, mesmo padrão usado para o crédito de IPI da Matriz contra conta real de compras.",
     fonte: "RESUMO NOTAS FISCAIS ENTRADA.csv (Filial SP)",
   }),
+
+  // PIS/COFINS da Filial SP — achado em 15/09/2026, mesmo padrão do ICMS/IPI:
+  // o valor já no código (AGO-TAX-SAI-PIS/COFINS) é só Matriz, extraído de
+  // "REGISTRO APURAÇÃO PIS/COFINS.pdf" (raiz FISCAL, CNPJ 0001-07). Diferente
+  // do ICMS/IPI, o plano de contas não tem conta dedicada de PIS/COFINS para a
+  // Filial — mesma conta usada pela Matriz (2829/2830, 1556/1552), separada só
+  // pelo CC 502 (mesmo critério de julho, que também não tem conta própria e
+  // separa Matriz/Filial via estabelecimento do lançamento, não da conta).
+  // Fonte: ARQUIVO EFD CONTRIBUIÇÕES.TXT (SPED oficial, período 08/2026),
+  // registros C100 (documento fiscal) com VL_PIS/VL_COFINS diretos, segregados
+  // pelos blocos C010 de cada CNPJ (0001-07 Matriz / 0003-60 Filial). Débito =
+  // soma dos C100 com IND_OPER=1 (saídas); crédito = IND_OPER=0 (entradas),
+  // mesmos 9 documentos já conferidos pelo CSV de entradas da Filial (ICMS/IPI).
+  base({
+    id: "AGO-PIS-F-DEB",
+    data: "31/08/2026",
+    origem: "APURAÇÃO PIS FILIAL 08/2026",
+    debitoCodigo: "2829",
+    creditoCodigo: "1556",
+    historico: "PIS sobre vendas - débito bruto da Filial SP em agosto/2026",
+    documento: "APURAÇÃO PIS FILIAL 08/2026",
+    cc: "502",
+    centroCusto: "COMERCIAL SP",
+    valor: 3_841.72,
+    observacao: "Débito bruto das saídas da Filial SP (registros C100, IND_OPER=1, campo VL_PIS), segregado do total pelo bloco C010 da Filial (CNPJ 0003-60) no arquivo EFD Contribuições oficial. Confirma que o valor já lançado em AGO-TAX-SAI-PIS (R$ 45.966,86) é só Matriz.",
+    fonte: "ARQUIVO EFD CONTRIBUIÇÕES.TXT (SPED 08/2026)",
+  }),
+  base({
+    id: "AGO-PIS-F-CRED-COMPRAS",
+    data: "31/08/2026",
+    origem: "APURAÇÃO PIS FILIAL 08/2026",
+    debitoCodigo: "1556",
+    creditoCodigo: "25139",
+    historico: "PIS sobre compras da Filial SP em agosto/2026 (crédito de entradas)",
+    documento: "APURAÇÃO PIS FILIAL 08/2026",
+    cc: "502",
+    centroCusto: "COMERCIAL SP",
+    valor: 437.11,
+    status: "revisar",
+    observacao: "Crédito de PIS sobre compras da Filial (registros C100, IND_OPER=0, campo VL_PIS), mesmos 9 documentos já conferidos via CSV de entradas para o crédito de ICMS/IPI. Creditado contra 25139, mesmo padrão do IPI Filial (sem conta redutora dedicada).",
+    fonte: "ARQUIVO EFD CONTRIBUIÇÕES.TXT (SPED 08/2026)",
+  }),
+  base({
+    id: "AGO-COFINS-F-DEB",
+    data: "31/08/2026",
+    origem: "APURAÇÃO COFINS FILIAL 08/2026",
+    debitoCodigo: "2830",
+    creditoCodigo: "1552",
+    historico: "COFINS sobre vendas - débito bruto da Filial SP em agosto/2026",
+    documento: "APURAÇÃO COFINS FILIAL 08/2026",
+    cc: "502",
+    centroCusto: "COMERCIAL SP",
+    valor: 17_695.29,
+    observacao: "Débito bruto das saídas da Filial SP (registros C100, IND_OPER=1, campo VL_COFINS), segregado do total pelo bloco C010 da Filial (CNPJ 0003-60) no arquivo EFD Contribuições oficial. Confirma que o valor já lançado em AGO-TAX-SAI-COFINS (R$ 211.726,64) é só Matriz.",
+    fonte: "ARQUIVO EFD CONTRIBUIÇÕES.TXT (SPED 08/2026)",
+  }),
+  base({
+    id: "AGO-COFINS-F-CRED-COMPRAS",
+    data: "31/08/2026",
+    origem: "APURAÇÃO COFINS FILIAL 08/2026",
+    debitoCodigo: "1552",
+    creditoCodigo: "25139",
+    historico: "COFINS sobre compras da Filial SP em agosto/2026 (crédito de entradas)",
+    documento: "APURAÇÃO COFINS FILIAL 08/2026",
+    cc: "502",
+    centroCusto: "COMERCIAL SP",
+    valor: 2_013.29,
+    status: "revisar",
+    observacao: "Crédito de COFINS sobre compras da Filial (registros C100, IND_OPER=0, campo VL_COFINS), mesmos 9 documentos já conferidos via CSV de entradas para o crédito de ICMS/IPI. Creditado contra 25139, mesmo padrão do IPI Filial (sem conta redutora dedicada).",
+    fonte: "ARQUIVO EFD CONTRIBUIÇÕES.TXT (SPED 08/2026)",
+  }),
 ];
 
 export const resumoProvisaoImpostosFilialAgosto = {
   icms: { debitoSaidas: 60_722.15, creditoComprasIdentificado: 15_057.71 },
   ipi: { debitoSaidas: 19_728.46, creditoComprasIdentificado: 2_045.81 },
-  observacao: "Descoberto em 15/09/2026: a apuração de ICMS/IPI da Filial SP (pasta própria FILIAL - AGO 26, CNPJ 0003-60) nunca tinha sido incorporada ao fechamento de agosto — só a Matriz estava lançada. Débito bruto e crédito de compras agora lançados; crédito de fretes e da transferência interna Matriz→Filial ainda pendentes de identificação.",
+  pis: { debitoSaidas: 3_841.72, creditoComprasIdentificado: 437.11 },
+  cofins: { debitoSaidas: 17_695.29, creditoComprasIdentificado: 2_013.29 },
+  observacao: "Descoberto em 15/09/2026: a apuração de ICMS/IPI/PIS/COFINS da Filial SP nunca tinha sido incorporada ao fechamento de agosto — só a Matriz estava lançada. ICMS/IPI vêm da apuração própria da Filial (pasta FILIAL - AGO 26, CNPJ 0003-60); PIS/COFINS vêm do arquivo EFD Contribuições oficial (registros por CNPJ). Débito bruto e crédito de compras agora lançados; crédito de fretes e da transferência interna Matriz→Filial (ICMS) ainda pendentes de identificação.",
 } as const;
 
 export const resumoProvisaoImpostosAgosto = {
