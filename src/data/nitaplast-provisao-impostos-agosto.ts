@@ -43,12 +43,20 @@ const nome = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(codigo) 
  *
  * Fonte dos totais: REGISTRO APURAÇÃO ICMS/IPI/PIS/COFINS.pdf (RESUMO DA
  * APURAÇÃO DO IMPOSTO, período 01/08/2026 a 31/08/2026).
+ *
+ * PIS/COFINS foram retificados em 14/09/2026 (Registro_de_Apuracao_do_PIS.xlsx
+ * e ...COFINS.xlsx, pasta FISCAL/LEGACY) — os valores abaixo já refletem a
+ * retificação, conferida contra os DARFs emitidos em 14/09/2026 (PIS
+ * R$ 9.344,49, COFINS R$ 43.160,21, ambos vencimento 25/09/2026). Os valores
+ * antigos do REGISTRO APURAÇÃO PIS/COFINS.pdf (04/09/2026) ficaram
+ * desatualizados. ICMS/IPI não têm retificação correspondente e permanecem
+ * como no PDF original.
  */
 export const apuracaoImpostosAgosto = {
   icms: { debitoSaidas: 256_359.87, creditoEntradas: 142_347.11, saldoDevedor: 114_012.76 },
   ipi: { debitoSaidas: 165_329.89, creditoEntradas: 129_716.36, saldoDevedor: 35_613.53 },
-  pis: { debitoSaidas: 49_808.58, creditoEntradas: 37_150.89, saldoDevedor: 12_657.69 },
-  cofins: { debitoSaidas: 229_421.93, creditoEntradas: 171_000.85, saldoDevedor: 58_421.08 },
+  pis: { debitoSaidas: 45_966.86, creditoEntradas: 36_622.37, saldoDevedor: 9_344.49 },
+  cofins: { debitoSaidas: 211_726.64, creditoEntradas: 168_566.43, saldoDevedor: 43_160.21 },
 } as const;
 
 const base = (parcial: Omit<LancamentoIntegrado, "status" | "rastreio" | "debito" | "credito"> & { status?: LancamentoIntegrado["status"] }): LancamentoIntegrado => ({
@@ -88,8 +96,8 @@ const creditoPorConta: CreditoPorConta[] = [
 export const residualNaoMapeado = {
   icms: 0,
   ipi: 0,
-  pis: 544.49,
-  cofins: 2_507.98,
+  pis: 15.97,
+  cofins: 73.56,
 } as const;
 
 /**
