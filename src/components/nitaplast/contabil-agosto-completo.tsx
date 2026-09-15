@@ -19,7 +19,13 @@ import {
   type EstabelecimentoNitaplast,
 } from "@/data/nitaplast-estabelecimento";
 import { useLancamentosCompetencia } from "@/hooks/use-lancamentos-competencia";
-import { calcularDreJulhoFinal } from "@/data/nitaplast-dre-julho-final";
+import {
+  calcularDreJulhoFinal,
+  ehCustoDreJulho,
+  ehDespesaFinanceiraDreJulho,
+  ehDespesaOperacionalDreJulho,
+  ehReceitaFinanceiraDreJulho,
+} from "@/data/nitaplast-dre-julho-final";
 import { lancamentosIntegradosJulhoFinal } from "@/data/nitaplast-razao-julho-final-v2";
 import { saldoAnteriorResultadoJulho2026 } from "@/data/nitaplast-resultado-transportado";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
@@ -32,6 +38,9 @@ const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" 
 const arred = (v: number) => Math.round(v * 100) / 100;
 const info = new Map(saldosImplantacao.map((x) => [x.conta, x]));
 const contasEstruturaBase = new Set(estruturaBalanceteNitaplast.map((x) => x.conta));
+// `info` (saldosImplantacao) só cobre contas existentes em 31/05 — contas criadas depois
+// (ex.: 25948, 4405, 4505) ficam sem classificação por esse mapa. `classificacaoPorConta`
+// (definida após `analiticas`, mais abaixo) cobre o plano de contas completo.
 // Contas que nasceram depois da implantação de 31/05 (mesma lista usada no motor de
 // julho): sem isso, movimentos legítimos e documentados caem na conta de encaixe
 // "9.9.99 - Conta não encontrada no plano" em vez da classificação real.
@@ -49,6 +58,9 @@ const estruturaBalanceteCompleta: LinhaEstruturaBalancete[] = [
 ];
 const analiticas = estruturaBalanceteCompleta.filter((x) => x.tipo === "A");
 const contasEstrutura = new Set(analiticas.map((x) => x.conta));
+/** Classificação e descrição por conta cobrindo o plano de contas completo (implantação + contas criadas depois), usadas onde `info` (só saldosImplantacao) ficaria incompleto. */
+const classificacaoPorConta = new Map(analiticas.map((x) => [x.conta, x.classificacao]));
+const descricaoPorContaCompleta = new Map(analiticas.map((x) => [x.conta, x.descricao]));
 function grupoClassificacaoAgosto(classificacao: string): string {
   if (classificacao.startsWith("1")) return "Ativo";
   if (classificacao.startsWith("2")) return "Passivo e patrimônio líquido";
@@ -121,7 +133,7 @@ function calcular(lancamentos: ReturnType<typeof useBase>["lancamentos"]) {
       conta: c,
       tipo: "A" as const,
       classificacao: info.get(c)?.classificacao ?? "9.9.99",
-      descricao: info.get(c)?.descricao ?? "Conta não encontrada no plano",
+      descricao: descricaoPorContaCompleta.get(c) ?? "Conta não encontrada no plano",
       nivel: 9,
     }));
   const estrutura = [...estruturaBalanceteCompleta, ...extras];
@@ -366,12 +378,127 @@ type TotaisAnaliseDre = {
   resultado: number;
 };
 
-function AnaliseVerticalDre({ agosto }: { agosto: TotaisAnaliseDre }) {
+/** Shape mínimo comum a LancamentoIntegrado e LancamentoCompetencia — permite reaproveitar a mesma lógica de análise para o Razão de julho e o de agosto. */
+type LinhaMovimentoAnalise = {
+  id?: string | undefined;
+  debitoCodigo: string;
+  creditoCodigo: string;
+  valor: number;
+  cc?: string | undefined;
+  origem?: string | undefined;
+  historico?: string | undefined;
+  documento?: string | undefined;
+  centroCusto?: string | undefined;
+  fonte?: string | undefined;
+  debito?: string | undefined;
+  credito?: string | undefined;
+};
+
+function movimentoContasEstabelecimento(
+  lancamentos: LinhaMovimentoAnalise[],
+  contas: string[],
+  estabelecimento?: "Matriz" | "Filial SP",
+  excluirIds?: string[],
+) {
+  const contasSet = new Set(contas);
+  const idsExcluidos = new Set(excluirIds ?? []);
+  return arred(
+    lancamentos.reduce((total, l) => {
+      if (estabelecimento && estabelecimentoLancamentoNitaplast(l) !== estabelecimento) return total;
+      if (l.id && idsExcluidos.has(l.id)) return total;
+      let delta = 0;
+      if (contasSet.has(l.debitoCodigo)) delta += l.valor;
+      if (contasSet.has(l.creditoCodigo)) delta -= l.valor;
+      return total + delta;
+    }, 0),
+  );
+}
+
+/** Cada conta individual que compõe a DRE, aberta por Matriz/Filial onde a natureza contábil exige. Mesma chave usada para julho e agosto — permite casar linha a linha. */
+const DETALHES_ANALISE_DRE: { chave: string; descricao: string; contas: string[]; estabelecimento?: "Matriz" | "Filial SP"; inverterSinal?: boolean; excluirIds?: string[] }[] = [
+  { chave: "rec-prod-matriz", descricao: "Receita Venda Produção Matriz", contas: ["2606"], estabelecimento: "Matriz", inverterSinal: true },
+  { chave: "rec-rev-matriz", descricao: "Receita Revenda Matriz", contas: ["2655"], estabelecimento: "Matriz", inverterSinal: true },
+  { chave: "rec-prod-filial", descricao: "Receita Venda Produção Filial", contas: ["2606"], estabelecimento: "Filial SP", inverterSinal: true },
+  { chave: "rec-rev-filial", descricao: "Receita Revenda Filial", contas: ["2655"], estabelecimento: "Filial SP", inverterSinal: true },
+  { chave: "ded-dev-matriz", descricao: "Devoluções Matriz", contas: ["25943"], estabelecimento: "Matriz" },
+  { chave: "ded-dev-filial", descricao: "Devoluções Filial", contas: ["25943"], estabelecimento: "Filial SP" },
+  { chave: "ded-ipi-matriz", descricao: "IPI Matriz", contas: ["2826"], estabelecimento: "Matriz" },
+  { chave: "ded-icms-matriz", descricao: "ICMS Matriz", contas: ["2827"], estabelecimento: "Matriz" },
+  { chave: "ded-pis-matriz", descricao: "PIS Matriz", contas: ["2829"], estabelecimento: "Matriz" },
+  { chave: "ded-cofins-matriz", descricao: "COFINS Matriz", contas: ["2830"], estabelecimento: "Matriz" },
+  { chave: "ded-icmsst-matriz", descricao: "ICMS ST Matriz", contas: ["2832"], estabelecimento: "Matriz" },
+  { chave: "ded-icmsst-filial", descricao: "ICMS ST Filial", contas: ["2832"], estabelecimento: "Filial SP" },
+  {
+    chave: "ded-icms-filial",
+    descricao: "ICMS sobre vendas Filial",
+    contas: ["25054"],
+    estabelecimento: "Filial SP",
+    // Exclui o ICMS de transferência interna Matriz→Filial (não é dedução de venda —
+    // mesmo critério já aplicado em nitaplast-dre-julho-final.ts, movExcluindo("25054", ...)).
+    excluirIds: ["JUL-ICMS-F-DEB-TRANSF"],
+  },
+  { chave: "ded-ipi-filial", descricao: "IPI Filial", contas: ["25055"], estabelecimento: "Filial SP" },
+  { chave: "ded-pis-filial", descricao: "PIS Filial", contas: ["2829"], estabelecimento: "Filial SP" },
+  { chave: "ded-cofins-filial", descricao: "COFINS Filial", contas: ["2830"], estabelecimento: "Filial SP" },
+];
+
+/**
+ * Calcula, para qualquer competência (julho ou agosto), o mesmo conjunto de
+ * linhas por conta/estabelecimento — usando as mesmas regras de classificação
+ * já validadas em nitaplast-dre-julho-final.ts (ehCustoDreJulho etc.), agora
+ * aplicadas diretamente sobre o Razão bruto de cada competência. Isso evita
+ * duas taxonomias divergentes entre julho e agosto: a mesma regra decide o
+ * que é custo, despesa operacional, despesa financeira e receita financeira
+ * nos dois meses.
+ */
+function calcularDetalhesAnaliseDre(lancamentos: LinhaMovimentoAnalise[]) {
+  const valores = new Map<string, number>();
+  for (const def of DETALHES_ANALISE_DRE) {
+    const bruto = movimentoContasEstabelecimento(lancamentos, def.contas, def.estabelecimento, def.excluirIds);
+    valores.set(def.chave, def.inverterSinal ? -bruto : bruto);
+  }
+
+  const custosContas = new Set<string>();
+  const despesasFinanceirasContas = new Set<string>();
+  const despesasOperacionaisContas = new Set<string>();
+  for (const l of lancamentos) {
+    for (const codigo of [l.debitoCodigo, l.creditoCodigo]) {
+      const chaveClassificacao = { conta: codigo, classificacao: classificacaoPorConta.get(codigo) ?? "", cc: l.cc ?? "0" };
+      if (ehCustoDreJulho(chaveClassificacao)) custosContas.add(codigo);
+      else if (ehDespesaFinanceiraDreJulho(chaveClassificacao)) despesasFinanceirasContas.add(codigo);
+      else if (contasReceitasFinanceirasAgosto.has(codigo)) continue;
+      else if (ehDespesaOperacionalDreJulho(chaveClassificacao)) despesasOperacionaisContas.add(codigo);
+    }
+  }
+  valores.set("cpv-matriz", movimentoContasEstabelecimento(lancamentos, [...custosContas], "Matriz"));
+  valores.set("cpv-filial", movimentoContasEstabelecimento(lancamentos, [...custosContas], "Filial SP"));
+  valores.set("fin-despesas", movimentoContasEstabelecimento(lancamentos, [...despesasFinanceirasContas]));
+  valores.set("fin-receitas", -movimentoContasEstabelecimento(lancamentos, [...contasReceitasFinanceirasAgosto]));
+
+  const despesasPorCategoria = new Map<string, number>();
+  for (const l of lancamentos) {
+    if (despesasOperacionaisContas.has(l.debitoCodigo)) {
+      const categoria = categoriaDaConta(l.debitoCodigo, l.cc ?? "0");
+      despesasPorCategoria.set(categoria, arred((despesasPorCategoria.get(categoria) ?? 0) + l.valor));
+    }
+    if (despesasOperacionaisContas.has(l.creditoCodigo)) {
+      const categoria = categoriaDaConta(l.creditoCodigo, l.cc ?? "0");
+      despesasPorCategoria.set(categoria, arred((despesasPorCategoria.get(categoria) ?? 0) - l.valor));
+    }
+  }
+  for (const [id] of categoriasDespesasAgostoDefs) {
+    valores.set(`desp-${id}`, despesasPorCategoria.get(id) ?? 0);
+  }
+  return valores;
+}
+
+function AnaliseVerticalDre({ agosto, lancamentosAgosto }: { agosto: TotaisAnaliseDre; lancamentosAgosto: LinhaMovimentoAnalise[] }) {
   const controleJulho = useReclassificacoesInteligentes("2026-07");
-  const julho = useMemo(
-    () => calcularDreJulhoFinal(controleJulho.aplicar(lancamentosIntegradosJulhoFinal)).dre,
+  const lancamentosJulho = useMemo(
+    () => controleJulho.aplicar(lancamentosIntegradosJulhoFinal),
     [controleJulho.aplicar],
   );
+  const julho = useMemo(() => calcularDreJulhoFinal(lancamentosJulho).dre, [lancamentosJulho]);
   const baseJulho: TotaisAnaliseDre = {
     receitaBruta: julho.receitaBruta,
     deducoes: julho.deducoes,
@@ -390,42 +517,73 @@ function AnaliseVerticalDre({ agosto }: { agosto: TotaisAnaliseDre }) {
     naoOperacional: julho.resultadoAlienacaoImobilizado,
     resultado: julho.resultado,
   };
-  const definicoes: [keyof TotaisAnaliseDre, string][] = [
-    ["receitaBruta", "(+) Receita Operacional Bruta"],
-    ["deducoes", "(-) Deduções da Receita Bruta"],
-    ["receitaLiquida", "(=) Receita Operacional Líquida"],
-    ["cpv", "(-) CPV / CMV Total"],
-    ["lucroBruto", "(=) Lucro Bruto"],
-    ["despesas", "(-) Despesas Operacionais"],
-    ["resultadoFinanceiro", "Resultado Financeiro Líquido"],
-    ["resultadoOperacional", "(=) Resultado Operacional"],
-    ["naoOperacional", "Resultado não operacional"],
-    ["resultado", "(=) Lucro / Prejuízo Líquido"],
+  const detalhesJulho = useMemo(() => calcularDetalhesAnaliseDre(lancamentosJulho), [lancamentosJulho]);
+  const detalhesAgosto = useMemo(() => calcularDetalhesAnaliseDre(lancamentosAgosto), [lancamentosAgosto]);
+
+  type DefinicaoLinha =
+    | { tipo: "total"; chave: keyof TotaisAnaliseDre; descricao: string; negrito?: boolean }
+    | { tipo: "detalhe"; chave: string; descricao: string };
+  const definicoes: DefinicaoLinha[] = [
+    { tipo: "total", chave: "receitaBruta", descricao: "(+) Receita Operacional Bruta", negrito: true },
+    { tipo: "detalhe", chave: "rec-prod-matriz", descricao: "Receita Venda Produção Matriz" },
+    { tipo: "detalhe", chave: "rec-rev-matriz", descricao: "Receita Revenda Matriz" },
+    { tipo: "detalhe", chave: "rec-prod-filial", descricao: "Receita Venda Produção Filial" },
+    { tipo: "detalhe", chave: "rec-rev-filial", descricao: "Receita Revenda Filial" },
+    { tipo: "total", chave: "deducoes", descricao: "(-) Deduções da Receita Bruta", negrito: true },
+    { tipo: "detalhe", chave: "ded-dev-matriz", descricao: "Devoluções Matriz" },
+    { tipo: "detalhe", chave: "ded-dev-filial", descricao: "Devoluções Filial" },
+    { tipo: "detalhe", chave: "ded-ipi-matriz", descricao: "IPI Matriz" },
+    { tipo: "detalhe", chave: "ded-icms-matriz", descricao: "ICMS Matriz" },
+    { tipo: "detalhe", chave: "ded-pis-matriz", descricao: "PIS Matriz" },
+    { tipo: "detalhe", chave: "ded-cofins-matriz", descricao: "COFINS Matriz" },
+    { tipo: "detalhe", chave: "ded-icmsst-matriz", descricao: "ICMS ST Matriz" },
+    { tipo: "detalhe", chave: "ded-icmsst-filial", descricao: "ICMS ST Filial" },
+    { tipo: "detalhe", chave: "ded-icms-filial", descricao: "ICMS sobre vendas Filial" },
+    { tipo: "detalhe", chave: "ded-ipi-filial", descricao: "IPI Filial" },
+    { tipo: "detalhe", chave: "ded-pis-filial", descricao: "PIS Filial" },
+    { tipo: "detalhe", chave: "ded-cofins-filial", descricao: "COFINS Filial" },
+    { tipo: "total", chave: "receitaLiquida", descricao: "(=) Receita Operacional Líquida", negrito: true },
+    { tipo: "total", chave: "cpv", descricao: "(-) CPV / CMV Total", negrito: true },
+    { tipo: "detalhe", chave: "cpv-matriz", descricao: "CPV Matriz" },
+    { tipo: "detalhe", chave: "cpv-filial", descricao: "CPV Filial" },
+    { tipo: "total", chave: "lucroBruto", descricao: "(=) Lucro Bruto", negrito: true },
+    { tipo: "total", chave: "despesas", descricao: "(-) Despesas Operacionais", negrito: true },
+    ...categoriasDespesasAgostoDefs.map(([id, descricao]): DefinicaoLinha => ({ tipo: "detalhe", chave: `desp-${id}`, descricao })),
+    { tipo: "total", chave: "resultadoFinanceiro", descricao: "Resultado Financeiro Líquido", negrito: true },
+    { tipo: "detalhe", chave: "fin-despesas", descricao: "Despesas Financeiras" },
+    { tipo: "detalhe", chave: "fin-receitas", descricao: "(-) Receitas Financeiras" },
+    { tipo: "total", chave: "resultadoOperacional", descricao: "(=) Resultado Operacional", negrito: true },
+    { tipo: "total", chave: "naoOperacional", descricao: "Resultado não operacional", negrito: true },
+    { tipo: "total", chave: "resultado", descricao: "(=) Lucro / Prejuízo Líquido", negrito: true },
   ];
-  const linhas = definicoes.map(([chave, descricao]) => {
-    const valorJulho = baseJulho[chave];
-    const valorAgosto = agosto[chave];
-    const avJulho = baseJulho.receitaBruta ? (valorJulho / baseJulho.receitaBruta) * 100 : 0;
-    const avAgosto = agosto.receitaBruta ? (valorAgosto / agosto.receitaBruta) * 100 : 0;
-    const diferenca = arred(valorAgosto - valorJulho);
-    const variacao = Math.abs(valorJulho) > 0.004 ? (diferenca / Math.abs(valorJulho)) * 100 : null;
-    const pontosPercentuais = avAgosto - avJulho;
-    const revisar =
-      Math.abs(pontosPercentuais) >= 5 ||
-      (variacao !== null && Math.abs(variacao) >= 30 && Math.abs(diferenca) >= 10_000);
-    return {
-      chave,
-      descricao,
-      valorJulho,
-      valorAgosto,
-      avJulho,
-      avAgosto,
-      diferenca,
-      variacao,
-      pontosPercentuais,
-      revisar,
-    };
-  });
+  const linhas = definicoes
+    .map((def) => {
+      const valorJulho = def.tipo === "total" ? baseJulho[def.chave] : (detalhesJulho.get(def.chave) ?? 0);
+      const valorAgosto = def.tipo === "total" ? agosto[def.chave] : (detalhesAgosto.get(def.chave) ?? 0);
+      const avJulho = baseJulho.receitaBruta ? (valorJulho / baseJulho.receitaBruta) * 100 : 0;
+      const avAgosto = agosto.receitaBruta ? (valorAgosto / agosto.receitaBruta) * 100 : 0;
+      const diferenca = arred(valorAgosto - valorJulho);
+      const variacao = Math.abs(valorJulho) > 0.004 ? (diferenca / Math.abs(valorJulho)) * 100 : null;
+      const pontosPercentuais = avAgosto - avJulho;
+      const revisar =
+        Math.abs(pontosPercentuais) >= 5 ||
+        (variacao !== null && Math.abs(variacao) >= 30 && Math.abs(diferenca) >= 10_000);
+      return {
+        chave: def.chave,
+        descricao: def.descricao,
+        negrito: def.tipo === "total",
+        valorJulho,
+        valorAgosto,
+        avJulho,
+        avAgosto,
+        diferenca,
+        variacao,
+        pontosPercentuais,
+        revisar,
+      };
+    })
+    // Linhas de detalhe zeradas nos dois meses não agregam nada à conferência.
+    .filter((linha) => linha.negrito || Math.abs(linha.valorJulho) > 0.004 || Math.abs(linha.valorAgosto) > 0.004);
   const percentual = (valor: number) =>
     `${valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
   return (
@@ -437,8 +595,9 @@ function AnaliseVerticalDre({ agosto }: { agosto: TotaisAnaliseDre }) {
               Análise vertical e horizontal — 07/2026 × 08/2026
             </CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              Mesmas linhas da DRE oficial. AV = participação sobre a receita bruta; variação p.p.
-              mostra a mudança de peso entre os meses.
+              DRE completa conta a conta (Matriz e Filial SP abertas onde a natureza contábil
+              exige). AV = participação sobre a receita bruta; variação p.p. mostra a mudança de
+              peso entre os meses.
             </p>
           </div>
           <Badge variant="outline">
@@ -463,8 +622,11 @@ function AnaliseVerticalDre({ agosto }: { agosto: TotaisAnaliseDre }) {
           </thead>
           <tbody>
             {linhas.map((linha) => (
-              <tr key={linha.chave} className={`border-b ${linha.revisar ? "bg-amber-50/50" : ""}`}>
-                <td className="p-2 font-medium">{linha.descricao}</td>
+              <tr
+                key={linha.chave}
+                className={`border-b ${linha.revisar ? "bg-amber-50/50" : ""} ${linha.negrito ? "bg-muted/30" : ""}`}
+              >
+                <td className={`p-2 ${linha.negrito ? "font-semibold" : "pl-6 text-muted-foreground"}`}>{linha.descricao}</td>
                 <td className="p-2 text-right tabular-nums">{brl.format(linha.valorJulho)}</td>
                 <td className="p-2 text-right tabular-nums">{percentual(linha.avJulho)}</td>
                 <td className="p-2 text-right tabular-nums">{brl.format(linha.valorAgosto)}</td>
@@ -490,7 +652,7 @@ function AnaliseVerticalDre({ agosto }: { agosto: TotaisAnaliseDre }) {
         <div className="mt-4 rounded-md border border-amber-400/50 bg-amber-50/40 p-3 text-sm">
           <strong>Critério de alerta:</strong> mudança de pelo menos 5 pontos percentuais ou
           variação mínima de 30% e R$ 10 mil. O alerta direciona a conferência do Razão; não cria
-          lançamento automático.
+          lançamento automático. Linhas de detalhe zeradas nos dois meses ficam ocultas.
         </div>
       </CardContent>
     </Card>
@@ -704,16 +866,20 @@ function calcularResultadoAgosto(lancamentos: ReturnType<typeof useBase>["lancam
       ),
     );
   const credito = (conta: string) => arred(-mov(conta));
+  // Classifica pelo plano de contas completo (implantação + contas criadas depois via
+  // contasPosImplantacao) — não só saldosImplantacao, que não cobre contas mais novas
+  // (ex.: 4405 "Despesas e adiantamentos de viagem", achado em 15/09/2026: um lançamento
+  // real de agosto nessa conta ficava fora do resultado por não estar em saldosImplantacao).
   const contasResultado = [
     ...new Set(lancamentos.flatMap((l) => [l.debitoCodigo, l.creditoCodigo])),
-  ].filter((c) => info.get(c)?.grupo === "Custos e despesas acumulados");
+  ].filter((c) => grupoClassificacaoAgosto(classificacaoPorConta.get(c) ?? "") === "Custos e despesas acumulados");
   const custos = contasResultado.filter(
     (c) =>
-      (info.get(c)?.classificacao ?? "").startsWith("5.1") ||
+      (classificacaoPorConta.get(c) ?? "").startsWith("5.1") ||
       ["25944", "25945", "3093"].includes(c),
   );
   const financeiras = contasResultado.filter((c) =>
-    (info.get(c)?.classificacao ?? "").startsWith("5.8"),
+    (classificacaoPorConta.get(c) ?? "").startsWith("5.8"),
   );
   const operacionais = contasResultado.filter(
     (c) =>
@@ -767,27 +933,28 @@ const categoriasDespesasAgostoDefs: [string, string][] = [
   ["filial", "Despesas Comercial SP"],
   ["outras", "Outras despesas operacionais sem classificação gerencial"],
 ];
+/** Reutilizada fora desta função (na análise vertical/horizontal completa) para categorizar despesas de qualquer competência com a mesma regra. */
+const categoriaDaConta = (conta: string, cc: string): string => {
+  const classificacao = classificacaoPorConta.get(conta) ?? "";
+  if (conta === "25937") return "industrializacao";
+  if (classificacao.startsWith("5.7.01.011")) return "depreciacao";
+  if (classificacao.startsWith("5.7.01.015") || classificacao.startsWith("5.7.05")) return "veiculos";
+  if (conta === "25070") return "comex";
+  if (ccFilialAgosto.has(cc)) return "filial";
+  if (ccAdministrativasAgosto.has(cc)) return "administrativas";
+  if (ccComerciaisAgosto.has(cc)) return "comerciais";
+  if (ccProducaoAgosto.has(cc)) return "producao";
+  return "outras";
+};
 function categorizarDespesasAgosto(lancamentos: ReturnType<typeof useBase>["lancamentos"], operacionais: string[]) {
   const operacionaisSet = new Set(operacionais);
   const porCategoria = new Map<string, Map<string, ItemDespesaAgosto>>();
   const somar = (categoria: string, conta: string, delta: number) => {
     const contas = porCategoria.get(categoria) ?? new Map<string, ItemDespesaAgosto>();
-    const atual = contas.get(conta) ?? { conta, descricao: info.get(conta)?.descricao ?? "Conta não encontrada no plano", classificacao: info.get(conta)?.classificacao ?? "9.9.99", valor: 0 };
+    const atual = contas.get(conta) ?? { conta, descricao: descricaoPorContaCompleta.get(conta) ?? "Conta não encontrada no plano", classificacao: classificacaoPorConta.get(conta) ?? "9.9.99", valor: 0 };
     atual.valor = arred(atual.valor + delta);
     contas.set(conta, atual);
     porCategoria.set(categoria, contas);
-  };
-  const categoriaDaConta = (conta: string, cc: string): string => {
-    const classificacao = info.get(conta)?.classificacao ?? "";
-    if (conta === "25937") return "industrializacao";
-    if (classificacao.startsWith("5.7.01.011")) return "depreciacao";
-    if (classificacao.startsWith("5.7.01.015") || classificacao.startsWith("5.7.05")) return "veiculos";
-    if (conta === "25070") return "comex";
-    if (ccFilialAgosto.has(cc)) return "filial";
-    if (ccAdministrativasAgosto.has(cc)) return "administrativas";
-    if (ccComerciaisAgosto.has(cc)) return "comerciais";
-    if (ccProducaoAgosto.has(cc)) return "producao";
-    return "outras";
   };
   for (const l of lancamentos) {
     if (operacionaisSet.has(l.debitoCodigo)) somar(categoriaDaConta(l.debitoCodigo, l.cc), l.debitoCodigo, l.valor);
@@ -869,7 +1036,7 @@ export function DreAgostoPadrao() {
       .filter((c) => Math.abs(mov(c)) > 0.004)
       .map((c) => ({
         id: `${prefixo}-${c}`,
-        descricao: `${c} - ${info.get(c)?.descricao ?? "Conta não encontrada no plano"}`,
+        descricao: `${c} - ${descricaoPorContaCompleta.get(c) ?? "Conta não encontrada no plano"}`,
         valor: Math.abs(mov(c)),
         nivel: 1,
         pai,
@@ -1135,6 +1302,7 @@ export function DreAgostoPadrao() {
               naoOperacional,
               resultado,
             }}
+            lancamentosAgosto={lancamentos}
           />
         </TabsContent>
       </Tabs>
@@ -1169,6 +1337,7 @@ export function AnaliseHorizontalVerticalAgosto() {
           naoOperacional,
           resultado,
         }}
+        lancamentosAgosto={lancamentos}
       />
     </div>
   );
