@@ -918,8 +918,14 @@ function calcularResultadoAgosto(lancamentos: ReturnType<typeof useBase>["lancam
 // natureza (industrialização, depreciação, veículos, comércio exterior), o resto
 // é agrupado pelo centro de custo real do lançamento de agosto.
 const ccAdministrativasAgosto = new Set(["301", "302", "303", "304", "305", "306"]);
-const ccComerciaisAgosto = new Set(["201", "203", "204", "205", "210"]);
-const ccProducaoAgosto = new Set(["101", "102", "103", "104", "106", "107", "108", "110", "111", "10014", "10032", "19999"]);
+// 206 (Exportação) e 209 (Importação) e 109 (produção) achados em 15/09/2026:
+// CCs reais usados em lançamentos de agosto que faltavam nesses conjuntos —
+// caíam em "outras despesas sem classificação gerencial" em vez da categoria
+// certa, mesmo sendo produção/comercial de verdade (ex.: folha e serviços
+// alocados ao CC 206, fretes ao CC 109). Não muda nenhum total, só a
+// categoria de apresentação.
+const ccComerciaisAgosto = new Set(["201", "203", "204", "205", "206", "209", "210"]);
+const ccProducaoAgosto = new Set(["101", "102", "103", "104", "106", "107", "108", "109", "110", "111", "10014", "10032", "19999"]);
 const ccFilialAgosto = new Set(["501", "502", "503", "504", "505"]);
 type ItemDespesaAgosto = { conta: string; descricao: string; classificacao: string; valor: number };
 const categoriasDespesasAgostoDefs: [string, string][] = [
