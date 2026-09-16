@@ -21,6 +21,7 @@ import {
   lancamentosFechamentoEstoqueAgosto,
   lancamentosFechamentoEstoqueFilialAgosto,
   lancamentosImobilizadoAgosto,
+  lancamentosTransferenciaInternaMatrizAgosto,
 } from "./nitaplast-cpv-depreciacao-agosto";
 export { saldoAberturaAgostoPorConta } from "./nitaplast-saldos-agosto";
 
@@ -72,6 +73,7 @@ export const lancamentosIntegradosAgosto: LancamentoIntegrado[] = [
   ...lancamentosJcpAgosto,
   ...lancamentosFechamentoEstoqueAgosto,
   ...lancamentosFechamentoEstoqueFilialAgosto,
+  ...lancamentosTransferenciaInternaMatrizAgosto,
   ...lancamentosImobilizadoAgosto,
   ...lancamentosDepreciacaoAgosto,
   ...lancamentosAmortizacaoAgosto,

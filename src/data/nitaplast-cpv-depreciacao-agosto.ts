@@ -172,6 +172,50 @@ export const lancamentosFechamentoEstoqueAgosto: LancamentoIntegrado[] = Object.
   return linhas;
 });
 
+/**
+ * Contrapartida na Matriz das duas transferências internas Matriz↔Filial de
+ * agosto (ver lancamentosFechamentoEstoqueFilialAgosto, AGO-CPV-F-TRANSF-*).
+ * Achado em 16/09/2026: só o lado da Filial tinha sido lançado — a Matriz
+ * nunca reconheceu ter recebido mercadoria da Filial nem ter enviado
+ * mercadoria para a Filial. Mesma lógica da Filial, espelhada: mercadoria
+ * recebida entra no CPV (como compra); mercadoria enviada sai do CPV (não foi
+ * vendida a terceiro). Contrapartida em 4859 (conta transitória) — as duas
+ * pontas juntas (Filial + Matriz) zeram a 4859 nessas transferências, como
+ * esperado de uma conta de passagem entre estabelecimentos.
+ */
+export const lancamentosTransferenciaInternaMatrizAgosto: LancamentoIntegrado[] = [
+  base({
+    id: "AGO-CPV-M-TRANSF-RECEBIDA",
+    data: "31/08/2026",
+    origem: "TRANSFERÊNCIA INTERNA 08/2026",
+    debitoCodigo: "25944",
+    creditoCodigo: "4859",
+    historico: "Mercadoria recebida por transferência interna entre estabelecimentos (NOP 2151/2152, 6 documentos)",
+    documento: "NF 8851, 8856, 8869, 8907, 8922, 8881 / NOP 2151-2152",
+    cc: "0",
+    centroCusto: "SEM CENTRO DE CUSTO",
+    valor: 353_394.77,
+    status: "revisar",
+    observacao: "Entra no CPV da Matriz como se fosse compra (mercadoria recebida por transferência interna, que não veio de terceiro). Contrapartida de AGO-CPV-F-TRANSF-ENVIADA (Filial). Fecha o mesmo fato cujo ICMS está em AGO-TAX-ICMS-TRANSF. Contrapartida em 4859 até identificar a conta patrimonial definitiva de transferência entre estabelecimentos.",
+    fonte: "RESUMO NOTAS FISCAIS ENTRADA.csv (Matriz)",
+  }),
+  base({
+    id: "AGO-CPV-M-TRANSF-ENVIADA",
+    data: "31/08/2026",
+    origem: "TRANSFERÊNCIA INTERNA 08/2026",
+    debitoCodigo: "4859",
+    creditoCodigo: "25944",
+    historico: "Mercadoria enviada por transferência interna entre estabelecimentos (NOP 2152, 33 documentos)",
+    documento: "33 documentos NOP 2152",
+    cc: "0",
+    centroCusto: "SEM CENTRO DE CUSTO",
+    valor: 119_957.34,
+    status: "revisar",
+    observacao: "Sai do CPV da Matriz (mercadoria que deixou o estoque físico da Matriz sem ser vendida a terceiro — foi para a Filial por transferência interna). Contrapartida de AGO-CPV-F-TRANSF-RECEBIDA (Filial). Fecha o mesmo fato cujo ICMS está em AGO-TAX-ICMS-TRANSF-F. Contrapartida em 4859 até identificar a conta patrimonial definitiva de transferência entre estabelecimentos.",
+    fonte: "RESUMO NOTAS FISCAIS SAIDA.csv (Matriz)",
+  }),
+];
+
 export const lancamentosImobilizadoAgosto: LancamentoIntegrado[] = [
   base({ id: "AGO-IMOB-JEEP", data: "18/08/2026", origem: "AQUISIÇÃO IMOBILIZADO 08/2026", debitoCodigo: "1089", creditoCodigo: "1496", historico: "Aquisição Jeep Commander Overland 2.2 Diesel", documento: "NF 2821198 / série 25", cc: "448", centroCusto: "JEEP COMMANDER OVERLAND", valor: 268_062.08, observacao: "Ativo adquirido em 18/08. Não foi criada cota adicional sem ficha patrimonial, taxa e confirmação da data disponível para uso.", fonte: "RELATATORIO DETALHADO ENTRADAS POR CENTRO DE CUSTO - SOFTDIB 082026.csv" }),
 ];
