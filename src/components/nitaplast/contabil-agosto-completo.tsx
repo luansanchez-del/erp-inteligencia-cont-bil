@@ -871,9 +871,19 @@ function calcularResultadoAgosto(lancamentos: ReturnType<typeof useBase>["lancam
   // contasPosImplantacao) — não só saldosImplantacao, que não cobre contas mais novas
   // (ex.: 4405 "Despesas e adiantamentos de viagem", achado em 15/09/2026: um lançamento
   // real de agosto nessa conta ficava fora do resultado por não estar em saldosImplantacao).
+  //
+  // 25944/25945 (Custos de Produtos Vendidos — Matriz/Filial) são exceção: a
+  // classificação delas (4.2.01.001.00x) cai no grupo "Receitas acumuladas" por
+  // peculiaridade deste plano de contas, não "Custos e despesas acumulados" —
+  // mesmo sendo, na prática, a conta de fechamento do CPV. Achado em 16/09/2026
+  // (CPV Filial aparecendo zerado na DRE mesmo com lançamentos reais na 25945):
+  // a lista explícita ["25944","25945","3093"] abaixo, em `custos`, nunca tinha
+  // efeito porque este filtro já excluía as duas ANTES de chegar lá. Julho já
+  // trata esse mesmo caso (nitaplast-dre-julho-final.ts aceita explicitamente
+  // classificação começando com "4.2" na composição do resultado).
   const contasResultado = [
     ...new Set(lancamentos.flatMap((l) => [l.debitoCodigo, l.creditoCodigo])),
-  ].filter((c) => grupoClassificacaoAgosto(classificacaoPorConta.get(c) ?? "") === "Custos e despesas acumulados");
+  ].filter((c) => grupoClassificacaoAgosto(classificacaoPorConta.get(c) ?? "") === "Custos e despesas acumulados" || ["25944", "25945"].includes(c));
   const custos = contasResultado.filter(
     (c) =>
       (classificacaoPorConta.get(c) ?? "").startsWith("5.1") ||
