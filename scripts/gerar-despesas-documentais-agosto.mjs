@@ -93,6 +93,13 @@ for (const texto of linhas) {
   const g = limpo(c[81]);
   // Estes grupos já integram CPV, devoluções, imobilizado ou apurações específicas.
   if (["11.01.001", "11.01.002", "11.01.003", "11.01.008", "11.01.010"].includes(g)) continue;
+  // NOP 1903 = mercadoria remetida para industrialização e NÃO aplicada no
+  // processo (material da própria empresa voltando sem uso). Não é fatura do
+  // industrializador — o faturamento oficial da NPL de 08/2026 confirma que
+  // ela só cobrou pela NOP 1124 (R$ 370.950,86), nada pela 1903. Lançar a
+  // 1903 como despesa/fornecedor duplica o valor do material (que já está no
+  // estoque) e cria um passivo com o fornecedor que não existe.
+  if (g === "11.02.001" && limpo(c[8]) === "1903") continue;
   for (const i of [84, 87, 90, 93]) {
     const ccBruto = limpo(c[i]);
     const cc = /^\d+$/.test(ccBruto) ? String(Number(ccBruto)) : ccBruto;
