@@ -475,14 +475,15 @@ function calcularDetalhesAnaliseDre(lancamentos: LinhaMovimentoAnalise[]) {
   valores.set("fin-despesas", movimentoContasEstabelecimento(lancamentos, [...despesasFinanceirasContas]));
   valores.set("fin-receitas", -movimentoContasEstabelecimento(lancamentos, [...contasReceitasFinanceirasAgosto]));
 
+  const categoriaPorContaDespesa = categoriaDominantePorConta(lancamentos, despesasOperacionaisContas);
   const despesasPorCategoria = new Map<string, number>();
   for (const l of lancamentos) {
     if (despesasOperacionaisContas.has(l.debitoCodigo)) {
-      const categoria = categoriaDaConta(l.debitoCodigo, l.cc ?? "0");
+      const categoria = categoriaPorContaDespesa.get(l.debitoCodigo)!;
       despesasPorCategoria.set(categoria, arred((despesasPorCategoria.get(categoria) ?? 0) + l.valor));
     }
     if (despesasOperacionaisContas.has(l.creditoCodigo)) {
-      const categoria = categoriaDaConta(l.creditoCodigo, l.cc ?? "0");
+      const categoria = categoriaPorContaDespesa.get(l.creditoCodigo)!;
       despesasPorCategoria.set(categoria, arred((despesasPorCategoria.get(categoria) ?? 0) - l.valor));
     }
   }
@@ -952,8 +953,39 @@ const categoriaDaConta = (conta: string, cc: string): string => {
   if (ccProducaoAgosto.has(cc)) return "producao";
   return "outras";
 };
+/**
+ * Cada conta pertence a UMA categoria só, decidida pelo CC onde a despesa
+ * nasce (o CC com o maior débito absoluto). Achado em 15/09/2026: créditos
+ * fiscais (ICMS/IPI/PIS/COFINS sobre compras) reduzem essas mesmas contas de
+ * despesa mas são lançados sem CC (rateio de crédito de entradas não carrega
+ * CC) — categorizar cada MOVIMENTO pelo seu próprio CC fazia o crédito cair
+ * em "outras" como despesa negativa, separado do débito original que fica
+ * corretamente em produção/comercial. Decidir a categoria pela conta inteira
+ * evita esse artefato sem mudar nenhum total.
+ */
+function categoriaDominantePorConta(lancamentos: Pick<LinhaMovimentoAnalise, "debitoCodigo" | "creditoCodigo" | "valor" | "cc">[], contas: Iterable<string>) {
+  const contasSet = new Set(contas);
+  const debitoPorContaECC = new Map<string, Map<string, number>>();
+  for (const l of lancamentos) {
+    if (!contasSet.has(l.debitoCodigo)) continue;
+    const porCC = debitoPorContaECC.get(l.debitoCodigo) ?? new Map<string, number>();
+    porCC.set(l.cc ?? "0", (porCC.get(l.cc ?? "0") ?? 0) + l.valor);
+    debitoPorContaECC.set(l.debitoCodigo, porCC);
+  }
+  const categoriaPorConta = new Map<string, string>();
+  for (const conta of contasSet) {
+    const porCC = debitoPorContaECC.get(conta);
+    let ccDominante = "0";
+    if (porCC && porCC.size > 0) {
+      ccDominante = [...porCC.entries()].reduce((a, b) => (Math.abs(b[1]) > Math.abs(a[1]) ? b : a))[0];
+    }
+    categoriaPorConta.set(conta, categoriaDaConta(conta, ccDominante));
+  }
+  return categoriaPorConta;
+}
 function categorizarDespesasAgosto(lancamentos: ReturnType<typeof useBase>["lancamentos"], operacionais: string[]) {
   const operacionaisSet = new Set(operacionais);
+  const categoriaPorConta = categoriaDominantePorConta(lancamentos, operacionaisSet);
   const porCategoria = new Map<string, Map<string, ItemDespesaAgosto>>();
   const somar = (categoria: string, conta: string, delta: number) => {
     const contas = porCategoria.get(categoria) ?? new Map<string, ItemDespesaAgosto>();
@@ -963,8 +995,8 @@ function categorizarDespesasAgosto(lancamentos: ReturnType<typeof useBase>["lanc
     porCategoria.set(categoria, contas);
   };
   for (const l of lancamentos) {
-    if (operacionaisSet.has(l.debitoCodigo)) somar(categoriaDaConta(l.debitoCodigo, l.cc), l.debitoCodigo, l.valor);
-    if (operacionaisSet.has(l.creditoCodigo)) somar(categoriaDaConta(l.creditoCodigo, l.cc), l.creditoCodigo, -l.valor);
+    if (operacionaisSet.has(l.debitoCodigo)) somar(categoriaPorConta.get(l.debitoCodigo)!, l.debitoCodigo, l.valor);
+    if (operacionaisSet.has(l.creditoCodigo)) somar(categoriaPorConta.get(l.creditoCodigo)!, l.creditoCodigo, -l.valor);
   }
   const total = (categoria: string) => arred([...(porCategoria.get(categoria)?.values() ?? [])].reduce((s, x) => s + x.valor, 0));
   const itens = (categoria: string) => [...(porCategoria.get(categoria)?.values() ?? [])].filter((x) => Math.abs(x.valor) > 0.004);
