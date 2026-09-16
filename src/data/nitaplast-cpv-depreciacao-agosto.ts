@@ -101,6 +101,52 @@ export const lancamentosFechamentoEstoqueFilialAgosto: LancamentoIntegrado[] = [
     observacao: "Compras líquidas da própria competência de agosto, documentadas por 6 NFs de CFOP 1102 (AGO-CUSTO-REV-F-01 a 06): R$ 31.519,17. Único encerramento de compras no CPV de agosto — o saldo acumulado de competências anteriores (R$ 420.540,54 na abertura) permanece patrimonial na 25139, pendente de conciliação, mesmo critério de julho (JUL-CPV-F-COMP).",
     fonte: "RESUMO NOTAS FISCAIS ENTRADA.csv — FILIAL AGO 26",
   }),
+  // Transferências internas Matriz↔Filial de agosto (achado em 16/09/2026, ao
+  // investigar CPV Filial > receita Filial): a fórmula estoque inicial +
+  // compras − estoque final atribuía a queda física do estoque inteiramente a
+  // vendas, mas parte dela é mercadoria que só mudou de estabelecimento, sem
+  // venda a terceiro. Ambas as pontas conferidas nos CSVs de entrada/saída dos
+  // dois estabelecimentos (mesmos valores nos dois lados, nenhuma nota
+  // cancelada). Contrapartida em 4859 (conta transitória) — não existe conta
+  // patrimonial dedicada de "transferência de mercadoria entre
+  // estabelecimentos" no plano de contas; mesmo critério já usado no projeto
+  // para valores sem conta real confirmada.
+  base({
+    id: "AGO-CPV-F-TRANSF-RECEBIDA",
+    data: "31/08/2026",
+    origem: "TRANSFERÊNCIA INTERNA 08/2026",
+    debitoCodigo: "25945",
+    creditoCodigo: "4859",
+    // Historico/documento evitam citar o outro estabelecimento: mencionar "Matriz" +
+    // "transferência" aqui aciona a heurística de estabelecimentoLancamentoNitaplast que
+    // classifica como "Matriz ↔ Filial" (compartilhado) — mas este lançamento ajusta só o
+    // CPV da própria Filial (cc 502), não deve ficar fora do card/análise por estabelecimento.
+    historico: "Mercadoria recebida por transferência interna entre estabelecimentos (NOP 2152, 33 documentos)",
+    documento: "33 documentos NOP 2152",
+    cc: "502",
+    centroCusto: "COMERCIAL SP",
+    valor: 119_957.34,
+    status: "revisar",
+    observacao: "Entra no CPV como se fosse compra (mercadoria disponível para revenda recebida da Matriz por transferência interna, que não veio de terceiro nem está mais em estoque físico). Fecha o mesmo fato cujo ICMS está em AGO-TAX-ICMS-TRANSF-F. Contrapartida em 4859 até identificar a conta patrimonial definitiva de transferência entre estabelecimentos.",
+    fonte: "RESUMO NOTAS FISCAIS ENTRADA.csv (Filial SP)",
+  }),
+  base({
+    id: "AGO-CPV-F-TRANSF-ENVIADA",
+    data: "31/08/2026",
+    origem: "TRANSFERÊNCIA INTERNA 08/2026",
+    debitoCodigo: "4859",
+    creditoCodigo: "25945",
+    // Mesmo motivo do lançamento acima: historico/documento sem citar o outro
+    // estabelecimento, para não cair na classificação "Matriz ↔ Filial".
+    historico: "Mercadoria enviada por transferência interna entre estabelecimentos (NOP 6151, 6 documentos)",
+    documento: "NF 8851, 8856, 8869, 8907, 8922, 8881 / NOP 6151",
+    cc: "502",
+    centroCusto: "COMERCIAL SP",
+    valor: 353_394.77,
+    status: "revisar",
+    observacao: "Sai do CPV (mercadoria que deixou o estoque físico da Filial sem ser vendida a terceiro — foi para a Matriz por transferência interna). NF 8907 (R$ 341.248,73) tem 'SEM VALOR COMERCIAL' na condição de pagamento, confirmando natureza de transferência. Fecha o mesmo fato cujo ICMS está em AGO-TAX-ICMS-TRANSF (Filial → Matriz). Contrapartida em 4859 até identificar a conta patrimonial definitiva de transferência entre estabelecimentos.",
+    fonte: "RESUMO NOTAS FISCAIS SAIDA.csv (Filial SP), conferido contra o CSV de entradas do outro estabelecimento",
+  }),
   base({
     id: "AGO-CPV-F-FINAL",
     data: "31/08/2026",

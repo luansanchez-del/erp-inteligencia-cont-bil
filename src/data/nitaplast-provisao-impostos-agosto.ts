@@ -124,13 +124,19 @@ export const residualNaoMapeado = {
 
 /**
  * O que antes ficava "sem conta real" no ICMS (R$ 15.118,15) foi conferido
- * documento a documento contra o CSV de entradas: são 7 notas emitidas pela
- * própria Nitaplast para si mesma (CFOP/NOP 2151 e 2152, gerenciais 01.01.001
- * "Venda de Mercadorias Mercado Interno" e 11.03.002 "Transferência de
- * Produtos para Filial") — ICMS de transferência interna Matriz → Filial, não
- * crédito de compra de terceiro. Mesmo fato e mesma conta de trânsito (25140)
- * que julho já usou nos dois lados (nitaplast-razao-julho-final-base.ts,
- * JUL-ICMS-M-TRANSF e JUL-ICMS-F-CRED).
+ * documento a documento contra o CSV de entradas: são 6 notas com "Fornecedor"
+ * = a própria Nitaplast, emitidas pela FILIAL (São Paulo) para a MATRIZ
+ * (destino Pinhais/PR, conferido no CSV de saídas da Filial — mesmos valores,
+ * NOP 6151) — CFOP/NOP 2151 e 2152 do lado de quem recebe, gerenciais
+ * 01.01.001 "Venda de Mercadorias Mercado Interno" e 11.03.002 "Transferência
+ * de Produtos para Filial". Achado em 16/09/2026: a direção é FILIAL → MATRIZ,
+ * não Matriz → Filial como o histórico do lançamento dizia antes (a conta
+ * debitada/creditada já estava certa — é a Matriz, que recebe, reconhecendo o
+ * crédito; só o texto estava invertido). NF 8907 (R$ 341.248,73 de mercadoria,
+ * a maior parte do total) tem "SEM VALOR COMERCIAL" na condição de pagamento —
+ * característica de remessa/transferência interna, não venda. Mesmo fato e
+ * mesma conta de trânsito (25140) que julho já usou nos dois lados
+ * (nitaplast-razao-julho-final-base.ts, JUL-ICMS-M-TRANSF e JUL-ICMS-F-CRED).
  */
 export const creditoIcmsTransferenciaAgosto = {
   total: 15_118.15,
@@ -138,6 +144,20 @@ export const creditoIcmsTransferenciaAgosto = {
     { gerencial: "01.01.001", descricao: "Venda de Mercadorias Mercado Interno (NOP 2152)", quantidade: 6, valor: 14_559.36 },
     { gerencial: "11.03.002", descricao: "Transferência de Produtos para Filial (NOP 2151)", quantidade: 1, valor: 558.79 },
   ],
+} as const;
+
+/**
+ * Contrapartida — transferência interna no sentido MATRIZ → FILIAL em
+ * agosto/2026, achada em 16/09/2026 ao investigar o CPV da Filial maior que a
+ * receita: 33 notas (NOP 2152) com "Fornecedor" = a própria Nitaplast (Matriz)
+ * no CSV de entradas da Filial. Valor de mercadoria nunca lançado em nenhum
+ * dos dois lados (nem estoque, nem ICMS) até este achado.
+ */
+export const creditoIcmsTransferenciaFilialAgosto = {
+  total: 9_242.68,
+  quantidadeDocumentos: 33,
+  valorMercadoria: 119_957.34,
+  observacao: "33 notas NOP 2152, fornecedor a própria Nitaplast (Matriz), no CSV de entradas da Filial. ICMS de transferência interna Matriz → Filial — não crédito de compra de terceiro.",
 } as const;
 
 export const lancamentosProvisaoImpostosAgosto: LancamentoIntegrado[] = [
@@ -233,13 +253,28 @@ export const lancamentosProvisaoImpostosAgosto: LancamentoIntegrado[] = [
     origem: "APURAÇÃO ICMS 08/2026",
     debitoCodigo: "1541",
     creditoCodigo: "25140",
-    historico: "ICMS de transferências internas Matriz → Filial (NOP 2151/2152)",
+    historico: "ICMS de transferências internas Filial → Matriz (NOP 2151/2152)",
     documento: "NF 8851, 8856, 8869, 8907, 8922, 8881 / NOP 2151-2152",
     cc: "0",
     centroCusto: "SEM CENTRO DE CUSTO",
     valor: creditoIcmsTransferenciaAgosto.total,
-    observacao: "Antes classificado como crédito sem conta real, parado na conta transitória 4859. Identificado documento a documento no CSV de entradas: 7 notas emitidas pela própria Nitaplast para si mesma (gerenciais 01.01.001 e 11.03.002), ICMS de transferência interna Matriz → Filial — não crédito de compra de terceiro. Mesma conta de trânsito (25140) usada em julho para o mesmo fato.",
+    observacao: "Antes classificado como crédito sem conta real, parado na conta transitória 4859. Identificado documento a documento no CSV de entradas: 6 notas emitidas pela Filial para a Matriz (conferido também no CSV de saídas da Filial, mesmos valores) — ICMS de transferência interna Filial → Matriz, não crédito de compra de terceiro. Direção corrigida em 16/09/2026 (texto estava Matriz → Filial; a conta debitada/creditada, quem recebe o crédito, já estava certa). Mesma conta de trânsito (25140) usada em julho para o mesmo fato.",
     fonte: "RELATATORIO DETALHADO ENTRADAS POR CENTRO DE CUSTO - SOFTDIB 082026.csv",
+  }),
+  base({
+    id: "AGO-TAX-ICMS-TRANSF-F",
+    data: "31/08/2026",
+    origem: "APURAÇÃO ICMS FILIAL 08/2026",
+    debitoCodigo: "25235",
+    creditoCodigo: "25140",
+    historico: "ICMS de transferências internas Matriz → Filial (NOP 2152)",
+    documento: "33 documentos NOP 2152",
+    cc: "502",
+    centroCusto: "COMERCIAL SP",
+    valor: creditoIcmsTransferenciaFilialAgosto.total,
+    status: "revisar",
+    observacao: "Contrapartida da AGO-TAX-ICMS-TRANSF: 33 notas com fornecedor a própria Nitaplast (Matriz) no CSV de entradas da Filial — ICMS de transferência interna Matriz → Filial, achado em 16/09/2026 ao investigar o CPV da Filial maior que a receita. Mercadoria (R$ 119.957,34) nunca tinha sido lançada em nenhum dos dois lados.",
+    fonte: "RESUMO NOTAS FISCAIS ENTRADA.csv (Filial SP)",
   }),
 
   // ICMS/IPI da Filial SP (CNPJ 82.295.817/0003-60) — achado em 15/09/2026: a
