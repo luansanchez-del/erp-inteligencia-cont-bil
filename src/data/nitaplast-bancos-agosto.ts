@@ -22,9 +22,18 @@ const nomeConta = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(cod
  *   completo E anexo de obrigações CCEE (Smart Energia) cruzando os mesmos valores
  *   — por isso é o único bloco com lançamentos individuais abaixo.
  * - Itaú Trust DI e Maxi DI: sem resumo mensal dedicado recebido para 08/2026.
- * - Greencred: posição de títulos em 31/08 recebida posteriormente; como juros e
- *   IR estão acumulados desde as aplicações, permanece em revisão documental e
- *   fora do Razão até existir memória do movimento mensal.
+ * - Greencred: a posição de 31/08 (Greencred Nitaplast.pdf) traz juros e IR
+ *   acumulados desde a aplicação (uma delas de 30/05/2025), não o movimento do
+ *   mês. Para isolar agosto, comparou-se com a posição de 31/07/2026 (mesmo
+ *   relatório, mês anterior) e, principalmente, com o EXTRATO MOVIMENTO
+ *   082026 - SISTEMA CLIENTE SOFTDIB, que já traz o movimento diário das duas
+ *   contas Greencred (B00002 conta-corrente e B00003 aplicação) com
+ *   classificação própria: "RENDIMENTO APLIC. FINANCEIRA" (gerencial
+ *   09.01.002) e "TRANSF. - MESMA TITULARIDADE" (gerencial 90.01.001) para os
+ *   resgates parciais transferidos à conta corrente da própria Greencred (não
+ *   saem do grupo). O SOFTDIB não lança provisão de IR mensal sobre os títulos
+ *   não resgatados — só o rendimento bruto — por isso não foi criada partida
+ *   de IR a recuperar (conta 25118) sem lastro na fonte.
  */
 export const controlesBancariosAgosto = {
   bancoBrasil: {
@@ -45,33 +54,19 @@ export const controlesBancariosAgosto = {
     observacao: "Conta dedicada a obrigações CCEE (Câmara de Comercialização de Energia Elétrica), operada via Bradesco Invest Fácil: os recursos entram, são aplicados automaticamente e resgatados na data de vencimento de cada obrigação. Conciliado com o anexo 'Smart Energia' (relatórios de Energia de Reserva, Reserva de Capacidade e Cotas de Energia Nuclear CCEE referência Agosto/2026).",
   },
   greencred: {
-    status: "revisar",
-    contaContabil: "4908",
+    status: "validado",
+    contaAplicacao: "25110",
+    contaContaCorrente: "21",
     agenciaConta: "5001 / 70233-1",
     saldoLiquidoExtrato: 1_536_985.11,
     jurosAcumuladosTitulos: 224_591.31,
     irProjetadoAcumulado: 42_953.36,
-    observacao: "Revisão de lançamento: o documento recebido em 09/09/2026 é uma posição dos títulos em 31/08/2026 e apresenta juros e IR acumulados desde as aplicações, não apenas o movimento de agosto. Não gerar partida no Razão até confrontar saldo anterior, aplicações/resgates do mês e memória mensal de rendimento.",
-    fonte: "Greencred Nitaplast.pdf",
+    rendimentoAgosto: 15_788.36,
+    resgatesAgosto: 300_000.00,
+    observacao: "Posição de 31/08/2026 (Greencred Nitaplast.pdf) comparada com a de 31/07/2026 e com o movimento diário do EXTRATO MOVIMENTO 082026 - SISTEMA CLIENTE SOFTDIB: rendimento bruto de agosto R$ 15.788,36 (conta 25110, aplicação Capital Coop Green Cred) e dois resgates parciais (R$ 140.000,00 + R$ 160.000,00) transferidos para a conta corrente da própria Greencred (conta 21), sem saída do grupo.",
+    fonte: "Greencred Nitaplast.pdf + Aplic Nitaplast Greencred.pdf (31/07/2026) + EXTRATO MOVIMENTO 082026 - SISTEMA CLIENTE SOFTDIB.csv",
   },
 } as const;
-
-/**
- * Pendências documentais não entram no Razão até que débito, crédito e valor do
- * movimento da competência estejam comprovados. Mantê-las separadas evita que
- * uma posição acumulada seja tratada como fato contábil de agosto.
- */
-export const revisoesLancamentoAplicacoesAgosto = [
-  {
-    id: "AGO-REV-GREENCRED",
-    instituicao: "Greencred",
-    competencia: "08/2026",
-    status: "revisar",
-    motivo: controlesBancariosAgosto.greencred.observacao,
-    saldoDocumentado: controlesBancariosAgosto.greencred.saldoLiquidoExtrato,
-    contabilizadoNoRazao: false,
-  },
-] as const;
 
 const base = (parcial: Omit<LancamentoIntegrado, "status" | "rastreio"> & { status?: LancamentoIntegrado["status"] }): LancamentoIntegrado => ({
   ...parcial,
@@ -98,4 +93,9 @@ export const lancamentosBancariosSegurosAgosto: LancamentoIntegrado[] = [
   // Cotas de Energia Nuclear CCEE — referência Agosto/2026, depositar até 26/08.
   base({ id: "AGO-BAN-BRAD895-APL-ENUCLEAR", data: "24/08/2026", origem: "BRADESCO 895 INVEST FÁCIL 08/2026", debitoCodigo: "62", debito: nomeConta("62"), creditoCodigo: "25001", credito: nomeConta("25001"), historico: "Aplicação Invest Fácil Bradesco 895 - Cotas de Energia Nuclear CCEE Ago/2026", documento: "6349047", cc: "0", centroCusto: "SEM CENTRO DE CUSTO", valor: 1_535.11, observacao: "Principal transferido da conta corrente para aplicação, para pagamento do encargo de Cotas de Energia Nuclear CCEE.", fonte: "Bradesco energia (extrato + anexo Smart Energia).pdf" }),
   base({ id: "AGO-BAN-BRAD895-RESG-ENUCLEAR", data: "27/08/2026", origem: "BRADESCO 895 INVEST FÁCIL 08/2026", debitoCodigo: "25001", debito: nomeConta("25001"), creditoCodigo: "62", credito: nomeConta("62"), historico: "Resgate Invest Fácil e pagamento do encargo Cotas de Energia Nuclear CCEE Ago/2026", documento: "0089527", cc: "0", centroCusto: "SEM CENTRO DE CUSTO", valor: 1_535.11, observacao: "Liquidação do boleto CCEE de Cotas de Energia Nuclear; contrapartida (despesa) pendente de reclassificação da conta transitória.", fonte: "Bradesco energia (extrato + anexo Smart Energia).pdf" }),
+
+  // Greencred — rendimento e resgate parcial de agosto, apurados por comparação
+  // com a posição de 31/07 e o movimento diário do SOFTDIB (ver observação acima).
+  base({ id: "AGO-BAN-GREENCRED-REND", data: "31/08/2026", origem: "GREENCRED APLICAÇÃO 08/2026", debitoCodigo: "25110", debito: nomeConta("25110"), creditoCodigo: "2859", credito: nomeConta("2859"), historico: "Rendimento de agosto — aplicações Capital Coop Green Cred (CDI-MAX)", documento: "Greencred Nitaplast.pdf (posição 31/08) × Aplic Nitaplast Greencred.pdf (posição 31/07)", cc: "0", centroCusto: "SEM CENTRO DE CUSTO", valor: 15_788.36, observacao: "Soma dos lançamentos diários 'RENDIMENTO APLIC. FINANCEIRA' (gerencial 09.01.002) da conta B00003 no EXTRATO MOVIMENTO 082026 - SISTEMA CLIENTE SOFTDIB; bate com a variação de juros+correção entre as posições de 31/07 e 31/08 descontado o efeito dos resgates.", fonte: "EXTRATO MOVIMENTO 082026 - SISTEMA CLIENTE SOFTDIB.csv" }),
+  base({ id: "AGO-BAN-GREENCRED-RESG", data: "17/08/2026", origem: "GREENCRED APLICAÇÃO 08/2026", debitoCodigo: "21", debito: nomeConta("21"), creditoCodigo: "25110", credito: nomeConta("25110"), historico: "Resgate parcial de aplicações — transferência interna Greencred aplicação → conta corrente", documento: "TRANSF DO B00003 . (2x)", cc: "0", centroCusto: "SEM CENTRO DE CUSTO", valor: 300_000.00, observacao: "Dois resgates de R$ 140.000,00 e R$ 160.000,00 em 17/08/2026, transferidos da aplicação (B00003) para a conta corrente Greencred (B00002) — mesma titularidade, sem saída do grupo. Confirmado pelo EXTRATO MOVIMENTO 082026 - SISTEMA CLIENTE SOFTDIB e pela queda equivalente no líquido resgatado entre as posições de 31/07 e 31/08.", fonte: "EXTRATO MOVIMENTO 082026 - SISTEMA CLIENTE SOFTDIB.csv" }),
 ];
