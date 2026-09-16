@@ -479,7 +479,7 @@ function calcularDetalhesAnaliseDre(lancamentos: LinhaMovimentoAnalise[]) {
   const despesasPorCategoria = new Map<string, number>();
   for (const l of lancamentos) {
     if (despesasOperacionaisContas.has(l.debitoCodigo)) {
-      const categoria = categoriaPorContaDespesa.get(l.debitoCodigo)!;
+      const categoria = ehNplog(l) ? "nplog" : categoriaPorContaDespesa.get(l.debitoCodigo)!;
       despesasPorCategoria.set(categoria, arred((despesasPorCategoria.get(categoria) ?? 0) + l.valor));
     }
     if (despesasOperacionaisContas.has(l.creditoCodigo)) {
@@ -941,6 +941,7 @@ const ccFilialAgosto = new Set(["501", "502", "503", "504", "505"]);
 type ItemDespesaAgosto = { conta: string; descricao: string; classificacao: string; valor: number };
 const categoriasDespesasAgostoDefs: [string, string][] = [
   ["industrializacao", "Despesas com Industrialização"],
+  ["nplog", "Despesas com Serviço - NPLog"],
   ["depreciacao", "Despesas com Imobilizado"],
   ["veiculos", "Despesas com Veículos"],
   ["comex", "Despesas com Comércio Exterior"],
@@ -950,6 +951,19 @@ const categoriasDespesasAgostoDefs: [string, string][] = [
   ["filial", "Despesas Comercial SP"],
   ["outras", "Outras despesas operacionais sem classificação gerencial"],
 ];
+/**
+ * NPLog (conta 25938, mesma conta de outros ~30 fornecedores de "Serviços de
+ * Terceiros PJ") ganha linha própria, igual julho já faz
+ * (dre-julho-completa.tsx filtra por documento.startsWith("11.02.003")).
+ * Como o texto do histórico muda entre competências (agosto cita "NPLOG" no
+ * nome do fornecedor; julho só diz "TRANSPORTE E LOGISTICA"), o critério
+ * usado aqui é o texto estável presente nos dois meses. Validado em
+ * 16/09/2026 contra CSV oficial e Questor — R$ 210.781,35 em agosto (NF 100),
+ * R$ 135.289,01 em julho (NF 57), nenhuma nota cancelada.
+ */
+function ehNplog(l: Pick<LinhaMovimentoAnalise, "debitoCodigo" | "historico">) {
+  return l.debitoCodigo === "25938" && /TRANSPORTE E LOG[IÍ]STICA/i.test(l.historico ?? "");
+}
 /** Reutilizada fora desta função (na análise vertical/horizontal completa) para categorizar despesas de qualquer competência com a mesma regra. */
 const categoriaDaConta = (conta: string, cc: string): string => {
   const classificacao = classificacaoPorConta.get(conta) ?? "";
@@ -1005,7 +1019,7 @@ function categorizarDespesasAgosto(lancamentos: ReturnType<typeof useBase>["lanc
     porCategoria.set(categoria, contas);
   };
   for (const l of lancamentos) {
-    if (operacionaisSet.has(l.debitoCodigo)) somar(categoriaPorConta.get(l.debitoCodigo)!, l.debitoCodigo, l.valor);
+    if (operacionaisSet.has(l.debitoCodigo)) somar(ehNplog(l) ? "nplog" : categoriaPorConta.get(l.debitoCodigo)!, l.debitoCodigo, l.valor);
     if (operacionaisSet.has(l.creditoCodigo)) somar(categoriaPorConta.get(l.creditoCodigo)!, l.creditoCodigo, -l.valor);
   }
   const total = (categoria: string) => arred([...(porCategoria.get(categoria)?.values() ?? [])].reduce((s, x) => s + x.valor, 0));
