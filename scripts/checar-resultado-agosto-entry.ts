@@ -1,5 +1,5 @@
 import { lancamentosIntegradosAgosto } from "../src/data/nitaplast-razao-agosto";
-import { calcularResultadoAgosto, categorizarDespesasAgosto, categoriasDespesasAgostoDefs } from "../src/components/nitaplast/contabil-agosto-completo";
+import { calcularResultadoAgosto, categorizarDespesasAgosto, categoriasDespesasAgostoDefs, descricaoPorContaCompleta, calcularDetalhesAnaliseDre } from "../src/components/nitaplast/contabil-agosto-completo";
 
 const lancamentos = lancamentosIntegradosAgosto.map((linha) => ({
   id: linha.id,
@@ -46,4 +46,39 @@ try {
   }
 } catch (e) {
   console.log("\n!!! ERRO ao categorizar despesas:", (e as Error).message);
+}
+
+function abrirContas(titulo: string, contas: string[]) {
+  console.log(`\n=== ${titulo} (por conta) ===`);
+  const linhas = contas
+    .map((c) => ({ c, v: r.mov(c), d: descricaoPorContaCompleta.get(c) ?? "?" }))
+    .filter((x) => Math.abs(x.v) > 0.004)
+    .sort((a, b) => Math.abs(b.v) - Math.abs(a.v));
+  for (const { c, v, d } of linhas) console.log(" ", c.padEnd(8), d.padEnd(45), v.toFixed(2));
+  console.log(" ", "TOTAL".padEnd(54), linhas.reduce((s, x) => s + x.v, 0).toFixed(2));
+}
+abrirContas("CPV/CMV", r.custos);
+abrirContas("Despesas Financeiras", r.financeiras);
+
+console.log("\n=== Itens de cada categoria de despesa operacional ===");
+try {
+  const categoriasDespesas = categorizarDespesasAgosto(lancamentos as any, r.operacionais);
+  for (const [id, descricao] of categoriasDespesasAgostoDefs) {
+    const itens = categoriasDespesas.itens(id);
+    if (itens.length === 0) continue;
+    console.log(`\n-- ${descricao} --`);
+    for (const it of itens.sort((a, b) => Math.abs(b.valor) - Math.abs(a.valor))) {
+      console.log(" ", it.conta.padEnd(8), it.descricao.padEnd(45), it.valor.toFixed(2));
+    }
+  }
+} catch {}
+
+console.log("\n=== Análise Vertical/Horizontal — linhas PIS/COFINS Matriz+Filial ===");
+try {
+  const detalhes = calcularDetalhesAnaliseDre(lancamentos as any);
+  for (const chave of ["ded-pis-matriz", "ded-pis-filial", "ded-cofins-matriz", "ded-cofins-filial", "ded-icms-filial", "ded-ipi-filial"]) {
+    console.log(" ", chave.padEnd(20), (detalhes.get(chave) ?? "undefined").toString());
+  }
+} catch (e) {
+  console.log("!!! ERRO em calcularDetalhesAnaliseDre:", (e as Error).message);
 }
