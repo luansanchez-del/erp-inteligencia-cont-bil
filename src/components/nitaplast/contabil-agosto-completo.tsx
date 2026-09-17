@@ -857,7 +857,7 @@ const contasReceitasFinanceirasAgosto = new Set([
 
 // Compartilhado entre o DRE e o Resumo do Balancete: os dois precisam do mesmo
 // resultado do mês de agosto, calculado uma única vez a partir do Razão.
-function calcularResultadoAgosto(lancamentos: ReturnType<typeof useBase>["lancamentos"]) {
+export function calcularResultadoAgosto(lancamentos: ReturnType<typeof useBase>["lancamentos"]) {
   const mov = (conta: string) =>
     arred(
       lancamentos.reduce(
@@ -939,7 +939,7 @@ const ccComerciaisAgosto = new Set(["201", "203", "204", "205", "206", "209", "2
 const ccProducaoAgosto = new Set(["101", "102", "103", "104", "106", "107", "108", "109", "110", "111", "10014", "10032", "19999"]);
 const ccFilialAgosto = new Set(["501", "502", "503", "504", "505"]);
 type ItemDespesaAgosto = { conta: string; descricao: string; classificacao: string; valor: number };
-const categoriasDespesasAgostoDefs: [string, string][] = [
+export const categoriasDespesasAgostoDefs: [string, string][] = [
   ["industrializacao", "Despesas com Industrialização"],
   ["nplog", "Despesas com Serviço - NPLog"],
   ["depreciacao", "Despesas com Imobilizado"],
@@ -1023,7 +1023,7 @@ function categoriaDaMovimento(conta: string, cc: string, categoriaPorConta: Map<
   if (ccFilialAgosto.has(cc)) return "filial";
   return categoriaPorConta.get(conta) ?? "outras";
 }
-function categorizarDespesasAgosto(lancamentos: ReturnType<typeof useBase>["lancamentos"], operacionais: string[]) {
+export function categorizarDespesasAgosto(lancamentos: ReturnType<typeof useBase>["lancamentos"], operacionais: string[]) {
   const operacionaisSet = new Set(operacionais);
   const categoriaPorConta = categoriaDominantePorConta(lancamentos, operacionaisSet);
   const porCategoria = new Map<string, Map<string, ItemDespesaAgosto>>();
