@@ -986,14 +986,25 @@ const categoriaDaConta = (conta: string, cc: string): string => {
  * em "outras" como despesa negativa, separado do débito original que fica
  * corretamente em produção/comercial. Decidir a categoria pela conta inteira
  * evita esse artefato sem mudar nenhum total.
+ *
+ * Achado em 16/09/2026: essa mesma regra apagava a Filial quando a despesa
+ * dela dividia conta com a Matriz (ex.: 3244 Materiais Auxiliares, 4014
+ * Salários) — o CC de Filial nunca ganha a disputa por ser sempre menor que
+ * o da Matriz na mesma conta, então a categoria "filial" desaparecia mesmo
+ * havendo movimento real lá (R$ 18.345,05 em 08/2026, maioria folha). Por
+ * isso os CCs de Filial são excluídos do cálculo de CC dominante abaixo — a
+ * Filial é decidida por movimento (ver `categoriaDaMovimento` no chamador),
+ * não por conta.
  */
 function categoriaDominantePorConta(lancamentos: Pick<LinhaMovimentoAnalise, "debitoCodigo" | "creditoCodigo" | "valor" | "cc">[], contas: Iterable<string>) {
   const contasSet = new Set(contas);
   const debitoPorContaECC = new Map<string, Map<string, number>>();
   for (const l of lancamentos) {
     if (!contasSet.has(l.debitoCodigo)) continue;
+    const cc = l.cc ?? "0";
+    if (ccFilialAgosto.has(cc)) continue;
     const porCC = debitoPorContaECC.get(l.debitoCodigo) ?? new Map<string, number>();
-    porCC.set(l.cc ?? "0", (porCC.get(l.cc ?? "0") ?? 0) + l.valor);
+    porCC.set(cc, (porCC.get(cc) ?? 0) + l.valor);
     debitoPorContaECC.set(l.debitoCodigo, porCC);
   }
   const categoriaPorConta = new Map<string, string>();
@@ -1007,6 +1018,11 @@ function categoriaDominantePorConta(lancamentos: Pick<LinhaMovimentoAnalise, "de
   }
   return categoriaPorConta;
 }
+/** Filial é decidida por movimento (não por conta-dominante): qualquer lançamento com CC de Filial vai para "filial", mesmo que a conta como um todo seja majoritariamente da Matriz. */
+function categoriaDaMovimento(conta: string, cc: string, categoriaPorConta: Map<string, string>): string {
+  if (ccFilialAgosto.has(cc)) return "filial";
+  return categoriaPorConta.get(conta) ?? "outras";
+}
 function categorizarDespesasAgosto(lancamentos: ReturnType<typeof useBase>["lancamentos"], operacionais: string[]) {
   const operacionaisSet = new Set(operacionais);
   const categoriaPorConta = categoriaDominantePorConta(lancamentos, operacionaisSet);
@@ -1019,8 +1035,9 @@ function categorizarDespesasAgosto(lancamentos: ReturnType<typeof useBase>["lanc
     porCategoria.set(categoria, contas);
   };
   for (const l of lancamentos) {
-    if (operacionaisSet.has(l.debitoCodigo)) somar(ehNplog(l) ? "nplog" : categoriaPorConta.get(l.debitoCodigo)!, l.debitoCodigo, l.valor);
-    if (operacionaisSet.has(l.creditoCodigo)) somar(categoriaPorConta.get(l.creditoCodigo)!, l.creditoCodigo, -l.valor);
+    const cc = l.cc ?? "0";
+    if (operacionaisSet.has(l.debitoCodigo)) somar(ehNplog(l) ? "nplog" : categoriaDaMovimento(l.debitoCodigo, cc, categoriaPorConta), l.debitoCodigo, l.valor);
+    if (operacionaisSet.has(l.creditoCodigo)) somar(categoriaDaMovimento(l.creditoCodigo, cc, categoriaPorConta), l.creditoCodigo, -l.valor);
   }
   const total = (categoria: string) => arred([...(porCategoria.get(categoria)?.values() ?? [])].reduce((s, x) => s + x.valor, 0));
   const itens = (categoria: string) => [...(porCategoria.get(categoria)?.values() ?? [])].filter((x) => Math.abs(x.valor) > 0.004);
