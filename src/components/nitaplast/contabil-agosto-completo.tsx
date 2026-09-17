@@ -59,8 +59,8 @@ const estruturaBalanceteCompleta: LinhaEstruturaBalancete[] = [
 const analiticas = estruturaBalanceteCompleta.filter((x) => x.tipo === "A");
 const contasEstrutura = new Set(analiticas.map((x) => x.conta));
 /** Classificação e descrição por conta cobrindo o plano de contas completo (implantação + contas criadas depois), usadas onde `info` (só saldosImplantacao) ficaria incompleto. */
-const classificacaoPorConta = new Map(analiticas.map((x) => [x.conta, x.classificacao]));
-const descricaoPorContaCompleta = new Map(analiticas.map((x) => [x.conta, x.descricao]));
+export const classificacaoPorConta = new Map(analiticas.map((x) => [x.conta, x.classificacao]));
+export const descricaoPorContaCompleta = new Map(analiticas.map((x) => [x.conta, x.descricao]));
 function grupoClassificacaoAgosto(classificacao: string): string {
   if (classificacao.startsWith("1")) return "Ativo";
   if (classificacao.startsWith("2")) return "Passivo e patrimônio líquido";
@@ -451,7 +451,7 @@ const DETALHES_ANALISE_DRE: { chave: string; descricao: string; contas: string[]
  * que é custo, despesa operacional, despesa financeira e receita financeira
  * nos dois meses.
  */
-function calcularDetalhesAnaliseDre(lancamentos: LinhaMovimentoAnalise[]) {
+export function calcularDetalhesAnaliseDre(lancamentos: LinhaMovimentoAnalise[]) {
   const valores = new Map<string, number>();
   for (const def of DETALHES_ANALISE_DRE) {
     const bruto = movimentoContasEstabelecimento(lancamentos, def.contas, def.estabelecimento, def.excluirIds);
@@ -935,20 +935,24 @@ const ccAdministrativasAgosto = new Set(["301", "302", "303", "304", "305", "306
 // certa, mesmo sendo produção/comercial de verdade (ex.: folha e serviços
 // alocados ao CC 206, fretes ao CC 109). Não muda nenhum total, só a
 // categoria de apresentação.
-const ccComerciaisAgosto = new Set(["201", "203", "204", "205", "206", "209", "210"]);
+const ccComerciaisAgosto = new Set(["201", "203", "204", "205", "209", "210"]);
+/** CC 206 = Exportação — categoria própria, igual ao layout de referência do contador (separa de "Despesas Comerciais" genéricas). */
+const ccExportacaoAgosto = new Set(["206"]);
 const ccProducaoAgosto = new Set(["101", "102", "103", "104", "106", "107", "108", "109", "110", "111", "10014", "10032", "19999"]);
 const ccFilialAgosto = new Set(["501", "502", "503", "504", "505"]);
 type ItemDespesaAgosto = { conta: string; descricao: string; classificacao: string; valor: number };
+/** Nomes e ordem seguem o layout de referência do contador (DRE Nitaplast). */
 export const categoriasDespesasAgostoDefs: [string, string][] = [
-  ["industrializacao", "Despesas com Industrialização"],
-  ["nplog", "Despesas com Serviço - NPLog"],
-  ["depreciacao", "Despesas com Imobilizado"],
-  ["veiculos", "Despesas com Veículos"],
-  ["comex", "Despesas com Comércio Exterior"],
   ["administrativas", "Despesas Administrativas"],
+  ["nplog", "Despesas com Serviço - NPLog"],
   ["comerciais", "Despesas Comerciais"],
   ["producao", "Despesas Produção"],
-  ["filial", "Despesas Comercial SP"],
+  ["veiculos", "Despesas Veiculos"],
+  ["depreciacao", "Despesas com Imobilizado"],
+  ["industrializacao", "Despesas com Industrialização"],
+  ["exportacao", "Despesas com Exportação — Matriz"],
+  ["filial", "Despesas comercial SP"],
+  ["comex", "Despesas Importação"],
   ["outras", "Outras despesas operacionais sem classificação gerencial"],
 ];
 /**
@@ -972,6 +976,7 @@ const categoriaDaConta = (conta: string, cc: string): string => {
   if (classificacao.startsWith("5.7.01.015") || classificacao.startsWith("5.7.05")) return "veiculos";
   if (conta === "25070") return "comex";
   if (ccFilialAgosto.has(cc)) return "filial";
+  if (ccExportacaoAgosto.has(cc)) return "exportacao";
   if (ccAdministrativasAgosto.has(cc)) return "administrativas";
   if (ccComerciaisAgosto.has(cc)) return "comerciais";
   if (ccProducaoAgosto.has(cc)) return "producao";
