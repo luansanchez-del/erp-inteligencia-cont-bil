@@ -952,7 +952,6 @@ export const categoriasDespesasAgostoDefs: [string, string][] = [
   ["industrializacao", "Despesas com Industrialização"],
   ["exportacao", "Despesas com Exportação — Matriz"],
   ["filial", "Despesas comercial SP"],
-  ["comex", "Despesas Importação"],
   ["outras", "Outras despesas operacionais sem classificação gerencial"],
 ];
 /**
@@ -968,19 +967,22 @@ export const categoriasDespesasAgostoDefs: [string, string][] = [
 function ehNplog(l: Pick<LinhaMovimentoAnalise, "debitoCodigo" | "historico">) {
   return l.debitoCodigo === "25938" && /TRANSPORTE E LOG[IÍ]STICA/i.test(l.historico ?? "");
 }
-/** Reutilizada fora desta função (na análise vertical/horizontal completa) para categorizar despesas de qualquer competência com a mesma regra. */
-const categoriaDaConta = (conta: string, cc: string): string => {
-  const classificacao = classificacaoPorConta.get(conta) ?? "";
-  if (conta === "25937") return "industrializacao";
-  if (classificacao.startsWith("5.7.01.011")) return "depreciacao";
-  if (classificacao.startsWith("5.7.01.015") || classificacao.startsWith("5.7.05")) return "veiculos";
-  if (conta === "25070") return "comex";
+/** Decide a categoria só pelo CC, sem olhar a conta — usada tanto pela conta-dominante quanto por movimento (Filial e 25070). */
+const categoriaPorCC = (cc: string): string => {
   if (ccFilialAgosto.has(cc)) return "filial";
   if (ccExportacaoAgosto.has(cc)) return "exportacao";
   if (ccAdministrativasAgosto.has(cc)) return "administrativas";
   if (ccComerciaisAgosto.has(cc)) return "comerciais";
   if (ccProducaoAgosto.has(cc)) return "producao";
   return "outras";
+};
+/** Reutilizada fora desta função (na análise vertical/horizontal completa) para categorizar despesas de qualquer competência com a mesma regra. */
+const categoriaDaConta = (conta: string, cc: string): string => {
+  const classificacao = classificacaoPorConta.get(conta) ?? "";
+  if (conta === "25937") return "industrializacao";
+  if (classificacao.startsWith("5.7.01.011")) return "depreciacao";
+  if (classificacao.startsWith("5.7.01.015") || classificacao.startsWith("5.7.05")) return "veiculos";
+  return categoriaPorCC(cc);
 };
 /**
  * Cada conta pertence a UMA categoria só, decidida pelo CC onde a despesa
@@ -1000,14 +1002,22 @@ const categoriaDaConta = (conta: string, cc: string): string => {
  * isso os CCs de Filial são excluídos do cálculo de CC dominante abaixo — a
  * Filial é decidida por movimento (ver `categoriaDaMovimento` no chamador),
  * não por conta.
+ *
+ * Achado em 17/09/2026: a conta 25070 (Despesas com importação) também mistura
+ * CCs de verdade — Produção (109), Comercial (201), Exportação (206) e
+ * Importação (209) — porque o fornecedor lança despesas de comércio exterior
+ * de naturezas diferentes na mesma conta. Forçar essa conta inteira numa
+ * categoria só (como "comex"/"Importação") misturava exportação com
+ * importação com produção. Por isso ela também é decidida por movimento.
  */
+const CONTAS_DECIDIDAS_POR_MOVIMENTO = new Set(["25070"]);
 function categoriaDominantePorConta(lancamentos: Pick<LinhaMovimentoAnalise, "debitoCodigo" | "creditoCodigo" | "valor" | "cc">[], contas: Iterable<string>) {
   const contasSet = new Set(contas);
   const debitoPorContaECC = new Map<string, Map<string, number>>();
   for (const l of lancamentos) {
     if (!contasSet.has(l.debitoCodigo)) continue;
     const cc = l.cc ?? "0";
-    if (ccFilialAgosto.has(cc)) continue;
+    if (ccFilialAgosto.has(cc) || CONTAS_DECIDIDAS_POR_MOVIMENTO.has(l.debitoCodigo)) continue;
     const porCC = debitoPorContaECC.get(l.debitoCodigo) ?? new Map<string, number>();
     porCC.set(cc, (porCC.get(cc) ?? 0) + l.valor);
     debitoPorContaECC.set(l.debitoCodigo, porCC);
@@ -1023,9 +1033,31 @@ function categoriaDominantePorConta(lancamentos: Pick<LinhaMovimentoAnalise, "de
   }
   return categoriaPorConta;
 }
-/** Filial é decidida por movimento (não por conta-dominante): qualquer lançamento com CC de Filial vai para "filial", mesmo que a conta como um todo seja majoritariamente da Matriz. */
-function categoriaDaMovimento(conta: string, cc: string, categoriaPorConta: Map<string, string>): string {
+/**
+ * Filial é decidida por movimento (não por conta-dominante): qualquer lançamento
+ * de Filial vai para "filial", mesmo que a conta como um todo seja majoritariamente
+ * da Matriz. Usa `estabelecimentoLancamentoNitaplast` (mesma função que já decide
+ * Filial para CPV e Receita neste arquivo) em vez de olhar só o CC — achado em
+ * 17/09/2026: despesas com "FILIAL SP" no histórico (ex.: fretes da
+ * transportadora Gamper) têm CC 109/outros herdados de julho, não 501-505, e
+ * ficavam indo pra Matriz.
+ *
+ * Exceção: os 3 estornos "AGO-EST-JUL-VERSAO-CC503-*" mencionam "Filial" só
+ * pra EXPLICAR por que a Matriz está recebendo um valor já reconhecido na
+ * Filial em outro lançamento — o CC real deles é 102 (Produção/Matriz), e são
+ * um ajuste artificial e temporário do fechamento de julho (contador decidiu
+ * fechar em R$ 234.732,08), não despesa real da Filial. Identificados pelo
+ * `id` (não pelo `origem`, que o motor de competência sobrescreve com
+ * "importado"/"manual" antes de chegar aqui). Sem essa exceção, o texto fazia
+ * esses 3 lançamentos (R$ 973,03 + R$ 700,00 + R$ 17.552,55) caírem em
+ * "filial" por engano.
+ */
+function categoriaDaMovimento(l: LinhaMovimentoAnalise, conta: string, categoriaPorConta: Map<string, string>): string {
+  const ehLancamentoDeVersao = (l.id ?? "").includes("JUL-VERSAO-CC503");
+  if (!ehLancamentoDeVersao && estabelecimentoLancamentoNitaplast(l) === "Filial SP") return "filial";
+  const cc = l.cc ?? "0";
   if (ccFilialAgosto.has(cc)) return "filial";
+  if (CONTAS_DECIDIDAS_POR_MOVIMENTO.has(conta)) return categoriaPorCC(cc);
   return categoriaPorConta.get(conta) ?? "outras";
 }
 export function categorizarDespesasAgosto(lancamentos: ReturnType<typeof useBase>["lancamentos"], operacionais: string[]) {
@@ -1040,9 +1072,8 @@ export function categorizarDespesasAgosto(lancamentos: ReturnType<typeof useBase
     porCategoria.set(categoria, contas);
   };
   for (const l of lancamentos) {
-    const cc = l.cc ?? "0";
-    if (operacionaisSet.has(l.debitoCodigo)) somar(ehNplog(l) ? "nplog" : categoriaDaMovimento(l.debitoCodigo, cc, categoriaPorConta), l.debitoCodigo, l.valor);
-    if (operacionaisSet.has(l.creditoCodigo)) somar(categoriaDaMovimento(l.creditoCodigo, cc, categoriaPorConta), l.creditoCodigo, -l.valor);
+    if (operacionaisSet.has(l.debitoCodigo)) somar(ehNplog(l) ? "nplog" : categoriaDaMovimento(l, l.debitoCodigo, categoriaPorConta), l.debitoCodigo, l.valor);
+    if (operacionaisSet.has(l.creditoCodigo)) somar(categoriaDaMovimento(l, l.creditoCodigo, categoriaPorConta), l.creditoCodigo, -l.valor);
   }
   const total = (categoria: string) => arred([...(porCategoria.get(categoria)?.values() ?? [])].reduce((s, x) => s + x.valor, 0));
   const itens = (categoria: string) => [...(porCategoria.get(categoria)?.values() ?? [])].filter((x) => Math.abs(x.valor) > 0.004);
