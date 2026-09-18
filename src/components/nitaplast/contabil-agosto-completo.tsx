@@ -898,7 +898,7 @@ export function calcularResultadoAgosto(lancamentos: ReturnType<typeof useBase>[
       !financeiras.includes(c) &&
       !contasDeducoesAgosto.has(c) &&
       !contasReceitasFinanceirasAgosto.has(c) &&
-      !["4736", "4760"].includes(c),
+      !["4736", "4760", "25948"].includes(c),
   );
   const soma = (contas: string[]) => arred(contas.reduce((s, c) => s + mov(c), 0));
   const receitaProducao = credito("2606"),
@@ -914,7 +914,10 @@ export function calcularResultadoAgosto(lancamentos: ReturnType<typeof useBase>[
   );
   const lucroBruto = arred(receitaLiquida - cpv),
     resultadoOperacional = arred(lucroBruto - despesas - despesasFinanceiras + receitasFinanceiras);
-  const naoOperacional = arred(Math.max(0, credito("4736")) - Math.max(0, mov("4760"))),
+  // 25948 (Despesa com Provisão de Custos) fica fora de "operacionais" e some
+  // aqui: decisão do cliente em 18/09/2026 (o cliente classifica essa
+  // provisão/reversão como não operacional, não despesa operacional comum).
+  const naoOperacional = arred(Math.max(0, credito("4736")) - Math.max(0, mov("4760")) - mov("25948")),
     resultado = arred(resultadoOperacional + naoOperacional);
   return {
     mov, credito, custos, operacionais, financeiras,
