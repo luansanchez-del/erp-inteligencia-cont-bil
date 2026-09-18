@@ -1011,6 +1011,41 @@ const categoriaDaConta = (conta: string, cc: string): string => {
  * importação com produção. Por isso ela também é decidida por movimento.
  */
 const CONTAS_DECIDIDAS_POR_MOVIMENTO = new Set(["25070"]);
+/**
+ * Fallback para movimentos de `CONTAS_DECIDIDAS_POR_MOVIMENTO` que não têm CC
+ * (ex.: rateio de crédito de PIS/COFINS sobre compras da 25070, lançado com
+ * `cc: "0"` em `nitaplast-provisao-impostos-agosto.ts` — o rateio é agregado
+ * do período, sem CC de origem). Sem isso, esses R$ 665,60 caem em "outras"
+ * como um artefato igual ao que a conta-dominante já resolve pras contas
+ * normais (ver comentário de `categoriaDominantePorConta` abaixo) — aqui uso o
+ * CC dominante dos movimentos REAIS da própria conta (ignorando os sem CC e
+ * os de Filial) como critério, achado em 17/09/2026.
+ */
+function categoriaDominantePorContaMovimento(lancamentos: Pick<LinhaMovimentoAnalise, "debitoCodigo" | "creditoCodigo" | "valor" | "cc">[], contas: Iterable<string>) {
+  const contasSet = new Set(contas);
+  const porContaECC = new Map<string, Map<string, number>>();
+  for (const l of lancamentos) {
+    const cc = l.cc ?? "0";
+    if (cc === "0" || ccFilialAgosto.has(cc)) continue;
+    for (const conta of [l.debitoCodigo, l.creditoCodigo]) {
+      if (!contasSet.has(conta)) continue;
+      const porCC = porContaECC.get(conta) ?? new Map<string, number>();
+      porCC.set(cc, (porCC.get(cc) ?? 0) + Math.abs(l.valor));
+      porContaECC.set(conta, porCC);
+    }
+  }
+  const categoriaPorConta = new Map<string, string>();
+  for (const conta of contasSet) {
+    const porCC = porContaECC.get(conta);
+    if (!porCC || porCC.size === 0) {
+      categoriaPorConta.set(conta, "outras");
+      continue;
+    }
+    const ccDominante = [...porCC.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0];
+    categoriaPorConta.set(conta, categoriaPorCC(ccDominante));
+  }
+  return categoriaPorConta;
+}
 function categoriaDominantePorConta(lancamentos: Pick<LinhaMovimentoAnalise, "debitoCodigo" | "creditoCodigo" | "valor" | "cc">[], contas: Iterable<string>) {
   const contasSet = new Set(contas);
   const debitoPorContaECC = new Map<string, Map<string, number>>();
@@ -1052,17 +1087,18 @@ function categoriaDominantePorConta(lancamentos: Pick<LinhaMovimentoAnalise, "de
  * esses 3 lançamentos (R$ 973,03 + R$ 700,00 + R$ 17.552,55) caírem em
  * "filial" por engano.
  */
-function categoriaDaMovimento(l: LinhaMovimentoAnalise, conta: string, categoriaPorConta: Map<string, string>): string {
+function categoriaDaMovimento(l: LinhaMovimentoAnalise, conta: string, categoriaPorConta: Map<string, string>, categoriaFallbackMovimento: Map<string, string>): string {
   const ehLancamentoDeVersao = (l.id ?? "").includes("JUL-VERSAO-CC503");
   if (!ehLancamentoDeVersao && estabelecimentoLancamentoNitaplast(l) === "Filial SP") return "filial";
   const cc = l.cc ?? "0";
   if (ccFilialAgosto.has(cc)) return "filial";
-  if (CONTAS_DECIDIDAS_POR_MOVIMENTO.has(conta)) return categoriaPorCC(cc);
+  if (CONTAS_DECIDIDAS_POR_MOVIMENTO.has(conta)) return cc === "0" ? (categoriaFallbackMovimento.get(conta) ?? "outras") : categoriaPorCC(cc);
   return categoriaPorConta.get(conta) ?? "outras";
 }
 export function categorizarDespesasAgosto(lancamentos: ReturnType<typeof useBase>["lancamentos"], operacionais: string[]) {
   const operacionaisSet = new Set(operacionais);
   const categoriaPorConta = categoriaDominantePorConta(lancamentos, operacionaisSet);
+  const categoriaFallbackMovimento = categoriaDominantePorContaMovimento(lancamentos, CONTAS_DECIDIDAS_POR_MOVIMENTO);
   const porCategoria = new Map<string, Map<string, ItemDespesaAgosto>>();
   const somar = (categoria: string, conta: string, delta: number) => {
     const contas = porCategoria.get(categoria) ?? new Map<string, ItemDespesaAgosto>();
@@ -1072,8 +1108,8 @@ export function categorizarDespesasAgosto(lancamentos: ReturnType<typeof useBase
     porCategoria.set(categoria, contas);
   };
   for (const l of lancamentos) {
-    if (operacionaisSet.has(l.debitoCodigo)) somar(ehNplog(l) ? "nplog" : categoriaDaMovimento(l, l.debitoCodigo, categoriaPorConta), l.debitoCodigo, l.valor);
-    if (operacionaisSet.has(l.creditoCodigo)) somar(categoriaDaMovimento(l, l.creditoCodigo, categoriaPorConta), l.creditoCodigo, -l.valor);
+    if (operacionaisSet.has(l.debitoCodigo)) somar(ehNplog(l) ? "nplog" : categoriaDaMovimento(l, l.debitoCodigo, categoriaPorConta, categoriaFallbackMovimento), l.debitoCodigo, l.valor);
+    if (operacionaisSet.has(l.creditoCodigo)) somar(categoriaDaMovimento(l, l.creditoCodigo, categoriaPorConta, categoriaFallbackMovimento), l.creditoCodigo, -l.valor);
   }
   const total = (categoria: string) => arred([...(porCategoria.get(categoria)?.values() ?? [])].reduce((s, x) => s + x.valor, 0));
   const itens = (categoria: string) => [...(porCategoria.get(categoria)?.values() ?? [])].filter((x) => Math.abs(x.valor) > 0.004);
