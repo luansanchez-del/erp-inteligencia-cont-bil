@@ -272,9 +272,19 @@ export const lancamentosCambioJulho: LancamentoIntegrado[] = [
   },
 ];
 
-export const contratosCambioJulhoPendentes = [
-  { contrato: "611879451", data: "10/07/2026", beneficiario: "GREATLAND VALVE", usd: 55863.94, brl: 287550.64, referencia: "GTL-PI-260401A/B", motivo: "A NF 92535 teve liquidações parciais anteriores; é necessário abrir o principal remanescente da fatura A/B antes de calcular nova variação." },
-] as const;
+/**
+ * Achado em 18/09/2026: o contrato 611879451 (referência GTL-PI-260401A/B) NÃO
+ * tem relação com a NF 92535 — essa NF já foi liquidada em jan/fev/2026, antes
+ * mesmo da contratação do câmbio, confirmado pelo cliente. O contrato é parte
+ * do processo de importação Greatland Valve (NF 94222 + NF 94251, duas DUIMPs:
+ * 26BR0001376062-0 e 26BR0001426125-2, dois contratos de câmbio — este e o
+ * 583972479 de 08/04/2026), processo já finalizado segundo o cliente. Ver
+ * `vinculosCambioGreatlandAgosto` em nitaplast-cambio-agosto.ts. Lista mantida
+ * vazia até surgir um novo contrato genuinamente sem vínculo documental.
+ */
+export const contratosCambioJulhoPendentes: {
+  contrato: string; data: string; beneficiario: string; usd: number; brl: number; referencia: string; motivo: string;
+}[] = [];
 
 // Importações documentalmente identificadas para as quais ainda não foi localizado
 // contrato de câmbio correspondente. Não geram baixa ou variação enquanto o vínculo

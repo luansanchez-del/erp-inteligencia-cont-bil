@@ -37,10 +37,17 @@ export const lancamentosCambioAgosto: LancamentoIntegrado[] = vinculosCambioAgos
  * andamento), a mesma conta creditada pela entrada da NF 94222 em
  * `nitaplast-cpv-depreciacao-agosto.ts` (AGO-CUSTO-MP-IMP).
  *
- * Os dois contratos (R$ 385.701,27) cobrem 85% da NF 94222 (R$ 454.046,67).
- * O restante, R$ 68.345,40, está em confirmação com o cliente — pode ser
- * IOF/despesas aduaneiras/variação cambial, ou um terceiro contrato ainda não
- * localizado. Enquanto isso, a NF 94222 permanece com saldo em aberto na 25116.
+ * Achado em 18/09/2026, confirmado pelo cliente: o processo completo é NF
+ * 94222 + NF 94251, duas DUIMPs (26BR0001376062-0 e 26BR0001426125-2,
+ * faturas GTL-PI-260401A e GTL-PI-260401B) e os dois contratos de câmbio
+ * abaixo — processo já finalizado segundo o cliente. O contrato 611879451
+ * (10/07/2026) referencia literalmente "/INV/GTL-PI-260401B/GTL-PI-260401A"
+ * no campo Informações da Ordem, confirmando o vínculo com as duas faturas.
+ * O que antes parecia "diferença de R$ 68.345,40 sem explicação" contra a NF
+ * 94222 isolada é, na verdade, a parcela relativa à NF 94251 — mas o
+ * documento/valor da NF 94251 ainda não foi localizado no sistema, então a
+ * baixa completa na 25116 continua pendente até esse documento chegar. Não
+ * reconciliar por estimativa: evitar valor sem origem identificável.
  */
 export const vinculosCambioGreatlandAgosto = [
   { contrato: "583972479", data: "08/04/2026", usd: 19_455.03, taxa: 5.045, reais: 98_150.63 },
@@ -55,16 +62,107 @@ export const lancamentosCambioGreatlandAgosto: LancamentoIntegrado[] = vinculosC
   debito: nome("25116"),
   creditoCodigo: "9",
   credito: nome("9"),
-  historico: "Adiantamento de importação Greatland Valve — pago antes da emissão da NF 94222",
+  historico: "Adiantamento de importação Greatland Valve — pago antes da emissão das NFs 94222/94251",
   documento: `Contrato de câmbio ${vinculo.contrato}, pago em ${vinculo.data}`,
   cc: "209",
   centroCusto: "IMPORTAÇÃO",
   valor: vinculo.reais,
   status: "revisar",
-  observacao: `Pagamento antecipado (adiantamento), não baixa de título: USD ${vinculo.usd.toFixed(2)}, taxa ${vinculo.taxa.toFixed(4)}, debitado do Bradesco 6349/3035-0 em ${vinculo.data} — contrato só localizado em 16/09/2026, por isso lançado em agosto na competência da NF 94222 (emitida 18/08/2026), não no mês real do pagamento. Baixa parcial da 25116 aberta pela entrada da matéria-prima (AGO-CUSTO-MP-IMP); resta R$ 68.345,40 em aberto até confirmação do cliente sobre a diferença.`,
+  observacao: `Pagamento antecipado (adiantamento), não baixa de título: USD ${vinculo.usd.toFixed(2)}, taxa ${vinculo.taxa.toFixed(4)}, debitado do Bradesco 6349/3035-0 em ${vinculo.data} — contrato só localizado em 16/09/2026, por isso lançado em agosto na competência da NF 94222 (emitida 18/08/2026), não no mês real do pagamento. Confirmado pelo cliente em 18/09/2026: os dois contratos cobrem NF 94222 + NF 94251 juntas (processo finalizado), não só a 94222. Baixa parcial da 25116 aberta pela entrada da matéria-prima (AGO-CUSTO-MP-IMP); falta o documento da NF 94251 para reconciliar o saldo completo.`,
   rastreio: "documento",
   fonte: `${vinculo.contrato}.pdf + extrato Bradesco 6349/3035-0 (${vinculo.data.slice(3)}) + EXTRATO MOVIMENTO 082026 - SISTEMA CLIENTE SOFTDIB.csv`,
 }));
+
+/**
+ * Baixa dos tributos federais e despesas aduaneiras da importação Greatland
+ * (NF 94222 e NF 94251), pagos por débito automático no registro da DI —
+ * ambas as DUIMPs confirmam "Pagamento dos tributos federais realizado -
+ * Automático". Fecha parte da 25116 que o câmbio não cobre (câmbio só
+ * remete o valor da mercadoria ao fornecedor no exterior; II/IPI/PIS/COFINS/
+ * despesas aduaneiras são pagos em reais, no Brasil). Confirmado pelo
+ * cliente em 18/09/2026.
+ *
+ * NF 94222 (DUIMP 26BR0001376062-0): II 51.394,46 + IPI 36.329,45 +
+ * PIS 6.745,54 + COFINS 30.997,31 + Siscomex 154,23 + AFRMM 1.649,26 =
+ * R$ 127.270,25, valores tirados diretamente do extrato da DUIMP. O frete
+ * (R$ 18.801,79) e as despesas aduaneiras/despachante da NF 94222 (estimadas
+ * em R$ 5.561,01 por diferença entre o total da NF e os componentes
+ * documentados) NÃO estão aqui — permanecem em aberto na 25116 até
+ * documento próprio (fatura do despachante e/ou comprovante do frete).
+ *
+ * NF 94251 (DUIMP 26BR0001426125-2): II 10.464,59 + IPI 5.371,35 +
+ * PIS 1.467,60 + COFINS 6.743,96 + despesas aduaneiras 15.990,82 =
+ * R$ 40.038,32 — todos os valores conferidos linha a linha no próprio
+ * DANFE (campo "Composicao Despesas Acessorias"). O frete (R$ 3.478,77)
+ * também não está aqui, mesmo motivo.
+ */
+export const lancamentosTributosImportacaoGreatlandAgosto: LancamentoIntegrado[] = [
+  {
+    id: "AGO-CAMBIO-GREATLAND-TRIB-94222",
+    data: "14/08/2026",
+    origem: "PAGAMENTO TRIBUTOS FEDERAIS — DI 26BR0001376062-0",
+    debitoCodigo: "25116",
+    debito: nome("25116"),
+    creditoCodigo: "9",
+    credito: nome("9"),
+    historico: "Tributos federais da importação Greatland Valve — NF 94222 (II + IPI + PIS + COFINS + Siscomex + AFRMM)",
+    documento: "DUIMP 26BR0001376062-0",
+    cc: "209",
+    centroCusto: "IMPORTAÇÃO",
+    valor: 127_270.25,
+    status: "validado",
+    observacao: "Débito automático no registro da DI (14/08/2026), conforme extrato da DUIMP: II R$ 51.394,46 + IPI R$ 36.329,45 + PIS R$ 6.745,54 + COFINS R$ 30.997,31 + Siscomex R$ 154,23 + AFRMM R$ 1.649,26. Confirmado pelo cliente em 18/09/2026.",
+    rastreio: "documento",
+    fonte: "DUIMP 26BR0001376062-0 Greatland.pdf",
+  },
+  {
+    id: "AGO-CAMBIO-GREATLAND-TRIB-94251",
+    data: "17/08/2026",
+    origem: "PAGAMENTO TRIBUTOS FEDERAIS — DI 26BR0001426125-2",
+    debitoCodigo: "25116",
+    debito: nome("25116"),
+    creditoCodigo: "9",
+    credito: nome("9"),
+    historico: "Tributos federais e despesas aduaneiras da importação Greatland Valve — NF 94251 (II + IPI + PIS + COFINS + despesas aduaneiras)",
+    documento: "NF 94251, série 001 / DUIMP 26BR0001426125-2",
+    cc: "209",
+    centroCusto: "IMPORTAÇÃO",
+    valor: 40_038.32,
+    status: "validado",
+    observacao: "Débito automático no registro da DI (17/08/2026): II R$ 10.464,59 + IPI R$ 5.371,35 + PIS R$ 1.467,60 + COFINS R$ 6.743,96 + despesas aduaneiras R$ 15.990,82 — composição conferida no próprio DANFE. Confirmado pelo cliente em 18/09/2026.",
+    rastreio: "documento",
+    fonte: "DANFE NF-e 000.094.251 + DUIMP 26BR0001426125-2 Greatland.pdf",
+  },
+];
+
+/**
+ * Achado em 18/09/2026: o câmbio remete FOB + frete internacional (valor
+ * aduaneiro), não só o FOB — por isso a obrigação contábil correta pra
+ * comparar com o câmbio é o valor aduaneiro das duas DI (R$ 391.100,96:
+ * R$ 321.215,41 + R$ 69.885,55), não o FOB isolado. Como o câmbio liquidou
+ * por menos (R$ 385.701,27, nas taxas de contratação de abril/julho, mais
+ * favoráveis que as taxas da DI de agosto), sobra uma variação cambial
+ * ATIVA real de R$ 5.399,69 — mesmo padrão e contas de
+ * `nitaplast-financeiro-julho.ts` (D 25116 / C 25096).
+ */
+export const lancamentosVariacaoCambialGreatlandAgosto: LancamentoIntegrado[] = [{
+  id: "AGO-CAMBIO-GREATLAND-VCA",
+  data: "31/08/2026",
+  origem: "VARIAÇÃO CAMBIAL — IMPORTAÇÃO GREATLAND VALVE",
+  debitoCodigo: "25116",
+  debito: nome("25116"),
+  creditoCodigo: "25096",
+  credito: nome("25096"),
+  historico: "Variação cambial ativa — importação Greatland Valve (NF 94222 + NF 94251)",
+  documento: "DUIMPs 26BR0001376062-0 e 26BR0001426125-2 + contratos de câmbio 583972479 e 611879451",
+  cc: "209",
+  centroCusto: "IMPORTAÇÃO",
+  valor: 5_399.69,
+  status: "validado",
+  observacao: "Obrigação contábil (valor aduaneiro das duas DI, na taxa de registro) R$ 391.100,96 menos valor liquidado pelos dois contratos de câmbio R$ 385.701,27 = variação cambial ativa R$ 5.399,69.",
+  rastreio: "documento",
+  fonte: "DUIMP 26BR0001376062-0 + DUIMP 26BR0001426125-2 + contratos de câmbio 583972479.pdf e 611879451.pdf",
+}];
 
 export const resumoCambioAgosto = {
   contratos: 2,
@@ -73,11 +171,13 @@ export const resumoCambioAgosto = {
   usd: 82_000,
   reais: 423_222.50,
   notaGreatland94222: {
-    notaFiscal: "94222",
-    valorNota: 454_046.67,
+    notaFiscal: "94222 + 94251",
+    valorNotas: 563_970.55,
     contratosVinculados: 385_701.27,
-    diferencaEmConfirmacao: 68_345.40,
-    observacao: "Dois contratos de câmbio (abril + julho) confirmados nos extratos Bradesco, cobrindo R$ 385.701,27 dos R$ 454.046,67 da NF 94222. Diferença de R$ 68.345,40 em confirmação com o cliente (IOF/despesas aduaneiras/variação cambial, ou terceiro contrato ainda não localizado).",
+    tributosEDespesasBaixados: 167_308.57,
+    variacaoCambialAtiva: 5_399.69,
+    saldoAindaAberto25116: 5_561.02,
+    observacao: "Processo Greatland finalizado (confirmado pelo cliente em 18/09/2026): NF 94222 (R$ 454.046,67) + NF 94251 (R$ 109.923,88), duas DUIMPs (26BR0001376062-0 e 26BR0001426125-2), dois contratos de câmbio (R$ 385.701,27), tributos federais de ambas as DI (R$ 167.308,57) e variação cambial ativa de R$ 5.399,69 (obrigação contábil pelo valor aduaneiro das DI menos valor liquidado pelo câmbio — mesmo critério de julho). Resta um saldo residual de R$ 5.561,02 na 25116, referente à estimativa de despesas aduaneiras da NF 94222 (calculada por diferença entre o total da NF e os componentes documentados na DUIMP) — falta o documento próprio (DANFE ou fatura do despachante da NF 94222) pra confirmar e fechar. Consultado o RESUMO CTES.csv (18/09/2026): não traz essa informação — os CT-e da LVZ ali são frete nacional já lançado na 25070, sem relação com este resíduo.",
   },
 } as const;
 
