@@ -13,7 +13,7 @@ import { lancamentosServicosQuestorAgosto } from "./nitaplast-servicos-questor-a
 import { lancamentosFolhaAgosto } from "./nitaplast-folha-agosto";
 import { lancamentosProvisoesAgosto } from "./nitaplast-provisoes-agosto";
 import { lancamentosJcpAgosto } from "./nitaplast-jcp-agosto";
-import { lancamentosVersaoJulho } from "./nitaplast-razao-julho-final-v2";
+import { lancamentosVersaoJulho, lancamentosProvisaoCustoClienteJulho } from "./nitaplast-razao-julho-final-v2";
 import type { LancamentoIntegrado } from "./nitaplast-razao-base";
 import {
   lancamentosAmortizacaoAgosto,
@@ -51,6 +51,30 @@ export const estornosVersaoJulhoEmAgosto: LancamentoIntegrado[] = lancamentosVer
 );
 
 /**
+ * Estorno, em agosto, da provisão de custo de R$ 100.000,00 solicitada pelo
+ * cliente em julho (JUL-PROV-CUSTO-CLIENTE-100K) — estorno puro (a provisão
+ * não se confirmou contra documento definitivo), não baixa contra custo real.
+ */
+export const estornoProvisaoCustoClienteAgosto: LancamentoIntegrado[] = lancamentosProvisaoCustoClienteJulho.map(
+  (original) => ({
+    ...original,
+    id: `AGO-EST-${original.id}`,
+    data: "01/08/2026",
+    origem: "ESTORNO PROVISÃO DE CUSTO 07/2026",
+    debitoCodigo: original.creditoCodigo,
+    debito: original.credito,
+    creditoCodigo: original.debitoCodigo,
+    credito: original.debito,
+    historico: `Estorno de ${original.id} — provisão de custo da competência 07/2026 não confirmada contra documento definitivo`,
+    documento: `ESTORNO ${original.documento}`,
+    status: "validado",
+    observacao: `Estorno integral e exato da provisão ${original.id} (R$ ${original.valor.toFixed(2)}), sem baixa contra custo real.`,
+    rastreio: "derivado",
+    fonte: `Referência contábil: ${original.id} / ${original.fonte}`,
+  }),
+);
+
+/**
  * Fonte contábil única de 08/2026. Toda tela do período deve derivar desta base,
  * acrescida apenas dos lançamentos manuais/importados auditáveis do usuário.
  * Linhas com status "revisar" continuam no Razão como fatos identificados, sem
@@ -58,6 +82,7 @@ export const estornosVersaoJulhoEmAgosto: LancamentoIntegrado[] = lancamentosVer
  */
 export const lancamentosIntegradosAgosto: LancamentoIntegrado[] = [
   ...estornosVersaoJulhoEmAgosto,
+  ...estornoProvisaoCustoClienteAgosto,
   ...lancamentosBancariosSegurosAgosto,
   ...lancamentosProvisaoImpostosAgosto,
   ...lancamentosIcmsStAgosto,
