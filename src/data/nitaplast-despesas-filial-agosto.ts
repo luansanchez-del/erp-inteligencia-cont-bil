@@ -211,7 +211,7 @@ export const lancamentosDespesasFilialAgosto: LancamentoIntegrado[] = [
     historico: "Serviço de terceiro PJ - HGF COMERCIO E MANUTENCAO",
     documento: "NF 205 / Conta gerencial 11.02.002",
     cc: "10009",
-    centroCusto: "SEM CENTRO DE CUSTO",
+    centroCusto: "FILIAL SP",
     valor: 650.00,
     status: "revisar",
     observacao: `CC 10009 não identificado nos centros de custo padrão da Filial; mantido como no relatório de origem, marcado para revisão do centro de custo real. ${OBS_PADRAO}`,

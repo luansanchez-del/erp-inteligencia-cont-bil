@@ -451,7 +451,7 @@ const DETALHES_ANALISE_DRE: { chave: string; descricao: string; contas: string[]
  * que é custo, despesa operacional, despesa financeira e receita financeira
  * nos dois meses.
  */
-export function calcularDetalhesAnaliseDre(lancamentos: LinhaMovimentoAnalise[]) {
+export function calcularDetalhesAnaliseDre(lancamentos: LinhaMovimentoAnalise[], categoriasPorMovimento = false) {
   const valores = new Map<string, number>();
   for (const def of DETALHES_ANALISE_DRE) {
     const bruto = movimentoContasEstabelecimento(lancamentos, def.contas, def.estabelecimento, def.excluirIds);
@@ -475,6 +475,13 @@ export function calcularDetalhesAnaliseDre(lancamentos: LinhaMovimentoAnalise[])
   valores.set("fin-despesas", movimentoContasEstabelecimento(lancamentos, [...despesasFinanceirasContas]));
   valores.set("fin-receitas", -movimentoContasEstabelecimento(lancamentos, [...contasReceitasFinanceirasAgosto]));
 
+  if (categoriasPorMovimento) {
+    // Agosto: mesma categorização da DRE (por movimento, ver `categorizarDespesasAgosto`),
+    // para a análise não divergir da DRE.
+    const categorias = categorizarDespesasAgosto(lancamentos as never, [...despesasOperacionaisContas]);
+    for (const [id] of categoriasDespesasAgostoDefs) valores.set(`desp-${id}`, categorias.total(id));
+    return valores;
+  }
   const categoriaPorContaDespesa = categoriaDominantePorConta(lancamentos, despesasOperacionaisContas);
   const despesasPorCategoria = new Map<string, number>();
   for (const l of lancamentos) {
@@ -519,7 +526,7 @@ function AnaliseVerticalDre({ agosto, lancamentosAgosto }: { agosto: TotaisAnali
     resultado: julho.resultado,
   };
   const detalhesJulho = useMemo(() => calcularDetalhesAnaliseDre(lancamentosJulho), [lancamentosJulho]);
-  const detalhesAgosto = useMemo(() => calcularDetalhesAnaliseDre(lancamentosAgosto), [lancamentosAgosto]);
+  const detalhesAgosto = useMemo(() => calcularDetalhesAnaliseDre(lancamentosAgosto, true), [lancamentosAgosto]);
 
   type DefinicaoLinha =
     | { tipo: "total"; chave: keyof TotaisAnaliseDre; descricao: string; negrito?: boolean }
@@ -1024,6 +1031,21 @@ const categoriaDaConta = (conta: string, cc: string): string => {
  */
 const CONTAS_DECIDIDAS_POR_MOVIMENTO = new Set(["25070"]);
 /**
+ * Achado em 21/09/2026: a conta 25938 (Serviços de Terceiros PJ) também mistura
+ * CCs de verdade — administrativo (301-306), vendas/comercial, exportação (206),
+ * produção/oficina/projetos (10x) —, mas era classificada pelo CC dominante e
+ * jogava TODA a conta em "Despesas Administrativas" (R$ 336.036,29 no mês, dos
+ * quais só ~R$ 132 mil em CC administrativo). Para agosto ela passa a ser
+ * decidida por movimento, como a 25070. Movimentos SEM CC (cc "0") caem no
+ * fallback abaixo (categoria do CC dominante dos movimentos reais da conta,
+ * hoje administrativo) — são pendência de classificação por departamento, não
+ * evidência de que sejam administrativos.
+ *
+ * Fica só em agosto de propósito: julho (fechado) e a tela de análise seguem a
+ * regra por conta até haver decisão de reclassificar o comparativo.
+ */
+const CONTAS_DECIDIDAS_POR_MOVIMENTO_AGOSTO = new Set([...CONTAS_DECIDIDAS_POR_MOVIMENTO, "25938"]);
+/**
  * Fallback para movimentos de `CONTAS_DECIDIDAS_POR_MOVIMENTO` que não têm CC
  * (ex.: rateio de crédito de PIS/COFINS sobre compras da 25070, lançado com
  * `cc: "0"` em `nitaplast-provisao-impostos-agosto.ts` — o rateio é agregado
@@ -1104,13 +1126,13 @@ function categoriaDaMovimento(l: LinhaMovimentoAnalise, conta: string, categoria
   if (!ehLancamentoDeVersao && estabelecimentoLancamentoNitaplast(l) === "Filial SP") return "filial";
   const cc = l.cc ?? "0";
   if (ccFilialAgosto.has(cc)) return "filial";
-  if (CONTAS_DECIDIDAS_POR_MOVIMENTO.has(conta)) return cc === "0" ? (categoriaFallbackMovimento.get(conta) ?? "outras") : categoriaPorCC(cc);
+  if (CONTAS_DECIDIDAS_POR_MOVIMENTO_AGOSTO.has(conta)) return cc === "0" ? (categoriaFallbackMovimento.get(conta) ?? "outras") : categoriaPorCC(cc);
   return categoriaPorConta.get(conta) ?? "outras";
 }
 export function categorizarDespesasAgosto(lancamentos: ReturnType<typeof useBase>["lancamentos"], operacionais: string[]) {
   const operacionaisSet = new Set(operacionais);
   const categoriaPorConta = categoriaDominantePorConta(lancamentos, operacionaisSet);
-  const categoriaFallbackMovimento = categoriaDominantePorContaMovimento(lancamentos, CONTAS_DECIDIDAS_POR_MOVIMENTO);
+  const categoriaFallbackMovimento = categoriaDominantePorContaMovimento(lancamentos, CONTAS_DECIDIDAS_POR_MOVIMENTO_AGOSTO);
   const porCategoria = new Map<string, Map<string, ItemDespesaAgosto>>();
   const somar = (categoria: string, conta: string, delta: number) => {
     const contas = porCategoria.get(categoria) ?? new Map<string, ItemDespesaAgosto>();
