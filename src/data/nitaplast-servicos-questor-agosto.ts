@@ -12,6 +12,11 @@ const nome = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(codigo) 
  * do Questor (Natureza 8000001/8000002 "SERVIÇOS TOMADOS"), 46 fornecedores
  * (R$ 87.409,07) não tinham lançamento correspondente.
  *
+ * CORREÇÃO (21/09/2026): dessas, 28 movimentos (R$ 38.665,36) TINHAM lançamento
+ * do Softdib em outras contas (a comparação original olhou só a conta 25938).
+ * O lado Softdib foi retirado do razão — ver `idsSoftdibSubstituidosPeloQuestorAgosto`
+ * abaixo. Os demais permanecem como complemento.
+ *
  * Fonte de valor e fornecedor: Questor (autoridade — sistema contábil
  * oficial). Fonte de CC: cruzamento por número de documento + fornecedor +
  * valor contra o CSV detalhado do SOFTDIB (RELATATORIO DETALHADO ENTRADAS
@@ -37,13 +42,15 @@ const nome = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(codigo) 
  *   usado, para não repetir o falso positivo já identificado nesta sessão
  *   (RD Gestão × Sergio Baggio - Jardinagem).
  * - "ausente": o documento simplesmente não existe no CSV do SOFTDIB.
+ * - "inferido": o documento não está no SOFTDIB e o CC foi inferido pelo padrão
+ *   do fornecedor (documentado em `notaCc`); precisa de confirmação.
  *
  * Nenhum valor foi estimado ou arredondado; tudo vem direto do Questor.
  */
 const CONTA_SERVICOS = "25938";
 const CONTA_FORNECEDORES = "1496";
 
-type StatusCc = "confirmado" | "parcial" | "rejeitado" | "ausente";
+type StatusCc = "confirmado" | "parcial" | "rejeitado" | "ausente" | "inferido";
 
 type ServicoQuestor = {
   id: string;
@@ -117,11 +124,35 @@ const servicosQuestorAgosto: ServicoQuestor[] = [
   { id: "AGO-QST-042", fornecedor: "EVL TRANSPORTES E LOGISTICA LTDA", valor: 801.55, documentoQuestor: "700", data: "26/08/2026", cc: "0", centroCusto: "SEM CENTRO DE CUSTO", nop: "1933", gerencial: "11.04.014", statusCc: "rejeitado", notaCc: "SOFTDIB tem documento 700 do mesmo fornecedor, mas com valor de R$ 14.027,02 (não R$ 801,55) — numeração não corresponde ao mesmo lançamento, não usado." },
   { id: "AGO-QST-043", fornecedor: "EVL TRANSPORTES E LOGISTICA LTDA", valor: 801.55, documentoQuestor: "724", data: "26/08/2026", cc: "0", centroCusto: "SEM CENTRO DE CUSTO", nop: "1933", gerencial: "11.04.014", statusCc: "rejeitado", notaCc: "SOFTDIB tem documento 724 do mesmo fornecedor, mas com valor de R$ 26.436,25 (não R$ 801,55) — numeração não corresponde ao mesmo lançamento, não usado." },
   { id: "AGO-QST-044", fornecedor: "ESTACIONAMENTO JOCKEY PLAZA LTDA", valor: 20.0, documentoQuestor: "800045", data: "27/08/2026", cc: "0", centroCusto: "SEM CENTRO DE CUSTO", statusCc: "ausente" },
-  { id: "AGO-QST-045", fornecedor: "CONT LEGACY - INTELIGENCIA CONTABIL LTDA", valor: 14773.06, documentoQuestor: "353", data: "28/08/2026", cc: "304", centroCusto: "ADM GERAL", nop: "1933", gerencial: "11.02.002", statusCc: "confirmado" },
+  { id: "AGO-QST-045", fornecedor: "CONT LEGACY - INTELIGENCIA CONTABIL LTDA", valor: 14773.06, documentoQuestor: "345", data: "25/08/2026", cc: "304", centroCusto: "ADM GERAL", nop: "1933", gerencial: "11.02.002", statusCc: "inferido", notaCc: "NF 345 (Questor, 25/08/2026, \"Recuperação tributária\") não consta no CSV do SOFTDIB. Antes estava gravada como NF 353 (28/08), que é outra nota, já lançada em AGO-ENT-DOC-0397; corrigido em 21/09/2026 após confirmação do contador de que a NF 345 é válida. CC 304 inferido: todas as notas da Cont Legacy no SOFTDIB (274, 353, 354) estão no CC 304." },
   { id: "AGO-QST-046", fornecedor: "L. C. REALI - COBRANCAS", valor: 2481.88, documentoQuestor: "30", data: "31/08/2026", cc: "0", centroCusto: "SEM CENTRO DE CUSTO", statusCc: "ausente" },
 ];
 
 export const totalServicosQuestorAgosto = servicosQuestorAgosto.reduce((s, x) => s + x.valor, 0);
+
+/**
+ * Lançamentos do CSV Softdib (nitaplast-despesas-documentais-agosto.ts) que
+ * repetiam documento + fornecedor + valor de um lançamento do Questor acima —
+ * 28 movimentos, R$ 38.665,36, achados em 21/09/2026. As duas fontes lançavam a
+ * mesma nota (uma na conta gerencial do Softdib, outra em 25938), então a despesa
+ * entrava duas vezes na DRE. Para as notas rateadas (Unimed 974133, Maxipas
+ * 10103), o Softdib só traz até 4 centros de custo e o Questor lança a nota
+ * inteira, então as partes do Softdib já estavam contidas no valor do Questor.
+ *
+ * Decisão do contador (21/09/2026): as notas de entrada/Questor são o lançamento
+ * principal; o Softdib fica só para consulta de centro de custo. Estes IDs
+ * permanecem no arquivo do Softdib (consulta/rastreio), mas NÃO entram no razão.
+ * Conferido nota a nota: valor lançado por nota = valor da nota (RESUMO NOTAS
+ * FISCAIS ENTRADA e Questor).
+ */
+export const idsSoftdibSubstituidosPeloQuestorAgosto: ReadonlySet<string> = new Set([
+  "AGO-ENT-DOC-0017", "AGO-ENT-DOC-0020", "AGO-ENT-DOC-0030", "AGO-ENT-DOC-0086", "AGO-ENT-DOC-0103",
+  "AGO-ENT-DOC-0104", "AGO-ENT-DOC-0105", "AGO-ENT-DOC-0106", "AGO-ENT-DOC-0107", "AGO-ENT-DOC-0108",
+  "AGO-ENT-DOC-0137", "AGO-ENT-DOC-0139", "AGO-ENT-DOC-0255", "AGO-ENT-DOC-0330", "AGO-ENT-DOC-0332",
+  "AGO-ENT-DOC-0333", "AGO-ENT-DOC-0334", "AGO-ENT-DOC-0356", "AGO-ENT-DOC-0357", "AGO-ENT-DOC-0358",
+  "AGO-ENT-DOC-0359", "AGO-ENT-DOC-0383", "AGO-ENT-DOC-0447", "AGO-ENT-DOC-0473", "AGO-ENT-DOC-0474",
+  "AGO-ENT-DOC-0475", "AGO-ENT-DOC-0476", "AGO-ENT-DOC-0483",
+]);
 
 const observacaoPorStatus = (s: ServicoQuestor): string => {
   switch (s.statusCc) {
@@ -133,6 +164,8 @@ const observacaoPorStatus = (s: ServicoQuestor): string => {
       return `Valor e fornecedor conforme Questor oficial (autoridade). ${s.notaCc ?? ""} Fica sem centro de custo específico até identificação documental.`;
     case "ausente":
       return "Valor e fornecedor conforme Questor oficial (autoridade). Não localizado no CSV detalhado do SOFTDIB (nem por número de documento, nem por fornecedor) — sem CC disponível, fica sem centro de custo específico até identificação documental.";
+    case "inferido":
+      return `Valor e fornecedor conforme Questor oficial (autoridade). ${s.notaCc ?? ""}`;
     default:
       return "Valor e fornecedor conforme Questor oficial (autoridade).";
   }
