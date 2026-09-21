@@ -1131,7 +1131,7 @@ export function categorizarDespesasAgosto(lancamentos: ReturnType<typeof useBase
 export function DreAgostoPadrao() {
   const { lancamentos } = useBase();
   const [abertas, setAbertas] = useState(
-    new Set(["receita", "deducoes", "custos", "despesas", "financeiro"]),
+    new Set(["receita", "deducoes", "custos", "cpv-matriz", "cpv-filial", "despesas", "financeiro"]),
   );
   const {
     mov, credito, custos, operacionais, financeiras,
@@ -1158,6 +1158,16 @@ export function DreAgostoPadrao() {
         if (estabelecimentoLancamentoNitaplast(lancamento) !== estabelecimento) return total;
         if (lancamento.creditoCodigo === conta) return total + lancamento.valor;
         if (lancamento.debitoCodigo === conta) return total - lancamento.valor;
+        return total;
+      }, 0),
+    );
+  /** Para contas de natureza devedora (custo/dedução): débito soma, crédito subtrai — mesmo sinal de `mov()`. */
+  const valorContaDevedoraPorEstabelecimento = (conta: string, estabelecimento: "Matriz" | "Filial SP") =>
+    arred(
+      lancamentos.reduce((total, lancamento) => {
+        if (estabelecimentoLancamentoNitaplast(lancamento) !== estabelecimento) return total;
+        if (lancamento.debitoCodigo === conta) return total + lancamento.valor;
+        if (lancamento.creditoCodigo === conta) return total - lancamento.valor;
         return total;
       }, 0),
     );
@@ -1254,7 +1264,21 @@ export function DreAgostoPadrao() {
       pai: "receita",
     },
     { id: "deducoes", descricao: "(-) Deduções da Receita Bruta", valor: deducoes, nivel: 0 },
-    ...detalhes("ded", "deducoes", [...contasDeducoesAgosto]),
+    // 2826 (IPI), 2827 (ICMS) e 2832 (ICMS ST) são só Matriz; 25054/25055 são só
+    // Filial (contas dedicadas) — essas cinco já saem separadas por estabelecimento
+    // por natureza da conta. 25943 (Devolução), 2829 (PIS) e 2830 (COFINS) dividem
+    // a mesma conta entre Matriz e Filial (sem conta própria da Filial), então
+    // precisam do valor calculado por estabelecimento em vez do saldo bruto da conta.
+    ...detalhes("ded", "deducoes", ["2826", "2827", "2832", "25054", "25055"]),
+    ...(["25943", "2829", "2830"] as const).flatMap((conta) => {
+      const nomeContaDed = `${conta} - ${descricaoPorContaCompleta.get(conta) ?? "Conta não encontrada no plano"}`;
+      const matrizV = Math.abs(valorContaDevedoraPorEstabelecimento(conta, "Matriz"));
+      const filialV = Math.abs(valorContaDevedoraPorEstabelecimento(conta, "Filial SP"));
+      const linhasConta: Linha[] = [];
+      if (matrizV > 0.004) linhasConta.push({ id: `ded-${conta}-matriz`, descricao: `${nomeContaDed} — Matriz`, valor: matrizV, nivel: 1, pai: "deducoes" });
+      if (filialV > 0.004) linhasConta.push({ id: `ded-${conta}-filial`, descricao: `${nomeContaDed} — Filial SP`, valor: filialV, nivel: 1, pai: "deducoes" });
+      return linhasConta;
+    }),
     {
       id: "receita-liquida",
       descricao: "(=) Receita Operacional Líquida",
@@ -1262,7 +1286,18 @@ export function DreAgostoPadrao() {
       nivel: 0,
     },
     { id: "custos", descricao: "(-) CPV / CMV", valor: cpv, nivel: 0 },
-    ...detalhes("cpv", "custos", custos),
+    { id: "cpv-matriz", descricao: "CPV Matriz", valor: cpvMatriz, nivel: 1, pai: "custos" },
+    ...custos.flatMap((c) => {
+      const v = Math.abs(valorContaDevedoraPorEstabelecimento(c, "Matriz"));
+      if (v < 0.004) return [];
+      return [{ id: `cpv-m-${c}`, descricao: `${c} - ${descricaoPorContaCompleta.get(c) ?? "Conta não encontrada no plano"}`, valor: v, nivel: 2 as const, pai: "cpv-matriz" }];
+    }),
+    { id: "cpv-filial", descricao: "CPV Filial SP", valor: cpvFilial, nivel: 1, pai: "custos" },
+    ...custos.flatMap((c) => {
+      const v = Math.abs(valorContaDevedoraPorEstabelecimento(c, "Filial SP"));
+      if (v < 0.004) return [];
+      return [{ id: `cpv-f-${c}`, descricao: `${c} - ${descricaoPorContaCompleta.get(c) ?? "Conta não encontrada no plano"}`, valor: v, nivel: 2 as const, pai: "cpv-filial" }];
+    }),
     { id: "lucro-bruto", descricao: "(=) Lucro Bruto", valor: lucroBruto, nivel: 0 },
     { id: "despesas", descricao: "(-) Despesas Operacionais", valor: despesas, nivel: 0 },
     ...linhasCategoriasDespesas,
@@ -1302,6 +1337,7 @@ export function DreAgostoPadrao() {
   ];
   const pais = new Set([
     "receita", "deducoes", "custos", "despesas", "financeiro",
+    "cpv-matriz", "cpv-filial",
     ...categoriasDespesasAgostoDefs.map(([id]) => `desp-cat-${id}`),
   ]);
   const paiPorId = new Map(linhas.map((l) => [l.id, l.pai]));
