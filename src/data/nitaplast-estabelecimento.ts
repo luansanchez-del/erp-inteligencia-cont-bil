@@ -1,3 +1,12 @@
+/**
+ * REGRA ABSOLUTA (ver nota técnica "nitaplast-estabelecimento-por-fonte-nao-por-cc"
+ * em notas-tecnicas.ts): o centro de custo (`cc`) sozinho NUNCA decide Matriz x
+ * Filial — o mesmo número de CC é reaproveitado nos dois estabelecimentos em
+ * relatórios diferentes. Quem decide é o documento/relatório de origem: se a
+ * fonte é exclusiva de um estabelecimento (ex.: qualquer relatório "NITAPLAST
+ * SAO PAULO", ou arquivo da pasta "FILIAL - AGO/JUL nn"), todo lançamento dali
+ * é daquele estabelecimento, mesmo com CC estranho, repetido ou desconhecido.
+ */
 type LinhaEstabelecimento = {
   origem?: string | undefined;
   historico?: string | undefined;

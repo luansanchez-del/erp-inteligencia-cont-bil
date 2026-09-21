@@ -11,6 +11,7 @@ import { lancamentosCambioAgosto, lancamentosCambioGreatlandAgosto, lancamentosT
 import { lancamentosDespesasDocumentaisAgosto } from "./nitaplast-despesas-documentais-agosto";
 import { lancamentosServicosQuestorAgosto } from "./nitaplast-servicos-questor-agosto";
 import { lancamentosFolhaAgosto } from "./nitaplast-folha-agosto";
+import { lancamentosDespesasFilialAgosto } from "./nitaplast-despesas-filial-agosto";
 import { lancamentosProvisoesAgosto } from "./nitaplast-provisoes-agosto";
 import { lancamentosJcpAgosto } from "./nitaplast-jcp-agosto";
 import { lancamentosVersaoJulho, lancamentosProvisaoCustoClienteJulho } from "./nitaplast-razao-julho-final-v2";
@@ -99,6 +100,7 @@ export const lancamentosIntegradosAgosto: LancamentoIntegrado[] = [
   ...lancamentosDespesasDocumentaisAgosto,
   ...lancamentosServicosQuestorAgosto,
   ...lancamentosFolhaAgosto,
+  ...lancamentosDespesasFilialAgosto,
   ...lancamentosProvisoesAgosto,
   ...lancamentosJcpAgosto,
   ...lancamentosFechamentoEstoqueAgosto,

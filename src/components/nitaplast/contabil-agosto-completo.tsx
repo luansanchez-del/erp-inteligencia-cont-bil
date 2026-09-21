@@ -853,6 +853,15 @@ const contasReceitasFinanceirasAgosto = new Set([
   "25099",
   "25100",
   "25101",
+  // 2859 "Receitas Aplicações Financeiras" (grupo "Receitas acumuladas", fora de
+  // "Custos e despesas acumulados") — achado em 21/09/2026: o rendimento Greencred
+  // de agosto (AGO-BAN-GREENCRED-REND, R$ 15.788,36) credita esta conta e, sem
+  // esta entrada, não caía em nenhuma linha da apuração de resultado (nem
+  // receita, nem despesa), fazendo a Receita Financeira de agosto parecer menor
+  // do que realmente foi. Diferente de mov()/credito(), que somam qualquer
+  // conta citada nos lançamentos, receitasFinanceiras só soma o que está
+  // listado aqui.
+  "2859",
 ]);
 
 // Compartilhado entre o DRE e o Resumo do Balancete: os dois precisam do mesmo

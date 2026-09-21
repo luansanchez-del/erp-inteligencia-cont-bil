@@ -68,6 +68,15 @@ export const notasTecnicas: NotaTecnica[] = [
     descricao: "Julho/2026 fecha em R$ 234.732,08 via lançamento manual real no Razão (ids JUL-VERSAO-*, origem \"LANÇAMENTO DE VERSÃO 07/2026\", status \"revisar\"), decidido pelo contador em 24/08/2026, com estorno programado para agosto/2026. Diferença de R$ 15.457,20 em relação ao Razão \"puro\" (R$ 250.189,28), decomposta em CC 503 \"Manutenção SP\" (Filial, contada em duplicidade pela planilha do cliente) e ICMS/COFINS Matriz (a planilha do cliente diverge da própria contabilidade dele). Ao aplicar em agosto/2026: localizar os 5 lançamentos JUL-VERSAO-* e lançar o estorno exato deles na competência de agosto antes de lançar a versão definitiva.",
     origem: "Decisão do contador, 24/08/2026",
   },
+  {
+    id: "nitaplast-estabelecimento-por-fonte-nao-por-cc",
+    grupoId: "g-nitaplast",
+    competenciaId: "*",
+    categoria: "informacao",
+    titulo: "Regra absoluta: o documento de origem decide Matriz x Filial, nunca o número do centro de custo",
+    descricao: "O centro de custo (CC) sozinho NUNCA é confiável para decidir se um lançamento é da Matriz ou da Filial SP: o mesmo número de CC é reaproveitado nos dois estabelecimentos em relatórios diferentes (ex.: CC 304 é \"ADM GERAL\" na Matriz, mas aparece em pagamentos legítimos da Filial no relatório \"NITAPLAST - SAO PAULO\"; CC 10009 não corresponde a nenhum CC conhecido de nenhum dos dois, mas o lançamento é Filial porque veio desse mesmo relatório). A regra é: se o documento/relatório de origem é exclusivo de um estabelecimento (ex.: qualquer linha de \"RELAÇÃO DOS PAGAMENTOS EFETUADOS — NITAPLAST SAO PAULO\", do \"EXTRATO BANCÁRIO — NITAPLAST SAO PAULO\", ou de qualquer arquivo da pasta \"FILIAL - AGO/JUL nn\"), TODO lançamento dali é daquele estabelecimento — mesmo que o CC pareça estranho, repetido ou desconhecido. Não deixar de lançar nem reclassificar um item como Matriz só porque o CC não bate com os CCs esperados (501-505); marcar `status: revisar` apenas no centro de custo/departamento específico, nunca no estabelecimento. Achado em 21/09/2026 ao investigar despesas da Filial de agosto/2026 (HGF Comércio, CC 10009; Eletropaulo, CC 304).",
+    origem: "Decisão registrada em 21/09/2026, a pedido do usuário — regra absoluta para todas as competências.",
+  },
 ];
 
 export function notasTecnicasDoGrupo(grupoId: string, competenciaId: string): NotaTecnica[] {
