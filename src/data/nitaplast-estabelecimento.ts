@@ -66,16 +66,24 @@ export function estabelecimentoLancamentoNitaplast(linha: LinhaEstabelecimento):
   const contaFilial = contaDedicadaFilialNitaplast(linha.debitoCodigo, linha.debito)
     || contaDedicadaFilialNitaplast(linha.creditoCodigo, linha.credito);
   const ccFilial = centroCustoFilialNitaplast(linha.cc);
-  const naturezaFilial = texto.includes("FILIAL")
+  const documentoFilialDedicado = linha.documento?.startsWith("14.03.006") ?? false;
+  const mencionaFilial = texto.includes("FILIAL")
     || texto.includes("COMERCIAL SP")
-    || texto.includes("COMERCIAL SAO PAULO")
-    || linha.documento?.startsWith("14.03.006");
-  const transferenciaEntreEstabelecimentos = naturezaFilial
-    && texto.includes("MATRIZ")
+    || texto.includes("COMERCIAL SAO PAULO");
+  const mencionaMatriz = texto.includes("MATRIZ");
+  const transferenciaEntreEstabelecimentos = mencionaFilial
+    && mencionaMatriz
     && (texto.includes("TRANSFER") || texto.includes("REMESSA"));
 
   if (transferenciaEntreEstabelecimentos) return "Matriz ↔ Filial";
-  if (contaFilial || ccFilial || naturezaFilial) return "Filial SP";
+  if (contaFilial || ccFilial || documentoFilialDedicado) return "Filial SP";
+  // Achado em 21/09/2026: um texto que cita "FILIAL" e "MATRIZ" ao mesmo tempo
+  // sem ser transferência (ex.: fonte de folha compartilhada "RELAÇÃO DE
+  // CÁLCULO FOLHA - MATRIZ E FILIAL") não é evidência de qual dos dois é —
+  // só conta/CC dedicados decidem nesse caso. Sem essa guarda, toda a folha da
+  // Matriz caía em "Filial SP" só pelo nome do relatório de origem mencionar
+  // os dois estabelecimentos.
+  if (mencionaFilial && !mencionaMatriz) return "Filial SP";
   return "Matriz";
 }
 
