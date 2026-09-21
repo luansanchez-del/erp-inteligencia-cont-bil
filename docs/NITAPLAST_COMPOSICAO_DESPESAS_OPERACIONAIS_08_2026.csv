@@ -1,0 +1,80 @@
+categoria;conta;descricao;classificacao;valor
+Despesas Administrativas;25938;Serviços de Terc de pessoa juridicca;5.3.01.003.031;158804.84
+Despesas Administrativas;4014;Salários e Ordenados;5.7.01.001.001;7734.16
+Despesas Administrativas;4912;Material Uso e Consumo;5.7.03.015.029;6837.35
+Despesas Administrativas;4020;INSS;5.7.01.001.007;2151.97
+Despesas Administrativas;25057;PROVISÃO PARA FÉRIAS;5.7.01.001.029;1027.78
+Despesas Administrativas;4021;FGTS;5.7.01.001.008;767.35
+Despesas Administrativas;25059;Provisão para 33ª;5.7.01.001.031;620.83
+Despesas Administrativas;25058;ENCARGOS S/ PROVISÃO DE FERIAS;5.7.01.001.030;362.81
+Despesas Administrativas;25060;ENCARGOS S/ PROV. DE 13º SAL.;5.7.01.001.032;219.14
+Despesas com Serviço - NPLog;25938;Serviços de Terc de pessoa juridicca;5.3.01.003.031;210781.35
+Despesas Comerciais;25938;Serviços de Terc de pessoa juridicca;5.3.01.003.031;87779.85
+Despesas Comerciais;4253;Fretes e Carretos;5.7.01.017.014;79170.28
+Despesas Comerciais;3244;Materiais Auxiliares e de Consumo;5.3.03.003.003;44534.68
+Despesas Comerciais;25070;Despesas com importação;5.7.01.017.028;41781.59
+Despesas Comerciais;25064;Materiais auxiliares e de consumo;5.7.01.017.022;36327.17
+Despesas Comerciais;4014;Salários e Ordenados;5.7.01.001.001;29658.02
+Despesas Comerciais;4020;INSS;5.7.01.001.007;8116.62
+Despesas Comerciais;4028;Alimentos do Trabalhador;5.7.01.001.015;6762.00
+Despesas Comerciais;25057;PROVISÃO PARA FÉRIAS;5.7.01.001.029;3507.16
+Despesas Comerciais;25059;Provisão para 33ª;5.7.01.001.031;2608.99
+Despesas Comerciais;4021;FGTS;5.7.01.001.008;2378.47
+Despesas Comerciais;5799;Combustível do Trabalhador;5.7.03.001.001;2277.00
+Despesas Comerciais;25058;ENCARGOS S/ PROVISÃO DE FERIAS;5.7.01.001.030;1238.03
+Despesas Comerciais;4115;Hospedagem;5.7.01.007.003;1179.40
+Despesas Comerciais;25060;ENCARGOS S/ PROV. DE 13º SAL.;5.7.01.001.032;920.96
+Despesas Comerciais;4085;Publicidade;5.7.01.005.002;673.40
+Despesas Comerciais;25061;Assistencia odontologica;5.7.01.001.033;179.82
+Despesas Produção;3244;Materiais Auxiliares e de Consumo;5.3.03.003.003;179985.85
+Despesas Produção;25938;Serviços de Terc de pessoa juridicca;5.3.01.003.031;62534.01
+Despesas Produção;3494;Energia Elétrica;5.3.03.007.002;26570.81
+Despesas Produção;25070;Despesas com importação;5.7.01.017.028;5211.76
+Despesas Produção;4189;Manutenção de Máquinas e Equipamentos;5.7.01.013.006;2785.60
+Despesas Produção;25071;Remoçao de residuo industriais;5.7.01.017.029;1344.00
+Despesas Produção;4253;Fretes e Carretos;5.7.01.017.014;694.28
+Despesas Produção;25061;Assistencia odontologica;5.7.01.001.033;39.96
+Despesas Produção;4546;"Lanches, Refeições, Copa e Cozinha";5.7.03.015.015;25.20
+Despesas Veiculos;4213;Combustíveis e Lubrificantes;5.7.01.015.001;1358.00
+Despesas Veiculos;4215;Manutenção de Veículos;5.7.01.015.003;630.15
+Despesas Veiculos;25028;Despesas com Veículos;5.7.01.015.007;143.28
+Despesas com Imobilizado;25078;Depreciação de Maquinas;5.7.01.011.003;25929.18
+Despesas com Imobilizado;25083;Depreciação de Veiculos;5.7.01.011.006;14298.16
+Despesas com Imobilizado;25081;Depreciação de Móveis e Utensilios;5.7.01.011.005;3110.24
+Despesas com Imobilizado;25082;Depreciação Equipamentos de informatica;5.7.01.011.005;2780.09
+Despesas com Imobilizado;25091;DEPRECIAÇÃO FERRAMENTAL DE EXTRUSÃO;5.7.01.011.014;2417.02
+Despesas com Imobilizado;25080;Depreciação de Instalação;5.7.01.011.004;2247.67
+Despesas com Imobilizado;25086;Depreciação de Eqp eletronico;5.7.01.011.009;318.65
+Despesas com Imobilizado;25087;DEPRECIAÇÃO BENFEIT IMÓV TERC;5.7.01.011.010;263.18
+Despesas com Imobilizado;25084;Depreciação de Ferramentas e acessorios;5.7.01.011.007;56.97
+Despesas com Industrialização;25937;serviços de industrialização;5.3.01.003.030;446165.71
+Despesas com Exportação — Matriz;25070;Despesas com importação;5.7.01.017.028;36678.58
+Despesas com Exportação — Matriz;25938;Serviços de Terc de pessoa juridicca;5.3.01.003.031;19430.24
+Despesas com Exportação — Matriz;4014;Salários e Ordenados;5.7.01.001.001;4231.41
+Despesas com Exportação — Matriz;4020;INSS;5.7.01.001.007;1155.17
+Despesas com Exportação — Matriz;4028;Alimentos do Trabalhador;5.7.01.001.015;966.00
+Despesas com Exportação — Matriz;25057;PROVISÃO PARA FÉRIAS;5.7.01.001.029;519.00
+Despesas com Exportação — Matriz;25059;Provisão para 33ª;5.7.01.001.031;386.50
+Despesas com Exportação — Matriz;4021;FGTS;5.7.01.001.008;338.51
+Despesas com Exportação — Matriz;25058;ENCARGOS S/ PROVISÃO DE FERIAS;5.7.01.001.030;183.21
+Despesas com Exportação — Matriz;5799;Combustível do Trabalhador;5.7.03.001.001;179.00
+Despesas com Exportação — Matriz;25060;ENCARGOS S/ PROV. DE 13º SAL.;5.7.01.001.032;136.43
+Despesas com Exportação — Matriz;25061;Assistencia odontologica;5.7.01.001.033;39.96
+Despesas comercial SP;3524;Alugueis e Condomínios de Imóveis;5.3.03.009.001;10825.02
+Despesas comercial SP;4014;Salários e Ordenados;5.7.01.001.001;10255.33
+Despesas comercial SP;25938;Serviços de Terc de pessoa juridicca;5.3.01.003.031;2907.00
+Despesas comercial SP;4028;Alimentos do Trabalhador;5.7.01.001.015;2898.00
+Despesas comercial SP;4020;INSS;5.7.01.001.007;2748.43
+Despesas comercial SP;4253;Fretes e Carretos;5.7.01.017.014;1646.92
+Despesas comercial SP;3244;Materiais Auxiliares e de Consumo;5.3.03.003.003;1474.11
+Despesas comercial SP;25057;PROVISÃO PARA FÉRIAS;5.7.01.001.029;1292.02
+Despesas comercial SP;25059;Provisão para 33ª;5.7.01.001.031;968.20
+Despesas comercial SP;4021;FGTS;5.7.01.001.008;820.41
+Despesas comercial SP;5799;Combustível do Trabalhador;5.7.03.001.001;632.00
+Despesas comercial SP;25058;ENCARGOS S/ PROVISÃO DE FERIAS;5.7.01.001.030;449.63
+Despesas comercial SP;3494;Energia Elétrica;5.3.03.007.002;374.66
+Despesas comercial SP;4040;Treinamento;5.7.01.001.027;347.75
+Despesas comercial SP;25060;ENCARGOS S/ PROV. DE 13º SAL.;5.7.01.001.032;336.92
+Despesas comercial SP;25056;EXAMES ADMISSIONIAS;5.7.01.001.028;208.48
+Despesas comercial SP;4024;Seguros de Vida em Grupo;5.7.01.001.011;182.52
+Despesas comercial SP;3493;Água e Esgoto;5.3.03.007.001;163.96

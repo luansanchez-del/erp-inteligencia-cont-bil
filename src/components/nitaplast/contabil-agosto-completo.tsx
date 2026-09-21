@@ -1043,8 +1043,25 @@ const CONTAS_DECIDIDAS_POR_MOVIMENTO = new Set(["25070"]);
  *
  * Fica só em agosto de propósito: julho (fechado) e a tela de análise seguem a
  * regra por conta até haver decisão de reclassificar o comparativo.
+ *
+ * Achado em 21/09/2026 (reconciliação pedida pelo cliente): o mesmo padrão de
+ * mistura de CC dominante existe em outras contas de "Comerciais" e "Produção" —
+ * folha (salários, INSS, FGTS, provisões de férias/13º) lançada com CC 201
+ * (Comercial) misturado a CC 210/206/301/302/304 (outro comercial, Exportação,
+ * Administrativo), e materiais/energia lançados com CC 102 (Produção) misturado
+ * a CC 201 (Comercial) e outros CCs de produção (103/104/106/110/10014/10032/
+ * 19999). O CC dominante jogava a conta inteira numa categoria só, escondendo a
+ * parte minoritária real (ex.: conta 3244 tinha ~R$ 44,5 mil de CC Comercial
+ * dentro de "Despesas Produção"). Aprovado pelo cliente em 21/09/2026: decidir
+ * por movimento, igual 25070/25938. Não muda nenhum total, só a categoria de
+ * apresentação de cada lançamento.
  */
-const CONTAS_DECIDIDAS_POR_MOVIMENTO_AGOSTO = new Set([...CONTAS_DECIDIDAS_POR_MOVIMENTO, "25938"]);
+const CONTAS_DECIDIDAS_POR_MOVIMENTO_AGOSTO = new Set([
+  ...CONTAS_DECIDIDAS_POR_MOVIMENTO,
+  "25938",
+  "4253", "25064", "25061", "5799", "4028", "4014", "4020", "4021",
+  "25057", "25058", "25059", "25060", "3244", "3494", "4546",
+]);
 /**
  * Fallback para movimentos de `CONTAS_DECIDIDAS_POR_MOVIMENTO` que não têm CC
  * (ex.: rateio de crédito de PIS/COFINS sobre compras da 25070, lançado com
