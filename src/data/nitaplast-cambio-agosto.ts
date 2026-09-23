@@ -164,6 +164,54 @@ export const lancamentosVariacaoCambialGreatlandAgosto: LancamentoIntegrado[] = 
   fonte: "DUIMP 26BR0001376062-0 + DUIMP 26BR0001426125-2 + contratos de câmbio 583972479.pdf e 611879451.pdf",
 }];
 
+/**
+ * Achado em 24/09/2026, mesmo padrão do Greatland acima: as duas parcelas da
+ * NF 93361 da BASF (`vinculosCambioAgosto`) têm "Valor Doc" R$ 212.146,30
+ * cada (valor na Declaração de Importação, na taxa de registro da DI) contra
+ * "Vlr.Pgto" na taxa do contrato de câmbio contratado — R$ 209.305,00 (001,
+ * taxa 5,1050) e R$ 213.917,50 (002, taxa 5,2175). A parcela 001 liquidou
+ * por menos (ganho/variação ativa R$ 2.841,30); a 002 liquidou por mais
+ * (perda/variação passiva R$ 1.771,20). Fonte: "PAGAMENTOS EFETUADOS.pdf".
+ */
+export const lancamentosVariacaoCambialBasfAgosto: LancamentoIntegrado[] = [
+  {
+    id: "AGO-CAMBIO-BASF-VCA",
+    data: "10/08/2026",
+    origem: "VARIAÇÃO CAMBIAL — IMPORTAÇÃO BASF SE",
+    debitoCodigo: "25116",
+    debito: nome("25116"),
+    creditoCodigo: "25096",
+    credito: nome("25096"),
+    historico: "Variação cambial ativa — importação BASF SE (NF 93361/001)",
+    documento: "NF 93361/001 — contrato 621680690",
+    cc: "204",
+    centroCusto: "ADM DE VENDAS",
+    valor: 2_841.30,
+    status: "validado",
+    observacao: "Valor Doc na DI R$ 212.146,30 menos valor liquidado pelo contrato de câmbio (taxa 5,1050) R$ 209.305,00 = variação cambial ativa R$ 2.841,30.",
+    rastreio: "documento",
+    fonte: "PAGAMENTOS EFETUADOS.pdf + contrato de câmbio 621680690.pdf",
+  },
+  {
+    id: "AGO-CAMBIO-BASF-VCP",
+    data: "13/08/2026",
+    origem: "VARIAÇÃO CAMBIAL — IMPORTAÇÃO BASF SE",
+    debitoCodigo: "25109",
+    debito: nome("25109"),
+    creditoCodigo: "25116",
+    credito: nome("25116"),
+    historico: "Variação cambial passiva — importação BASF SE (NF 93361/002)",
+    documento: "NF 93361/002 — contrato 622836291",
+    cc: "204",
+    centroCusto: "ADM DE VENDAS",
+    valor: 1_771.20,
+    status: "validado",
+    observacao: "Valor Doc na DI R$ 212.146,30 menos valor liquidado pelo contrato de câmbio (taxa 5,2175) R$ 213.917,50 = variação cambial passiva R$ 1.771,20 (liquidou por mais que o valor da DI).",
+    rastreio: "documento",
+    fonte: "PAGAMENTOS EFETUADOS.pdf + contrato de câmbio 622836291.pdf",
+  },
+];
+
 export const resumoCambioAgosto = {
   contratos: 2,
   fornecedor: "BASF SE",
