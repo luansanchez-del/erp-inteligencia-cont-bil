@@ -11,6 +11,7 @@ import { lancamentosCambioAgosto, lancamentosCambioGreatlandAgosto, lancamentosT
 import { lancamentosDespesasDocumentaisAgosto } from "./nitaplast-despesas-documentais-agosto";
 import { lancamentosPagamentoHaustinAgosto } from "./nitaplast-pagamento-haustin-agosto";
 import { lancamentosCartaoCreditoAgosto } from "./nitaplast-cartao-credito-agosto";
+import { lancamentosCartaoJussaraRodrigoAgosto } from "./nitaplast-cartao-4005-jussara-rodrigo-agosto";
 import { idsSoftdibSubstituidosPeloQuestorAgosto, lancamentosServicosQuestorAgosto } from "./nitaplast-servicos-questor-agosto";
 import { lancamentosFolhaAgosto } from "./nitaplast-folha-agosto";
 import { lancamentosDespesasFilialAgosto } from "./nitaplast-despesas-filial-agosto";
@@ -102,6 +103,7 @@ export const lancamentosIntegradosAgosto: LancamentoIntegrado[] = [
   ...lancamentosDespesasDocumentaisAgosto.filter((l) => !idsSoftdibSubstituidosPeloQuestorAgosto.has(l.id)),
   ...lancamentosPagamentoHaustinAgosto,
   ...lancamentosCartaoCreditoAgosto,
+  ...lancamentosCartaoJussaraRodrigoAgosto,
   ...lancamentosServicosQuestorAgosto,
   ...lancamentosFolhaAgosto,
   ...lancamentosDespesasFilialAgosto,
