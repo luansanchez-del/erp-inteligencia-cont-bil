@@ -27,10 +27,15 @@ const nomeConta = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(cod
  *   Material de uso e consumo          → 4912
  *   Estorno "Despesas Facebook"        → 4085 (Publicidade), a crédito
  *
- * Jussara (CC 504) é Filial SP; Rodrigo (CC 201) é Matriz/Vendas — cada
- * grupo de linhas abaixo soma exatamente ao sub-total "CONFERIDO"/"OK" da
- * planilha por pessoa e por cartão (254,69 + 5.448,87 + 7.272,40 - 49,97 =
- * 12.925,99 para Rodrigo, nos três cartões dele: 0890-5132, 0965 e 2588).
+ * Cliente confirmou em 23/09/2026: TODAS as despesas de Jussara e Rodrigo
+ * (as duas pessoas, os três cartões do Rodrigo) são Despesas Comercial SP —
+ * o CC "201" que aparece na planilha do cartão é da própria planilha, não é
+ * o CC "201 = Vendas/Matriz" do plano de contas da Nitaplast. Por isso o cc
+ * usado abaixo é sempre 502 (Comercial SP), igual ao já usado no cartão
+ * 6202-6083. Cada grupo de linhas soma exatamente ao sub-total
+ * "CONFERIDO"/"OK" da planilha por pessoa e por cartão (254,69 + 5.448,87 +
+ * 7.272,40 - 49,97 = 12.925,99 para Rodrigo, nos três cartões dele:
+ * 0890-5132, 0965 e 2588).
  */
 const base = (parcial: Omit<LancamentoIntegrado, "status" | "rastreio" | "debito" | "credito">): LancamentoIntegrado => ({
   ...parcial,
@@ -53,12 +58,12 @@ export const lancamentosCartaoJussaraRodrigoAgosto: LancamentoIntegrado[] = [
   base({ id: "AGO-CARTAO-4005-JUSSARA-4115", data: DATA, origem: ORIGEM, debitoCodigo: "4115", creditoCodigo: "4859", historico: "Hospedagem — cartão Jussara Soares Lima", documento: "Cartão final 2463", cc: "504", centroCusto: "FILIAL SP", valor: 724.50, observacao: "Reclassificado de 4859.", fonte: FONTE }),
   base({ id: "AGO-CARTAO-4005-JUSSARA-4213", data: DATA, origem: ORIGEM, debitoCodigo: "4213", creditoCodigo: "4859", historico: "Combustíveis e Lubrificantes — cartão Jussara Soares Lima", documento: "Cartão final 2463", cc: "504", centroCusto: "FILIAL SP", valor: 286.92, observacao: "Reclassificado de 4859.", fonte: FONTE }),
 
-  // ===== RODRIGO A LIMA (cartões 0890-5132, 0965, 2588) — CC 201, Matriz/Vendas =====
-  base({ id: "AGO-CARTAO-4005-RODRIGO-4912", data: DATA, origem: ORIGEM, debitoCodigo: "4912", creditoCodigo: "4859", historico: "Material Uso e Consumo — cartões Rodrigo A Lima (0965 + 2588)", documento: "Cartões finais 0890-5132/0965/2588", cc: "201", centroCusto: "VENDAS", valor: 731.20, observacao: "Reclassificado de 4859.", fonte: FONTE }),
-  base({ id: "AGO-CARTAO-4005-RODRIGO-25066", data: DATA, origem: ORIGEM, debitoCodigo: "25066", creditoCodigo: "4859", historico: "Lanches e Refeições — cartões Rodrigo A Lima (0965 + 2588)", documento: "Cartões finais 0965/2588", cc: "201", centroCusto: "VENDAS", valor: 4_345.56, observacao: "Reclassificado de 4859.", fonte: FONTE }),
-  base({ id: "AGO-CARTAO-4005-RODRIGO-25063", data: DATA, origem: ORIGEM, debitoCodigo: "25063", creditoCodigo: "4859", historico: "Viagens e Representações (passagens aéreas, locação de veículo, estacionamento, táxi/uber) — cartões Rodrigo A Lima (0965 + 2588)", documento: "Cartões finais 0965/2588", cc: "201", centroCusto: "VENDAS", valor: 2_137.45, observacao: "Reclassificado de 4859.", fonte: FONTE }),
-  base({ id: "AGO-CARTAO-4005-RODRIGO-4115", data: DATA, origem: ORIGEM, debitoCodigo: "4115", creditoCodigo: "4859", historico: "Hospedagem — cartões Rodrigo A Lima (0890-5132 + 0965 + 2588)", documento: "Cartões finais 0890-5132/0965/2588", cc: "201", centroCusto: "VENDAS", valor: 3_229.59, observacao: "Reclassificado de 4859.", fonte: FONTE }),
-  base({ id: "AGO-CARTAO-4005-RODRIGO-4213", data: DATA, origem: ORIGEM, debitoCodigo: "4213", creditoCodigo: "4859", historico: "Combustíveis e Lubrificantes — cartões Rodrigo A Lima (0965 + 2588)", documento: "Cartões finais 0965/2588", cc: "201", centroCusto: "VENDAS", valor: 1_600.52, observacao: "Reclassificado de 4859.", fonte: FONTE }),
-  base({ id: "AGO-CARTAO-4005-RODRIGO-4215", data: DATA, origem: ORIGEM, debitoCodigo: "4215", creditoCodigo: "4859", historico: "Manutenção de Veículos (revisão BYD AOX-3J29) — cartão Rodrigo A Lima (2588)", documento: "Cartão final 2588", cc: "201", centroCusto: "VENDAS", valor: 931.64, observacao: "Reclassificado de 4859.", fonte: FONTE }),
-  base({ id: "AGO-CARTAO-4005-RODRIGO-ESTORNO-4085", data: DATA, origem: ORIGEM, debitoCodigo: "4859", creditoCodigo: "4085", historico: "Estorno de despesas Facebook — cartão Rodrigo A Lima (2588)", documento: "Cartão final 2588", cc: "201", centroCusto: "VENDAS", valor: 49.97, observacao: "Estorno de publicidade (Facebook Ads) identificado na fatura do cartão; reduz a relassificação líquida de Rodrigo para R$ 12.925,99.", fonte: FONTE }),
+  // ===== RODRIGO A LIMA (cartões 0890-5132, 0965, 2588) — Despesas Comercial SP =====
+  base({ id: "AGO-CARTAO-4005-RODRIGO-4912", data: DATA, origem: ORIGEM, debitoCodigo: "4912", creditoCodigo: "4859", historico: "Material Uso e Consumo — despesa comercial da Filial SP — cartão Rodrigo A Lima (0965 + 2588)", documento: "Cartões finais 0890-5132/0965/2588", cc: "502", centroCusto: "COMERCIAL SP", valor: 731.20, observacao: "Reclassificado de 4859. Cliente confirmou em 23/09/2026 que é Despesas Comercial SP.", fonte: FONTE }),
+  base({ id: "AGO-CARTAO-4005-RODRIGO-25066", data: DATA, origem: ORIGEM, debitoCodigo: "25066", creditoCodigo: "4859", historico: "Lanches e Refeições — despesa comercial da Filial SP — cartão Rodrigo A Lima (0965 + 2588)", documento: "Cartões finais 0965/2588", cc: "502", centroCusto: "COMERCIAL SP", valor: 4_345.56, observacao: "Reclassificado de 4859. Cliente confirmou em 23/09/2026 que é Despesas Comercial SP.", fonte: FONTE }),
+  base({ id: "AGO-CARTAO-4005-RODRIGO-25063", data: DATA, origem: ORIGEM, debitoCodigo: "25063", creditoCodigo: "4859", historico: "Viagens e Representações (passagens aéreas, locação de veículo, estacionamento, táxi/uber) — despesa comercial da Filial SP — cartão Rodrigo A Lima (0965 + 2588)", documento: "Cartões finais 0965/2588", cc: "502", centroCusto: "COMERCIAL SP", valor: 2_137.45, observacao: "Reclassificado de 4859. Cliente confirmou em 23/09/2026 que é Despesas Comercial SP.", fonte: FONTE }),
+  base({ id: "AGO-CARTAO-4005-RODRIGO-4115", data: DATA, origem: ORIGEM, debitoCodigo: "4115", creditoCodigo: "4859", historico: "Hospedagem — despesa comercial da Filial SP — cartão Rodrigo A Lima (0890-5132 + 0965 + 2588)", documento: "Cartões finais 0890-5132/0965/2588", cc: "502", centroCusto: "COMERCIAL SP", valor: 3_229.59, observacao: "Reclassificado de 4859. Cliente confirmou em 23/09/2026 que é Despesas Comercial SP.", fonte: FONTE }),
+  base({ id: "AGO-CARTAO-4005-RODRIGO-4213", data: DATA, origem: ORIGEM, debitoCodigo: "4213", creditoCodigo: "4859", historico: "Combustíveis e Lubrificantes — despesa comercial da Filial SP — cartão Rodrigo A Lima (0965 + 2588)", documento: "Cartões finais 0965/2588", cc: "502", centroCusto: "COMERCIAL SP", valor: 1_600.52, observacao: "Reclassificado de 4859. Cliente confirmou em 23/09/2026 que é Despesas Comercial SP.", fonte: FONTE }),
+  base({ id: "AGO-CARTAO-4005-RODRIGO-4215", data: DATA, origem: ORIGEM, debitoCodigo: "4215", creditoCodigo: "4859", historico: "Manutenção de Veículos (revisão BYD AOX-3J29) — despesa comercial da Filial SP — cartão Rodrigo A Lima (2588)", documento: "Cartão final 2588", cc: "502", centroCusto: "COMERCIAL SP", valor: 931.64, observacao: "Reclassificado de 4859. Cliente confirmou em 23/09/2026 que é Despesas Comercial SP.", fonte: FONTE }),
+  base({ id: "AGO-CARTAO-4005-RODRIGO-ESTORNO-4085", data: DATA, origem: ORIGEM, debitoCodigo: "4859", creditoCodigo: "4085", historico: "Estorno de despesas Facebook — despesa comercial da Filial SP — cartão Rodrigo A Lima (2588)", documento: "Cartão final 2588", cc: "502", centroCusto: "COMERCIAL SP", valor: 49.97, observacao: "Estorno de publicidade (Facebook Ads) identificado na fatura do cartão; reduz a reclassificação líquida de Rodrigo para R$ 12.925,99. Cliente confirmou em 23/09/2026 que é Despesas Comercial SP.", fonte: FONTE }),
 ];
