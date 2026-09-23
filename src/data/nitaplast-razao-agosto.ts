@@ -7,7 +7,7 @@ import {
 } from "./nitaplast-receitas-agosto";
 import { lancamentosIcmsStAgosto } from "./nitaplast-icms-st-agosto";
 import { lancamentosBradescoFundoAgosto, lancamentosBradescoInvestFacilAgosto } from "./nitaplast-aplicacoes-bradesco-agosto";
-import { lancamentosCambioAgosto, lancamentosCambioGreatlandAgosto, lancamentosTributosImportacaoGreatlandAgosto, lancamentosVariacaoCambialGreatlandAgosto } from "./nitaplast-cambio-agosto";
+import { lancamentosCambioAgosto, lancamentosCambioGreatlandAgosto, lancamentosTributosImportacaoGreatlandAgosto, lancamentosVariacaoCambialGreatlandAgosto, lancamentosVariacaoCambialBasfAgosto } from "./nitaplast-cambio-agosto";
 import { lancamentosDespesasDocumentaisAgosto } from "./nitaplast-despesas-documentais-agosto";
 import { lancamentosPagamentoHaustinAgosto } from "./nitaplast-pagamento-haustin-agosto";
 import { lancamentosCartaoCreditoAgosto } from "./nitaplast-cartao-credito-agosto";
@@ -97,6 +97,7 @@ export const lancamentosIntegradosAgosto: LancamentoIntegrado[] = [
   ...lancamentosCambioGreatlandAgosto,
   ...lancamentosTributosImportacaoGreatlandAgosto,
   ...lancamentosVariacaoCambialGreatlandAgosto,
+  ...lancamentosVariacaoCambialBasfAgosto,
   ...lancamentosReceitasAgosto,
   ...lancamentosDevolucoesVendasAgosto,
   ...lancamentosRecebimentosClientesAgosto,

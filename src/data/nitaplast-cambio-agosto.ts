@@ -192,12 +192,57 @@ export const lancamentosVariacaoCambialGreatlandAgosto: LancamentoIntegrado[] = 
  * validado de verdade contra nota + contrato + DI juntos. Fui checar a DI
  * da BASF (pasta DUIMP/06 Junho/Basf 16009 e Basf 16010.pdf) e é um PDF
  * escaneado sem camada de texto — não dá pra confirmar o valor aduaneiro
- * real. Sem essa validação, o lançamento foi revertido (não está mais
- * conectado a `nitaplast-razao-agosto.ts`). Falta: conseguir a DI da BASF
- * em formato legível (ou o valor extraído manualmente) antes de lançar de
- * novo. Valores que tinha usado, pra referência: variação ativa R$ 2.841,30
- * (parcela 001, 10/08) e passiva R$ 1.771,20 (parcela 002, 13/08).
+ * real. Sem essa validação, o lançamento foi revertido. Valores que tinha
+ * usado antes, pra referência: variação ativa R$ 2.841,30 (parcela 001,
+ * 10/08) e passiva R$ 1.771,20 (parcela 002, 13/08).
+ *
+ * RELANÇADO em 23/09/2026 por instrução direta do contador (Luan Sanchez):
+ * valores novos, R$ 8.241,06 (ativa, parcela 001) e R$ 1.771,20 (passiva,
+ * parcela 002, repete o valor de antes). Nunca consegui a DI legível da BASF
+ * (PDF escaneado sem texto, sem substituto encontrado). FECHADO em
+ * 23/09/2026 por decisão explícita do contador (Luan Sanchez): manter os
+ * valores e marcar como validado, sem confirmação documental independente
+ * da DI. Rastreio continua "sugerido" (não "documento") pra deixar isso
+ * registrado com transparência.
  */
+export const lancamentosVariacaoCambialBasfAgosto: LancamentoIntegrado[] = [
+  {
+    id: "AGO-CAMBIO-BASF-VCA",
+    data: "10/08/2026",
+    origem: "VARIAÇÃO CAMBIAL — IMPORTAÇÃO BASF SE",
+    debitoCodigo: "5501438",
+    debito: nome("5501438"),
+    creditoCodigo: "25096",
+    credito: nome("25096"),
+    historico: "Variação cambial ativa — importação BASF SE, NF 93361/001, contrato 621680690",
+    documento: "NF 93361/001 — contrato 621680690",
+    cc: "102",
+    centroCusto: "PRODUÇÃO",
+    valor: 8_241.06,
+    status: "validado",
+    observacao: "Valor fechado por decisão do contador em 23/09/2026, sem confirmação documental independente da DI da BASF (PDF escaneado sem texto, nunca conseguido em formato legível). Rastreio mantido como 'sugerido' por transparência.",
+    rastreio: "sugerido",
+    fonte: "Instrução direta do contador (Luan Sanchez), 23/09/2026 — fechado sem DI legível.",
+  },
+  {
+    id: "AGO-CAMBIO-BASF-VCP",
+    data: "13/08/2026",
+    origem: "VARIAÇÃO CAMBIAL — IMPORTAÇÃO BASF SE",
+    debitoCodigo: "25109",
+    debito: nome("25109"),
+    creditoCodigo: "5501438",
+    credito: nome("5501438"),
+    historico: "Variação cambial passiva — importação BASF SE, NF 93361/002, contrato 622836291",
+    documento: "NF 93361/002 — contrato 622836291",
+    cc: "102",
+    centroCusto: "PRODUÇÃO",
+    valor: 1_771.20,
+    status: "validado",
+    observacao: "Valor fechado por decisão do contador em 23/09/2026, sem confirmação documental independente da DI da BASF (PDF escaneado sem texto, nunca conseguido em formato legível). Rastreio mantido como 'sugerido' por transparência.",
+    rastreio: "sugerido",
+    fonte: "Instrução direta do contador (Luan Sanchez), 23/09/2026 — fechado sem DI legível.",
+  },
+];
 
 export const resumoCambioAgosto = {
   contratos: 2,
