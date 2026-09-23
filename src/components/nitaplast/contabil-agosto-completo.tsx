@@ -1359,6 +1359,15 @@ export function DreAgostoPadrao() {
       nivel: 1,
       pai: "financeiro",
     },
+    // Achado em 24/09/2026: cliente pediu pra Juros, Variações Cambiais,
+    // Despesas Bancárias e Descontos aparecerem como linha própria, não só
+    // dentro do total agregado "Despesas Financeiras" — já estavam somados
+    // corretamente no total, só não apareciam abertos conta a conta.
+    ...financeiras.flatMap((c) => {
+      const v = mov(c);
+      if (Math.abs(v) < 0.004) return [];
+      return [{ id: `fin-d-${c}`, descricao: `${c} - ${descricaoPorContaCompleta.get(c) ?? "Conta não encontrada no plano"}`, valor: v, nivel: 2 as const, pai: "fin-d" }];
+    }),
     {
       id: "fin-r",
       descricao: "(-) Receitas Financeiras",
@@ -1366,6 +1375,11 @@ export function DreAgostoPadrao() {
       nivel: 1,
       pai: "financeiro",
     },
+    ...[...contasReceitasFinanceirasAgosto].flatMap((c) => {
+      const v = credito(c);
+      if (Math.abs(v) < 0.004) return [];
+      return [{ id: `fin-r-${c}`, descricao: `${c} - ${descricaoPorContaCompleta.get(c) ?? "Conta não encontrada no plano"}`, valor: v, nivel: 2 as const, pai: "fin-r" }];
+    }),
     {
       id: "operacional",
       descricao: "(=) Resultado Operacional",
