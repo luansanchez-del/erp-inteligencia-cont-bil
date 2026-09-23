@@ -165,52 +165,19 @@ export const lancamentosVariacaoCambialGreatlandAgosto: LancamentoIntegrado[] = 
 }];
 
 /**
- * Achado em 24/09/2026, mesmo padrão do Greatland acima: as duas parcelas da
- * NF 93361 da BASF (`vinculosCambioAgosto`) têm "Valor Doc" R$ 212.146,30
- * cada (valor na Declaração de Importação, na taxa de registro da DI) contra
- * "Vlr.Pgto" na taxa do contrato de câmbio contratado — R$ 209.305,00 (001,
- * taxa 5,1050) e R$ 213.917,50 (002, taxa 5,2175). A parcela 001 liquidou
- * por menos (ganho/variação ativa R$ 2.841,30); a 002 liquidou por mais
- * (perda/variação passiva R$ 1.771,20). Fonte: "PAGAMENTOS EFETUADOS.pdf".
+ * TENTATIVA REVERTIDA em 24/09/2026. Cheguei a lançar variação cambial da
+ * BASF usando o "Valor Doc" de "PAGAMENTOS EFETUADOS.pdf" (R$ 212.146,30 em
+ * cada parcela da NF 93361) como se fosse o valor da DI na taxa de registro
+ * — igual ao padrão usado pra Greatland. Cliente apontou que isso não foi
+ * validado de verdade contra nota + contrato + DI juntos. Fui checar a DI
+ * da BASF (pasta DUIMP/06 Junho/Basf 16009 e Basf 16010.pdf) e é um PDF
+ * escaneado sem camada de texto — não dá pra confirmar o valor aduaneiro
+ * real. Sem essa validação, o lançamento foi revertido (não está mais
+ * conectado a `nitaplast-razao-agosto.ts`). Falta: conseguir a DI da BASF
+ * em formato legível (ou o valor extraído manualmente) antes de lançar de
+ * novo. Valores que tinha usado, pra referência: variação ativa R$ 2.841,30
+ * (parcela 001, 10/08) e passiva R$ 1.771,20 (parcela 002, 13/08).
  */
-export const lancamentosVariacaoCambialBasfAgosto: LancamentoIntegrado[] = [
-  {
-    id: "AGO-CAMBIO-BASF-VCA",
-    data: "10/08/2026",
-    origem: "VARIAÇÃO CAMBIAL — IMPORTAÇÃO BASF SE",
-    debitoCodigo: "25116",
-    debito: nome("25116"),
-    creditoCodigo: "25096",
-    credito: nome("25096"),
-    historico: "Variação cambial ativa — importação BASF SE (NF 93361/001)",
-    documento: "NF 93361/001 — contrato 621680690",
-    cc: "204",
-    centroCusto: "ADM DE VENDAS",
-    valor: 2_841.30,
-    status: "validado",
-    observacao: "Valor Doc na DI R$ 212.146,30 menos valor liquidado pelo contrato de câmbio (taxa 5,1050) R$ 209.305,00 = variação cambial ativa R$ 2.841,30.",
-    rastreio: "documento",
-    fonte: "PAGAMENTOS EFETUADOS.pdf + contrato de câmbio 621680690.pdf",
-  },
-  {
-    id: "AGO-CAMBIO-BASF-VCP",
-    data: "13/08/2026",
-    origem: "VARIAÇÃO CAMBIAL — IMPORTAÇÃO BASF SE",
-    debitoCodigo: "25109",
-    debito: nome("25109"),
-    creditoCodigo: "25116",
-    credito: nome("25116"),
-    historico: "Variação cambial passiva — importação BASF SE (NF 93361/002)",
-    documento: "NF 93361/002 — contrato 622836291",
-    cc: "204",
-    centroCusto: "ADM DE VENDAS",
-    valor: 1_771.20,
-    status: "validado",
-    observacao: "Valor Doc na DI R$ 212.146,30 menos valor liquidado pelo contrato de câmbio (taxa 5,2175) R$ 213.917,50 = variação cambial passiva R$ 1.771,20 (liquidou por mais que o valor da DI).",
-    rastreio: "documento",
-    fonte: "PAGAMENTOS EFETUADOS.pdf + contrato de câmbio 622836291.pdf",
-  },
-];
 
 export const resumoCambioAgosto = {
   contratos: 2,
