@@ -7,6 +7,12 @@ export const grupos: GrupoEmpresa[] = [
     responsavel: "Luan Sanchez",
     empresasIds: ["nitaplast-matriz", "nitaplast-sp"],
   },
+  {
+    id: "g-furktech",
+    nome: "FURK TECH",
+    responsavel: "Luan Sanchez",
+    empresasIds: ["furktech"],
+  },
 ];
 
 export const empresas: Empresa[] = [
@@ -39,6 +45,20 @@ export const empresas: Empresa[] = [
     responsavelContabil: { nome: "GILSON STRECHAR", registro: "CRC 036601/O-4", cpf: "859.770.809-30" },
     regimeConfirmado: false,
     grupoId: "g-nitaplast",
+    ativa: true,
+  },
+  {
+    id: "furktech",
+    codigo: "0362",
+    razaoSocial: "FURK TECH LTDA",
+    nomeFantasia: "FURK TECH",
+    cnpj: "51.969.246/0001-07",
+    municipio: "Pinhais",
+    uf: "PR",
+    atividade: "Serviços (tecnologia / gestão de viagens corporativas)",
+    tipo: "matriz",
+    regimeConfirmado: false,
+    grupoId: "g-furktech",
     ativa: true,
   },
   {
