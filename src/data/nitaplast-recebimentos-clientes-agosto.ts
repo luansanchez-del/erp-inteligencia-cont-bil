@@ -29,11 +29,14 @@ const nome = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(codigo) 
  *   (R$ 1.010,10) de Duplicatas a Receber para Juros Ativos (25095), seguindo
  *   o mesmo padrão já usado em junho/2026 (`nitaplast-juros-ativos-junho.ts`:
  *   D 25111 / C 25095). Não mexe no banco, só reclassifica dentro do Razão.
- * - NÃO desmembra o desconto concedido (R$ 140.063,90) em despesa financeira
- *   — ainda não há, em nenhum fechamento real anterior (nem junho), conta do
- *   plano confirmada para desconto concedido a clientes. Lançar isso exigiria
- *   inventar código de conta, o que a regra do projeto proíbe. Fica como
- *   pendência, com o valor cheio provisoriamente batendo contra 25111.
+ * - NÃO desmembra o desconto concedido (R$ 140.063,90) em despesa financeira.
+ *   TENTATIVA REVERTIDA em 23/09/2026: cheguei a lançar contra a conta 25106
+ *   (que existe no plano), mas o cliente esclareceu que esse "Desc" do
+ *   relatório Títulos Liquidados é um desconto INTERNO do Softdib (uma
+ *   mecânica de baixa do sistema comercial, não um desconto financeiro real
+ *   concedido ao cliente) — não deve virar despesa financeira no Razão.
+ *   Revertido; o valor cheio volta a bater provisoriamente contra 25111,
+ *   igual estava antes.
  * - Há uma diferença residual de ~R$ 5.500 entre o total líquido recebido e o
  *   que a fórmula (duplicata - saldo aberto + juros - desconto) indicaria —
  *   corresponde a um pequeno número de títulos com Vlr.Rec "0,00" no

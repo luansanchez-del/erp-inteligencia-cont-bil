@@ -48,6 +48,26 @@ export const lancamentosCambioAgosto: LancamentoIntegrado[] = vinculosCambioAgos
  * documento/valor da NF 94251 ainda não foi localizado no sistema, então a
  * baixa completa na 25116 continua pendente até esse documento chegar. Não
  * reconciliar por estimativa: evitar valor sem origem identificável.
+ *
+ * Achado em 23/09/2026, lendo as duas DUIMPs originais (pasta "C:\082026\
+ * CONTRATOS DE CAMBIO 082026"): DUIMP 26BR0001376062-0 (NF 94222) tem VALOR
+ * FOB MOEDA USD 58.314,59 (valor aduaneiro R$ 321.215,41, taxa 5,1859) e
+ * frete prepaid USD 3.625,56. DUIMP 26BR0001426125-2 (NF 94251) tem VALOR
+ * FOB MOEDA USD 12.712,84 (valor aduaneiro R$ 69.885,55, taxa 5,2236) e
+ * frete prepaid USD 665,97. Soma dos FOB das duas DI: USD 71.027,43 — bate
+ * exatamente com o valor que o cliente citou como "USD das duas DI juntas".
+ * O contrato 611879451 sozinho (USD 55.863,94) cobre só parte disso, deixando
+ * USD 15.163,49 aparentemente sem câmbio — mas o contrato 583972479 (USD
+ * 19.455,03, 08/04/2026, o mais antigo, provável adiantamento anterior ao
+ * embarque de 21/06/2026) COBRE essa diferença: os dois contratos somados
+ * (USD 75.318,97) batem com FOB + frete prepaid das duas DI juntas (USD
+ * 71.027,43 + 3.625,56 + 665,97 = USD 75.318,96, diferença de 1 centavo por
+ * arredondamento). Ou seja, não falta contrato de câmbio nenhum — os dois já
+ * lançados cobrem o processo inteiro (mercadoria + frete). O NF 94222 (R$
+ * 454.046,67) é o valor da nota fiscal brasileira de entrada (mercadoria +
+ * impostos domésticos + margem), não o valor aduaneiro da DI isolada (R$
+ * 321.215,41) nem uma soma simples das duas DI — por isso não batia com
+ * nenhum dos dois à primeira vista.
  */
 export const vinculosCambioGreatlandAgosto = [
   { contrato: "583972479", data: "08/04/2026", usd: 19_455.03, taxa: 5.045, reais: 98_150.63 },

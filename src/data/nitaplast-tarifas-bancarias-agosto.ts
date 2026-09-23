@@ -15,11 +15,22 @@ const nomeConta = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(cod
  * de R$ 25,00, mais 1 tarifa do BB) em vez de lançar nota a nota — mesmo
  * padrão já usado noutras varreduras deste mês.
  *
- * Variações Cambiais Passivas (25109), Juros Passivo (25103) e Desconto
- * Concedido (25106) — as outras pendências do cliente — NÃO aparecem em
- * nenhum extrato disponível (Bradesco, Itaú, BB; Unipreme não tem camada de
- * texto legível). Ficam como pendência real sem lançamento, documentada
- * aqui, até aparecer fonte.
+ * Variações Cambiais Passivas (25109), Juros Passivo (25103) e Descontos
+ * Obtidos (4927) — outras pendências do cliente — NÃO aparecem em nenhum
+ * extrato disponível (Bradesco, Itaú, BB; Unipreme não tem camada de texto
+ * legível), nem na coluna "Acr/Desc" das duas relações de pagamentos
+ * efetuados varridas em 23/09/2026 (RELAÇÃO DE PAGAMENTOS EFETUADOS
+ * 082026.pdf e PAGAMENTOS EFETUADOS.pdf, todos os meses) — os únicos valores
+ * não-zero nessa coluna em agosto são acerto de câmbio de importação
+ * (BASF/Greatland, já lançados) e arredondamento de centavos (TICONA,
+ * imaterial). Ficam como pendência real sem lançamento, documentada aqui,
+ * até aparecer fonte.
+ *
+ * Desconto Concedido (25106, campo "Desc" de Títulos Liquidados, R$
+ * 140.063,90): tentativa de lançar revertida em 23/09/2026 — cliente
+ * esclareceu que é desconto interno do Softdib (mecânica do sistema
+ * comercial), não desconto financeiro real. Ver
+ * `nitaplast-recebimentos-clientes-agosto.ts`.
  */
 const base = (parcial: Omit<LancamentoIntegrado, "status" | "rastreio" | "debito" | "credito">): LancamentoIntegrado => ({
   ...parcial,
