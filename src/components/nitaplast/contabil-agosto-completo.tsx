@@ -954,11 +954,15 @@ const ccAdministrativasAgosto = new Set(["301", "302", "303", "304", "305", "306
 // certa, mesmo sendo produção/comercial de verdade (ex.: folha e serviços
 // alocados ao CC 206, fretes ao CC 109). Não muda nenhum total, só a
 // categoria de apresentação.
-const ccComerciaisAgosto = new Set(["201", "203", "204", "205", "209", "210"]);
-/** CC 206 = Exportação — categoria própria, igual ao layout de referência do contador (separa de "Despesas Comerciais" genéricas). */
-const ccExportacaoAgosto = new Set(["206"]);
+// CC 206 (Exportação) — achado em 24/09/2026: cliente confirmou que Despesas
+// com Exportação É Despesas Comerciais, não uma categoria própria (correção
+// da decisão anterior, que a separava "igual ao layout de referência do
+// contador"). Volta a integrar ccComerciaisAgosto.
+const ccComerciaisAgosto = new Set(["201", "203", "204", "205", "206", "209", "210"]);
 const ccProducaoAgosto = new Set(["101", "102", "103", "104", "106", "107", "108", "109", "110", "111", "10014", "10032", "19999"]);
 const ccFilialAgosto = new Set(["501", "502", "503", "504", "505"]);
+/** CC 600 = Barracão — categoria própria, achado em 24/09/2026 a partir do layout de referência do contador. */
+const ccBarracaoAgosto = new Set(["600"]);
 type ItemDespesaAgosto = { conta: string; descricao: string; classificacao: string; valor: number };
 /** Nomes e ordem seguem o layout de referência do contador (DRE Nitaplast). */
 export const categoriasDespesasAgostoDefs: [string, string][] = [
@@ -967,9 +971,10 @@ export const categoriasDespesasAgostoDefs: [string, string][] = [
   ["comerciais", "Despesas Comerciais"],
   ["producao", "Despesas Produção"],
   ["veiculos", "Despesas Veiculos"],
+  ["barracao", "Despesas Barracão"],
   ["depreciacao", "Despesas com Imobilizado"],
   ["industrializacao", "Despesas com Industrialização"],
-  ["exportacao", "Despesas com Exportação — Matriz"],
+  ["tributarias", "Despesas Tributárias"],
   ["filial", "Despesas comercial SP"],
   ["outras", "Outras despesas operacionais sem classificação gerencial"],
 ];
@@ -989,7 +994,7 @@ function ehNplog(l: Pick<LinhaMovimentoAnalise, "debitoCodigo" | "historico">) {
 /** Decide a categoria só pelo CC, sem olhar a conta — usada tanto pela conta-dominante quanto por movimento (Filial e 25070). */
 const categoriaPorCC = (cc: string): string => {
   if (ccFilialAgosto.has(cc)) return "filial";
-  if (ccExportacaoAgosto.has(cc)) return "exportacao";
+  if (ccBarracaoAgosto.has(cc)) return "barracao";
   if (ccAdministrativasAgosto.has(cc)) return "administrativas";
   if (ccComerciaisAgosto.has(cc)) return "comerciais";
   if (ccProducaoAgosto.has(cc)) return "producao";
@@ -1001,6 +1006,7 @@ const categoriaDaConta = (conta: string, cc: string): string => {
   if (conta === "25937") return "industrializacao";
   if (classificacao.startsWith("5.7.01.011")) return "depreciacao";
   if (classificacao.startsWith("5.7.01.015") || classificacao.startsWith("5.7.05")) return "veiculos";
+  if (classificacao.startsWith("5.7.09")) return "tributarias";
   return categoriaPorCC(cc);
 };
 /**
