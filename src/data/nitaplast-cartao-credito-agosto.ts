@@ -10,16 +10,19 @@ const nomeConta = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(cod
  * classificação 1501012 Cartões de Crédito) e confirmado no extrato real do
  * Itaú (linhas "BUSINESS 4005-0722" e "BUSINESS 6202-6083").
  *
- * Cartão final 6202-6083 é de uso da Filial Comercial SP, e o cliente
- * confirmou em 23/09/2026 que TUDO na fatura dele é despesa comercial —
- * sem abrir nota a nota. Lançado na conta já existente 25938 (Serviços de
- * Terceiros PJ), o catch-all já usado pra despesa sem detalhe em todas as
- * áreas (Administrativas, Comerciais, Produção, Filial) — decisão do cliente
- * em 23/09/2026 de não criar conta nova. O CC 502 (Comercial SP) é quem
- * garante que isso entra na categoria "Despesas comercial SP" do DRE, não a
- * conta em si. Cartão final 4005-0722 ainda está sendo investigado (o que
- * ele paga não foi confirmado) e continua na conta transitória (4859) até
- * isso ficar claro.
+ * Cartão final 6202-6083: em 23/09/2026 o cliente pediu pra remover a
+ * classificação comercial que tinha sido dada de forma verbal, sem
+ * documento — essa fatura não aparece em "DESPESAS CARTÃO CRÉDITO.xlsx"
+ * (nem na aba JULHO 26, nem na AGOSTO 26); só o cartão 4005-0722 tem
+ * detalhamento nesse arquivo (ver `nitaplast-cartao-4005-jussara-rodrigo-
+ * agosto.ts`). Volta pra conta transitória (4859) até aparecer um
+ * documento real (fatura detalhada ou outra planilha) que comprove o que
+ * essa fatura paga.
+ *
+ * Cartão final 4005-0722 também segue na transitória — só as porções de
+ * Jussara e Rodrigo já saíram de lá, documentadas na planilha (ver arquivo
+ * citado acima). O restante dos portadores desse cartão ainda não foi
+ * reclassificado.
  *
  * Mesmo tratamento (débito 4859) já tinha sido dado à fatura de junho antes
  * de existir conta própria (ver `nitaplast-movimento-financeiro.ts`, evento
@@ -55,18 +58,18 @@ export const lancamentosCartaoCreditoAgosto: LancamentoIntegrado[] = [
     id: "AGO-CARTAO-ITAU-6202",
     data: "03/08/2026",
     origem: "PAGAMENTOS EFETUADOS 08/2026",
-    debitoCodigo: "25938",
-    debito: nomeConta("25938"),
+    debitoCodigo: "4859",
+    debito: nomeConta("4859"),
     creditoCodigo: "11",
     credito: nomeConta("11"),
-    historico: "Fatura cartão corporativo Itaú Business final 6202-6083 — despesa comercial da Filial SP — 08/2026",
+    historico: "Fatura cartão corporativo Itaú Business final 6202-6083 — 08/2026",
     documento: "F22542 — Título 3082026/002",
-    cc: "502",
-    centroCusto: "COMERCIAL SP",
+    cc: "0",
+    centroCusto: "SEM CENTRO DE CUSTO",
     valor: 18_497.38,
-    status: "validado",
-    observacao: "Cliente confirmou em 23/09/2026 que este cartão (final 6202-6083) é de uso da Filial Comercial SP e que toda a fatura é despesa comercial — não será aberta nota a nota. Lançado em 25938 (Serviços de Terceiros PJ, conta já existente, sem criar conta nova); histórico e CC (502) garantem que o motor de estabelecimento reconheça Filial SP corretamente e que o DRE categorize como Despesas comercial SP.",
+    status: "revisar",
+    observacao: "Débito automático em conta transitória (4859) por falta de conta própria de cartão de crédito no plano de contas e por não haver fonte documental (não consta em \"DESPESAS CARTÃO CRÉDITO.xlsx\"). Precisa de documento (fatura detalhada ou planilha) pra sair da transitória.",
     rastreio: "documento",
-    fonte: "PAGAMENTOS EFETUADOS.pdf + extrato Itaú 08/2026 (linha \"BUSINESS 6202-6083\") + confirmação do cliente",
+    fonte: "PAGAMENTOS EFETUADOS.pdf + extrato Itaú 08/2026 (linha \"BUSINESS 6202-6083\")",
   },
 ];
