@@ -154,6 +154,21 @@ export const idsSoftdibSubstituidosPeloQuestorAgosto: ReadonlySet<string> = new 
   "AGO-ENT-DOC-0475", "AGO-ENT-DOC-0476", "AGO-ENT-DOC-0483",
 ]);
 
+/**
+ * Correção em 23/09/2026: as notas da UNIMED (gerencial 12.03.002, plano de
+ * saúde) estavam caindo, junto com todo o resto, na conta genérica 25938
+ * (Serviços de Terceiros Operacional) — mesmo já tendo natureza conhecida
+ * ("Assistência Médica e Social"). Isso vinha do tratamento original do
+ * Softdib (nitaplast-despesas-documentais-agosto.ts, IDs AGO-ENT-DOC-0103 a
+ * 0108, hoje substituídos por estes), que já classificava por natureza
+ * (3203 para CC de produção, 4023 para CC comercial/administrativo). A regra
+ * abaixo restaura essa classificação por natureza para as notas de plano de
+ * saúde, usando o mesmo critério por CC; CC "0" (rateio residual do Softdib,
+ * sem centro específico) cai em 4023 por ser overhead administrativo.
+ */
+const CCS_PRODUCAO = new Set(["101", "102", "103", "104", "105", "106", "107", "108", "109", "110", "111"]);
+const contaDespesaPlanoSaude = (cc: string): string => (CCS_PRODUCAO.has(cc) ? "3203" : "4023");
+
 const observacaoPorStatus = (s: ServicoQuestor): string => {
   switch (s.statusCc) {
     case "confirmado":
@@ -171,21 +186,27 @@ const observacaoPorStatus = (s: ServicoQuestor): string => {
   }
 };
 
-export const lancamentosServicosQuestorAgosto: LancamentoIntegrado[] = servicosQuestorAgosto.map((s) => ({
-  id: s.id,
-  data: s.data,
-  origem: "QUESTOR ENTRADAS 08/2026 (ATUALIZADO)",
-  debitoCodigo: CONTA_SERVICOS,
-  debito: nome(CONTA_SERVICOS),
-  creditoCodigo: CONTA_FORNECEDORES,
-  credito: nome(CONTA_FORNECEDORES),
-  historico: `SERVIÇOS DE TERCEIROS OPERACIONAL - ${s.fornecedor}`,
-  documento: `Documento Questor ${s.documentoQuestor}${s.nop ? ` / NOP ${s.nop}` : ""}${s.gerencial ? ` / gerencial ${s.gerencial}` : ""}`,
-  cc: s.cc,
-  centroCusto: s.centroCusto,
-  valor: s.valor,
-  status: "revisar",
-  observacao: observacaoPorStatus(s),
-  rastreio: "documento",
-  fonte: "Questor_Exportacao - entradas (atualizado).xlsx + RELATATORIO DETALHADO ENTRADAS POR CENTRO DE CUSTO - SOFTDIB 082026.csv",
-}));
+export const lancamentosServicosQuestorAgosto: LancamentoIntegrado[] = servicosQuestorAgosto.map((s) => {
+  const ehPlanoDeSaude = s.gerencial === "12.03.002";
+  const debitoCodigo = ehPlanoDeSaude ? contaDespesaPlanoSaude(s.cc) : CONTA_SERVICOS;
+  return {
+    id: s.id,
+    data: s.data,
+    origem: "QUESTOR ENTRADAS 08/2026 (ATUALIZADO)",
+    debitoCodigo,
+    debito: nome(debitoCodigo),
+    creditoCodigo: CONTA_FORNECEDORES,
+    credito: nome(CONTA_FORNECEDORES),
+    historico: ehPlanoDeSaude ? `ASSISTÊNCIA MÉDICA (PLANO DE SAÚDE) - ${s.fornecedor}` : `SERVIÇOS DE TERCEIROS OPERACIONAL - ${s.fornecedor}`,
+    documento: `Documento Questor ${s.documentoQuestor}${s.nop ? ` / NOP ${s.nop}` : ""}${s.gerencial ? ` / gerencial ${s.gerencial}` : ""}`,
+    cc: s.cc,
+    centroCusto: s.centroCusto,
+    valor: s.valor,
+    status: "revisar",
+    observacao: ehPlanoDeSaude
+      ? `${observacaoPorStatus(s)} Corrigido em 23/09/2026: classificado por natureza (Assistência Médica e Social) em vez da conta genérica de Serviços de Terceiros, restaurando o critério já usado antes da substituição pelo Questor (CC de produção → 3203, demais → 4023).`
+      : observacaoPorStatus(s),
+    rastreio: "documento",
+    fonte: "Questor_Exportacao - entradas (atualizado).xlsx + RELATATORIO DETALHADO ENTRADAS POR CENTRO DE CUSTO - SOFTDIB 082026.csv",
+  };
+});
