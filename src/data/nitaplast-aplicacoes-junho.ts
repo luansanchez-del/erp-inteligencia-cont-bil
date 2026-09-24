@@ -289,4 +289,46 @@ export const ajustesAplicacoesJunho: LancamentoIntegrado[] = [
     rastreio: "documento",
     fonte: "Green Junho.pdf + Razão por Centro de Custos 05/2026, conta 67611/25110",
   },
+
+  // Bradesco 6349 / Invest Fácil (CDB, correntista Marcos Victor Siedel) — achado
+  // em 23/09/2026 ao investigar por que a conta 62 não fechava contra o extrato
+  // real de agosto. Existe uma SEGUNDA aplicação Invest Fácil, na conta corrente
+  // 6349/3035-0 (diferente da 895/27418-6 já reconciliada acima), que nunca foi
+  // lançada — nem na implantação de maio, nem em junho — apesar do dinheiro ser
+  // real e comprovado: o próprio extrato mensal da conta corrente Bradesco
+  // ("BRADESCO - NITA.pdf", pasta 06 - JUNHO - 2026) traz uma seção "Saldos
+  // Invest Fácil" mostrando o saldo dia a dia, fechando em 30/06/2026 em
+  // R$ 285.385,82 (bruto) — batendo exato com o extrato específico da aplicação
+  // ("Bradesco Invest fácil.pdf", pasta 7 Julho 2026, mesmo total na linha
+  // "Saldo anterior em 30/06/2026"). Confirmado também que a conta corrente 9
+  // (Banco Bradesco 6349) já fecha certo em junho (R$ 286.604,52 no Razão contra
+  // R$ 286.600,88 do extrato, diferença de R$ 3,64 imaterial) — ou seja, esse
+  // saldo JÁ está embutido no banco, porque a varredura automática do Invest
+  // Fácil não aparece como lançamento visível no extrato de movimentação, só
+  // nessa seção-resumo separada.
+  //
+  // Por isso este NÃO é um lançamento de receita: é uma RECLASSIFICAÇÃO dentro
+  // do Ativo Circulante, tirando de "Banco" (conta 9) e reconhecendo em
+  // "Aplicações Financeiras" (conta 62) o valor que já estava lá, sem alterar o
+  // total do ativo nem passar pela DRE. Por instrução do contador (Luan
+  // Sanchez, 23/09/2026), confirmada a validação cruzada entre os dois extratos
+  // do banco antes de lançar.
+  {
+    id: "APL-BRAD6349-RECLASS-001",
+    data: "30/06/2026",
+    origem: "RECLASSIFICAÇÃO — APLICAÇÃO INVEST FÁCIL BRADESCO 6349",
+    debitoCodigo: "62",
+    debito: nomeConta("62"),
+    creditoCodigo: "9",
+    credito: nomeConta("9"),
+    historico: "Reclassificação de disponibilidades — saldo aplicado no Invest Fácil (CDB) da conta 6349/3035-0 em 30/06/2026, nunca antes reconhecido",
+    documento: "BRADESCO - NITA.pdf (extrato conta corrente, seção 'Saldos Invest Fácil') × Bradesco Invest fácil.pdf (extrato de investimentos)",
+    cc: "0",
+    centroCusto: "SEM CENTRO DE CUSTO",
+    valor: 285_379.60,
+    status: "validado",
+    observacao: "Não é receita nova: o dinheiro já estava no banco (conta 9 já fecha certo em junho, R$ 286.604,52 no sistema contra R$ 286.600,88 real). Reclassifica de Banco para Aplicações Financeiras o valor líquido que o próprio extrato Bradesco confirma, em duas fontes independentes e batendo entre si, estar aplicado no Invest Fácil em 30/06/2026. Sem efeito na DRE.",
+    rastreio: "documento",
+    fonte: "BRADESCO - NITA.pdf (06/2026) + Bradesco Invest fácil.pdf (07/2026) — instrução do contador em 23/09/2026.",
+  },
 ];
