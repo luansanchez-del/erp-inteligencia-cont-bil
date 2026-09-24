@@ -74,47 +74,40 @@ export const vinculosCambioGreatlandAgosto = [
   { contrato: "611879451", data: "10/07/2026", usd: 55_863.94, taxa: 5.1473390, reais: 287_550.64 },
 ] as const;
 
-export const lancamentosCambioGreatlandAgosto: LancamentoIntegrado[] = vinculosCambioGreatlandAgosto.map((vinculo) => ({
-  id: `AGO-CAMBIO-GREATLAND-${vinculo.contrato}`,
-  data: "01/08/2026",
-  origem: "CONTRATO DE CÂMBIO IMPORTAÇÃO — GREATLAND VALVE",
-  debitoCodigo: "25116",
-  debito: nome("25116"),
-  creditoCodigo: "9",
-  credito: nome("9"),
-  historico: "Adiantamento de importação Greatland Valve — pago antes da emissão das NFs 94222/94251",
-  documento: `Contrato de câmbio ${vinculo.contrato}, pago em ${vinculo.data}`,
-  cc: "209",
-  centroCusto: "IMPORTAÇÃO",
-  valor: vinculo.reais,
-  status: "revisar",
-  observacao: `Pagamento antecipado (adiantamento), não baixa de título: USD ${vinculo.usd.toFixed(2)}, taxa ${vinculo.taxa.toFixed(4)}, debitado do Bradesco 6349/3035-0 em ${vinculo.data} — contrato só localizado em 16/09/2026, por isso lançado em agosto na competência da NF 94222 (emitida 18/08/2026), não no mês real do pagamento. Confirmado pelo cliente em 18/09/2026: os dois contratos cobrem NF 94222 + NF 94251 juntas (processo finalizado), não só a 94222. Baixa parcial da 25116 aberta pela entrada da matéria-prima (AGO-CUSTO-MP-IMP); falta o documento da NF 94251 para reconciliar o saldo completo.`,
-  rastreio: "documento",
-  fonte: `${vinculo.contrato}.pdf + extrato Bradesco 6349/3035-0 (${vinculo.data.slice(3)}) + EXTRATO MOVIMENTO 082026 - SISTEMA CLIENTE SOFTDIB.csv`,
-}));
+// Os dois contratos acima NÃO são lançados em agosto — achado em 24/09/2026 ao
+// conciliar o extrato Bradesco 6349/3035-0 de agosto linha a linha. Eles saíram
+// do banco em 08/04/2026 (antes da implantação de 31/05, portanto já dentro do
+// saldo de abertura) e em 10/07/2026 (já no agregado JUL-BAN-OP-016, D 25116 /
+// C 9, "IMPORTAÇÃO / PAGAMENTO EXTERIOR — 7 movimentos"). Os lançamentos
+// AGO-CAMBIO-GREATLAND-583972479/611879451 creditavam o banco pela segunda vez
+// (R$ 385.701,27). Prova: sem eles, a conta 9 fecha contra o extrato de agosto
+// com diferença de R$ 11,15 (vinda da abertura); com eles, ficava negativa.
+// Os vínculos continuam aqui porque sustentam o cálculo da variação cambial.
 
 /**
- * Baixa dos tributos federais e despesas aduaneiras da importação Greatland
- * (NF 94222 e NF 94251), pagos por débito automático no registro da DI —
- * ambas as DUIMPs confirmam "Pagamento dos tributos federais realizado -
- * Automático". Fecha parte da 25116 que o câmbio não cobre (câmbio só
- * remete o valor da mercadoria ao fornecedor no exterior; II/IPI/PIS/COFINS/
- * despesas aduaneiras são pagos em reais, no Brasil). Confirmado pelo
- * cliente em 18/09/2026.
+ * Baixa dos tributos federais da importação Greatland (NF 94222 e NF 94251),
+ * pagos por débito automático no registro da DI — ambas as DUIMPs confirmam
+ * "Pagamento dos tributos federais realizado - Automático". Fecha parte da
+ * 25116 que o câmbio não cobre (câmbio só remete o valor da mercadoria ao
+ * fornecedor no exterior; tributos são pagos em reais, no Brasil).
  *
- * NF 94222 (DUIMP 26BR0001376062-0): II 51.394,46 + IPI 36.329,45 +
- * PIS 6.745,54 + COFINS 30.997,31 + Siscomex 154,23 + AFRMM 1.649,26 =
- * R$ 127.270,25, valores tirados diretamente do extrato da DUIMP. O frete
- * (R$ 18.801,79) e as despesas aduaneiras/despachante da NF 94222 (estimadas
- * em R$ 5.561,01 por diferença entre o total da NF e os componentes
- * documentados) NÃO estão aqui — permanecem em aberto na 25116 até
- * documento próprio (fatura do despachante e/ou comprovante do frete).
+ * Valores corrigidos em 24/09/2026 para o que efetivamente saiu do banco
+ * (extrato Bradesco 6349/3035-0, "PAGTO ELETRONICO TRIBUTO / PUCOMEX RFB";
+ * SOFTDIB: DÉBITO AUTOMÁTICO IMPORTAÇÃO):
  *
- * NF 94251 (DUIMP 26BR0001426125-2): II 10.464,59 + IPI 5.371,35 +
- * PIS 1.467,60 + COFINS 6.743,96 + despesas aduaneiras 15.990,82 =
- * R$ 40.038,32 — todos os valores conferidos linha a linha no próprio
- * DANFE (campo "Composicao Despesas Acessorias"). O frete (R$ 3.478,77)
- * também não está aqui, mesmo motivo.
+ * NF 94222 (DUIMP 26BR0001376062-0), 14/08: R$ 125.620,99 = II 51.394,46 +
+ * IPI 36.329,45 + PIS 6.745,54 + COFINS 30.997,31 + Siscomex 154,23. O
+ * AFRMM (R$ 1.649,26), antes incluído aqui, não foi debitado nesse
+ * pagamento e continua em aberto na 25116 até o comprovante próprio.
+ *
+ * NF 94251 (DUIMP 26BR0001426125-2), 17/08: R$ 24.302,23 = II 10.464,59 +
+ * IPI 5.371,35 + PIS 1.467,60 + COFINS 6.743,96 + Siscomex 254,49 (R$
+ * 24.301,99; R$ 0,24 de arredondamento entre as adições da DUIMP). As
+ * despesas aduaneiras do DANFE (R$ 15.990,82), antes incluídas aqui, não são
+ * pagas à Receita — continuam em aberto na 25116 até a fatura do despachante.
+ *
+ * Fretes (R$ 18.801,79 e R$ 3.478,77) e despesas de despachante da NF 94222
+ * também seguem em aberto na 25116, mesmo motivo.
  */
 export const lancamentosTributosImportacaoGreatlandAgosto: LancamentoIntegrado[] = [
   {
@@ -125,15 +118,15 @@ export const lancamentosTributosImportacaoGreatlandAgosto: LancamentoIntegrado[]
     debito: nome("25116"),
     creditoCodigo: "9",
     credito: nome("9"),
-    historico: "Tributos federais da importação Greatland Valve — NF 94222 (II + IPI + PIS + COFINS + Siscomex + AFRMM)",
-    documento: "DUIMP 26BR0001376062-0",
+    historico: "Tributos federais da importação Greatland Valve — NF 94222 (II + IPI + PIS + COFINS + Siscomex)",
+    documento: "DUIMP 26BR0001376062-0 / extrato Bradesco 6349 linha 98, dcto 5307051",
     cc: "209",
     centroCusto: "IMPORTAÇÃO",
-    valor: 127_270.25,
+    valor: 125_620.99,
     status: "validado",
-    observacao: "Débito automático no registro da DI (14/08/2026), conforme extrato da DUIMP: II R$ 51.394,46 + IPI R$ 36.329,45 + PIS R$ 6.745,54 + COFINS R$ 30.997,31 + Siscomex R$ 154,23 + AFRMM R$ 1.649,26. Confirmado pelo cliente em 18/09/2026.",
+    observacao: "Débito automático no registro da DI (14/08/2026): II R$ 51.394,46 + IPI R$ 36.329,45 + PIS R$ 6.745,54 + COFINS R$ 30.997,31 + Siscomex R$ 154,23 = valor debitado no extrato (PUCOMEX RFB 18027784). AFRMM R$ 1.649,26 não debitado aqui — segue em aberto na 25116.",
     rastreio: "documento",
-    fonte: "DUIMP 26BR0001376062-0 Greatland.pdf",
+    fonte: "DUIMP 26BR0001376062-0 Greatland.pdf + NITA - BRADESCO.pdf (extrato 08/2026)",
   },
   {
     id: "AGO-CAMBIO-GREATLAND-TRIB-94251",
@@ -143,15 +136,15 @@ export const lancamentosTributosImportacaoGreatlandAgosto: LancamentoIntegrado[]
     debito: nome("25116"),
     creditoCodigo: "9",
     credito: nome("9"),
-    historico: "Tributos federais e despesas aduaneiras da importação Greatland Valve — NF 94251 (II + IPI + PIS + COFINS + despesas aduaneiras)",
-    documento: "NF 94251, série 001 / DUIMP 26BR0001426125-2",
+    historico: "Tributos federais da importação Greatland Valve — NF 94251 (II + IPI + PIS + COFINS + Siscomex)",
+    documento: "NF 94251, série 001 / DUIMP 26BR0001426125-2 / extrato Bradesco 6349 linha 112, dcto 5305477",
     cc: "209",
     centroCusto: "IMPORTAÇÃO",
-    valor: 40_038.32,
+    valor: 24_302.23,
     status: "validado",
-    observacao: "Débito automático no registro da DI (17/08/2026): II R$ 10.464,59 + IPI R$ 5.371,35 + PIS R$ 1.467,60 + COFINS R$ 6.743,96 + despesas aduaneiras R$ 15.990,82 — composição conferida no próprio DANFE. Confirmado pelo cliente em 18/09/2026.",
+    observacao: "Débito automático no registro da DI (17/08/2026, PUCOMEX RFB 18199372): II R$ 10.464,59 + IPI R$ 5.371,35 + PIS R$ 1.467,60 + COFINS R$ 6.743,96 + Siscomex R$ 254,49 = R$ 24.301,99 (R$ 0,24 de arredondamento). Despesas aduaneiras do DANFE (R$ 15.990,82) não são pagas à Receita — seguem em aberto na 25116.",
     rastreio: "documento",
-    fonte: "DANFE NF-e 000.094.251 + DUIMP 26BR0001426125-2 Greatland.pdf",
+    fonte: "DANFE NF-e 000.094.251 + DUIMP 26BR0001426125-2 Greatland.pdf + NITA - BRADESCO.pdf (extrato 08/2026)",
   },
 ];
 

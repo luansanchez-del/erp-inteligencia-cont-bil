@@ -7,12 +7,13 @@ import {
 } from "./nitaplast-receitas-agosto";
 import { lancamentosIcmsStAgosto } from "./nitaplast-icms-st-agosto";
 import { lancamentosBradescoFundoAgosto, lancamentosBradescoInvestFacilAgosto } from "./nitaplast-aplicacoes-bradesco-agosto";
-import { lancamentosCambioAgosto, lancamentosCambioGreatlandAgosto, lancamentosTributosImportacaoGreatlandAgosto, lancamentosVariacaoCambialGreatlandAgosto, lancamentosVariacaoCambialBasfAgosto } from "./nitaplast-cambio-agosto";
+import { lancamentosCambioAgosto, lancamentosTributosImportacaoGreatlandAgosto, lancamentosVariacaoCambialGreatlandAgosto, lancamentosVariacaoCambialBasfAgosto } from "./nitaplast-cambio-agosto";
 import { lancamentosDespesasDocumentaisAgosto } from "./nitaplast-despesas-documentais-agosto";
 import { lancamentosPagamentoHaustinAgosto } from "./nitaplast-pagamento-haustin-agosto";
 import { lancamentosCartaoCreditoAgosto } from "./nitaplast-cartao-credito-agosto";
 import { lancamentosCartaoJussaraRodrigoAgosto } from "./nitaplast-cartao-4005-jussara-rodrigo-agosto";
 import { lancamentosTarifasBancariasAgosto } from "./nitaplast-tarifas-bancarias-agosto";
+import { lancamentosBradesco6349Agosto } from "./nitaplast-bradesco-6349-agosto";
 import { idsSoftdibSubstituidosPeloQuestorAgosto, lancamentosServicosQuestorAgosto } from "./nitaplast-servicos-questor-agosto";
 import { lancamentosFolhaAgosto } from "./nitaplast-folha-agosto";
 import { lancamentosDespesasFilialAgosto } from "./nitaplast-despesas-filial-agosto";
@@ -94,7 +95,6 @@ export const lancamentosIntegradosAgosto: LancamentoIntegrado[] = [
   ...lancamentosBradescoInvestFacilAgosto,
   ...lancamentosBradescoFundoAgosto,
   ...lancamentosCambioAgosto,
-  ...lancamentosCambioGreatlandAgosto,
   ...lancamentosTributosImportacaoGreatlandAgosto,
   ...lancamentosVariacaoCambialGreatlandAgosto,
   ...lancamentosVariacaoCambialBasfAgosto,
@@ -107,6 +107,7 @@ export const lancamentosIntegradosAgosto: LancamentoIntegrado[] = [
   ...lancamentosCartaoCreditoAgosto,
   ...lancamentosCartaoJussaraRodrigoAgosto,
   ...lancamentosTarifasBancariasAgosto,
+  ...lancamentosBradesco6349Agosto,
   ...lancamentosServicosQuestorAgosto,
   ...lancamentosFolhaAgosto,
   ...lancamentosDespesasFilialAgosto,
