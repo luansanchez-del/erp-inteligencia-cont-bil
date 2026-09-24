@@ -21,7 +21,13 @@ const nomeConta = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(cod
  * - Bradesco 895 (conta de energia) é a única fonte deste mês com extrato PDF
  *   completo E anexo de obrigações CCEE (Smart Energia) cruzando os mesmos valores
  *   — por isso é o único bloco com lançamentos individuais abaixo.
- * - Itaú Trust DI e Maxi DI: sem resumo mensal dedicado recebido para 08/2026.
+ * - Itaú Trust DI: zerada desde 31/07/2026 (confirmado no extrato oficial de
+ *   fundos "Nitaplast Itau fundo.pdf" — Saldo Líquido R$ 0,00), sem aplicação
+ *   nova em agosto — nada a lançar.
+ * - Itaú aplicação automática (conta 54, agência/conta 1656/04114-0): tinha
+ *   essa observação como "sem resumo recebido" — corrigido em 23/09/2026, o
+ *   resumo mensal ("Nitaplast Itaú resumo.pdf") foi localizado e está lançado
+ *   abaixo.
  * - Greencred: a posição de 31/08 (Greencred Nitaplast.pdf) traz juros e IR
  *   acumulados desde a aplicação (uma delas de 30/05/2025), não o movimento do
  *   mês. Para isolar agosto, comparou-se com a posição de 31/07/2026 (mesmo
@@ -98,4 +104,21 @@ export const lancamentosBancariosSegurosAgosto: LancamentoIntegrado[] = [
   // com a posição de 31/07 e o movimento diário do SOFTDIB (ver observação acima).
   base({ id: "AGO-BAN-GREENCRED-REND", data: "31/08/2026", origem: "GREENCRED APLICAÇÃO 08/2026", debitoCodigo: "25110", debito: nomeConta("25110"), creditoCodigo: "2859", credito: nomeConta("2859"), historico: "Rendimento de agosto — aplicações Capital Coop Green Cred (CDI-MAX)", documento: "Greencred Nitaplast.pdf (posição 31/08) × Aplic Nitaplast Greencred.pdf (posição 31/07)", cc: "0", centroCusto: "SEM CENTRO DE CUSTO", valor: 15_788.36, observacao: "Soma dos lançamentos diários 'RENDIMENTO APLIC. FINANCEIRA' (gerencial 09.01.002) da conta B00003 no EXTRATO MOVIMENTO 082026 - SISTEMA CLIENTE SOFTDIB; bate com a variação de juros+correção entre as posições de 31/07 e 31/08 descontado o efeito dos resgates.", fonte: "EXTRATO MOVIMENTO 082026 - SISTEMA CLIENTE SOFTDIB.csv" }),
   base({ id: "AGO-BAN-GREENCRED-RESG", data: "17/08/2026", origem: "GREENCRED APLICAÇÃO 08/2026", debitoCodigo: "21", debito: nomeConta("21"), creditoCodigo: "25110", credito: nomeConta("25110"), historico: "Resgate parcial de aplicações — transferência interna Greencred aplicação → conta corrente", documento: "TRANSF DO B00003 . (2x)", cc: "0", centroCusto: "SEM CENTRO DE CUSTO", valor: 300_000.00, observacao: "Dois resgates de R$ 140.000,00 e R$ 160.000,00 em 17/08/2026, transferidos da aplicação (B00003) para a conta corrente Greencred (B00002) — mesma titularidade, sem saída do grupo. Confirmado pelo EXTRATO MOVIMENTO 082026 - SISTEMA CLIENTE SOFTDIB e pela queda equivalente no líquido resgatado entre as posições de 31/07 e 31/08.", fonte: "EXTRATO MOVIMENTO 082026 - SISTEMA CLIENTE SOFTDIB.csv" }),
+
+  // Itaú aplicação automática (conta 54, ag/conta 1656/04114-0) — achado em
+  // 23/09/2026 ao investigar a pendência de aplicação financeira do cliente.
+  // Resumo mensal oficial ("Nitaplast Itaú resumo.pdf", período Agosto/2026):
+  //   Saldo em 31/07/2026 (líquido)   123.989,75
+  //   Aplicações no mês                332.595,90
+  //   Rendimento apurado (líquido)          1,36
+  //   Resgates antec. e vencimentos    388.799,07
+  //   Saldo em 31/08/2026 (líquido)    67.787,94
+  // Confere exatamente com a abertura já corrigida em junho (ver
+  // APL-ITAU-AUTO-RECLASS-001 em nitaplast-aplicacoes-junho.ts) mais a
+  // reconciliação de julho já existente (JUL-APL-ITAU-AUTO-001 a 005) — fecha
+  // em R$ 123.990,14, batendo com o saldo de abertura de agosto do resumo
+  // (diferença de R$ 0,39, imaterial).
+  base({ id: "AGO-BAN-ITAU-AUTO-APL", data: "31/08/2026", origem: "ITAÚ APLICAÇÃO AUTOMÁTICA 08/2026", debitoCodigo: "54", debito: nomeConta("54"), creditoCodigo: "11", credito: nomeConta("11"), historico: "Aplicações do mês — Itaú aplicação automática 04114-0", documento: "Nitaplast Itaú resumo.pdf, agência 1656 / conta 04114-0", cc: "0", centroCusto: "SEM CENTRO DE CUSTO", valor: 332_595.90, observacao: "Total de aplicações de agosto/2026 conforme resumo mensal Itaú.", fonte: "Nitaplast Itaú resumo.pdf" }),
+  base({ id: "AGO-BAN-ITAU-AUTO-RESG", data: "31/08/2026", origem: "ITAÚ APLICAÇÃO AUTOMÁTICA 08/2026", debitoCodigo: "11", debito: nomeConta("11"), creditoCodigo: "54", credito: nomeConta("54"), historico: "Resgates antecipados e vencimentos do mês — Itaú aplicação automática 04114-0", documento: "Nitaplast Itaú resumo.pdf, agência 1656 / conta 04114-0", cc: "0", centroCusto: "SEM CENTRO DE CUSTO", valor: 388_799.07, observacao: "Total líquido de resgates/vencimentos de agosto/2026 (já descontados IOF R$ 7,77 e IR R$ 0,27 do mês) conforme resumo mensal Itaú.", fonte: "Nitaplast Itaú resumo.pdf" }),
+  base({ id: "AGO-BAN-ITAU-AUTO-REND", data: "31/08/2026", origem: "ITAÚ APLICAÇÃO AUTOMÁTICA 08/2026", debitoCodigo: "54", debito: nomeConta("54"), creditoCodigo: "25098", credito: nomeConta("25098"), historico: "Rendimento líquido apurado no mês — Itaú aplicação automática 04114-0", documento: "Nitaplast Itaú resumo.pdf, agência 1656 / conta 04114-0", cc: "901", centroCusto: "RECEITAS FINANCEIRAS", valor: 1.36, observacao: "Rendimento líquido apurado no mês (referente às operações resgatadas e ao saldo remanescente), conforme resumo mensal Itaú.", fonte: "Nitaplast Itaú resumo.pdf" }),
 ];

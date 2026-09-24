@@ -331,4 +331,36 @@ export const ajustesAplicacoesJunho: LancamentoIntegrado[] = [
     rastreio: "documento",
     fonte: "BRADESCO - NITA.pdf (06/2026) + Bradesco Invest fácil.pdf (07/2026) — instrução do contador em 23/09/2026.",
   },
+
+  // Itaú aplicação automática (conta 54) — mesmo padrão de varredura automática
+  // do Bradesco Invest Fácil, achado em 23/09/2026. Os lançamentos de julho
+  // (JUL-APL-ITAU-AUTO-001 a 005, em nitaplast-bancos-julho-completo.ts) partem
+  // de uma "abertura bruta" de R$ 59.898,31 (citada no próprio comentário do
+  // arquivo, fonte "Nitaplast Itau resumo.pdf") que nunca foi de fato lançada
+  // em junho — a conta 54 nasce em zero no sistema. Confirmado que o dinheiro é
+  // real: a conta corrente Itaú (11) já fecha junho em R$ 59.898,01, valor
+  // praticamente idêntico (diferença de R$ 0,30) ao saldo aplicado — mesmo
+  // padrão do Bradesco, onde a varredura automática fica embutida no saldo do
+  // banco sem aparecer como lançamento visível.
+  //
+  // Reclassificação pura (Banco -> Aplicações), sem efeito na DRE. Por
+  // instrução do contador (Luan Sanchez, 23/09/2026).
+  {
+    id: "APL-ITAU-AUTO-RECLASS-001",
+    data: "30/06/2026",
+    origem: "RECLASSIFICAÇÃO — APLICAÇÃO AUTOMÁTICA ITAÚ 04114-0",
+    debitoCodigo: "54",
+    debito: nomeConta("54"),
+    creditoCodigo: "11",
+    credito: nomeConta("11"),
+    historico: "Reclassificação de disponibilidades — saldo aplicado automaticamente na conta 04114-0 em 30/06/2026, nunca antes reconhecido",
+    documento: "Nitaplast Itau resumo.pdf (referência à abertura bruta de julho, R$ 59.898,31)",
+    cc: "0",
+    centroCusto: "SEM CENTRO DE CUSTO",
+    valor: 59_898.31,
+    status: "validado",
+    observacao: "Não é receita nova: a conta corrente Itaú (11) já fecha junho em R$ 59.898,01, praticamente o mesmo valor (diferença de R$ 0,30). Reclassifica de Banco para Aplicações Financeiras, sem efeito na DRE — mesmo padrão de varredura automática usado no Bradesco Invest Fácil.",
+    rastreio: "derivado",
+    fonte: "Nitaplast Itau resumo.pdf + saldo de conta corrente Itaú (11) de junho — instrução do contador em 23/09/2026.",
+  },
 ];

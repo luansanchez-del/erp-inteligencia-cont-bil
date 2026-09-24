@@ -28,6 +28,23 @@ export const lancamentosBancariosSegurosJulho: LancamentoIntegrado[] = [
   l({id:"JUL-APL-GREEN-002",data:"15/07/2026",origem:"TRANSFERÊNCIA GREENCRED/BRADESCO 07/2026",debitoCodigo:"9",creditoCodigo:"21",historico:"Transferência Greencred para Bradesco",documento:"TED 15/07/2026",cc:"0",centroCusto:"SEM CENTRO DE CUSTO",valor:200000.00,observacao:"Mesma titularidade.",fonte:"UNIPRIME - NITA(3).pdf + NITA - BRADESCO(1).pdf"}),
   l({id:"JUL-APL-GREEN-003",data:"31/07/2026",origem:"GREENCRED 07/2026",debitoCodigo:"25110",creditoCodigo:"25098",historico:"Rendimento bruto Greencred - julho",documento:"POSIÇÃO 31/07/2026",cc:"901",centroCusto:"RECEITAS FINANCEIRAS",valor:22751.47,observacao:"Valor derivado exclusivamente da posição bruta: 1.861.799,85 - (2.039.048,38 - 200.000,00). Tributos projetados de liquidação não são antecipados.",fonte:"Aplic Nitaplast Greencred.pdf",rastreio:"derivado"}),
 
+  // Correção — IR/IOF provisionado nunca descontado, achado em 23/09/2026 ao
+  // conferir título a título os extratos oficiais da Greencred de 30/06/2026
+  // ("Green Junho.pdf") e 31/07/2026 ("Aplic Nitaplast Greencred.pdf"). Os
+  // lançamentos acima (JUL-APL-GREEN-001/003) usam a posição BRUTA da
+  // Greencred; a posição real LÍQUIDA (após o IR que a cooperativa provisiona
+  // progressivamente sobre os títulos não resgatados, mesmo sem liquidação) é
+  // R$ 24.296,20 mais baixa em 31/07/2026 (líquido real R$ 1.821.082,55 contra
+  // R$ 1.845.378,75 no sistema). Conferido item a item: R$ 19.967,56 já vinha
+  // de junho (mesma raiz: posição bruta usada em vez da líquida em
+  // APL-GREEN-REND-001) e R$ 4.328,64 é o incremento do próprio mês de julho
+  // (IR provisionado +R$ 4.984,74, líquido do estorno de IOF -R$ 656,10 do
+  // título 0050004833-9, que passou a ficar isento de IOF após 30 dias).
+  // Reclassificação dentro do Ativo (não é despesa nem reversão de receita):
+  // reconhece o IR provisionado como direito a compensar, reduzindo o valor
+  // líquido da aplicação. Por instrução do contador (Luan Sanchez, 23/09/2026).
+  l({id:"JUL-APL-GREEN-004",data:"31/07/2026",origem:"CORREÇÃO — IR PROVISIONADO GREENCRED",debitoCodigo:"25118",creditoCodigo:"25110",historico:"IR provisionado sobre títulos Greencred não resgatados — nunca descontado (herdado de junho + incremento de julho)",documento:"Green Junho.pdf (30/06/2026) × Aplic Nitaplast Greencred.pdf (31/07/2026)",cc:"0",centroCusto:"SEM CENTRO DE CUSTO",valor:24296.20,observacao:"Reduz a aplicação Greencred (25110) para o valor líquido real de 31/07/2026, reconhecendo o IR provisionado (25118) que a Greencred já vinha descontando internamente desde junho, nunca lançado por nós. Sem efeito na DRE.",fonte:"Green Junho.pdf + Aplic Nitaplast Greencred.pdf — instrução do contador em 23/09/2026."}),
+
   // Bradesco Maxi DI: aplicação única de 500 mil e posição bruta final 500.784,95. IOF/IR da posição são projeções, pois não houve resgate.
   l({id:"JUL-APL-MAXI-001",data:"31/07/2026",origem:"BRADESCO MAXI DI 07/2026",debitoCodigo:"62",creditoCodigo:"9",historico:"Aplicação Bradesco Maxi DI",documento:"MAX RENDA FIXA DI 07/2026",cc:"0",centroCusto:"SEM CENTRO DE CUSTO",valor:500000.00,observacao:"Principal aplicado em julho.",fonte:"Bradesco Maxi DI.pdf"}),
   l({id:"JUL-APL-MAXI-002",data:"31/07/2026",origem:"BRADESCO MAXI DI 07/2026",debitoCodigo:"62",creditoCodigo:"25098",historico:"Rendimento bruto Bradesco Maxi DI - julho",documento:"MAX RENDA FIXA DI 07/2026",cc:"901",centroCusto:"RECEITAS FINANCEIRAS",valor:784.95,observacao:"Rendimento bruto da posição. IOF R$ 709,96 e IRRF R$ 16,86 não realizados, portanto não lançados.",fonte:"Bradesco Maxi DI posição consolidada mensal.pdf"}),
