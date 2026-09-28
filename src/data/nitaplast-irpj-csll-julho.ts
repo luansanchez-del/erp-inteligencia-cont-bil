@@ -21,6 +21,13 @@ const pagamentosEstimativaCsllAteJunho = 50_778.95 + 11_964.01;
 const irrfAplicacoesFinanceirasAcumuladoJaneiroAJunho = 20_747.94;
 const mesesAcumuladosJaneiroAJunho = 6;
 
+// Exposto para a apuração de agosto (nitaplast-irpj-csll-agosto.ts), que encadeia
+// o acumulado a partir desta mesma base Jan-Jun.
+export const adicoesExclusoesAcumuladasJaneiroAJunho = {
+  adicoes: adicoesAcumuladasJaneiroAJunho,
+  exclusoes: exclusoesAcumuladasJaneiroAJunho,
+} as const;
+
 export type ApuracaoIrpjCsllJulho = ApuracaoIrpjCsllBalancoSuspensaoReducaoResultado & {
   lucroContabilAcumuladoJaneiroAJulho: number;
   lucroContabilDoMes: number;
