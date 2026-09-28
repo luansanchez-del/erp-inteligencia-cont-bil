@@ -8,6 +8,12 @@ type DreJulhoFinal = ReturnType<typeof calcularDreJulhoFinal>["dre"];
 
 export const contaIrrfAplicacoesFinanceirasNitaplast = "25118";
 
+// Débitos na 25118 que não são IRRF retido: IR provisionado sobre títulos Greencred
+// ainda não resgatados (R$ 24.296,20). Só compensa no LALUR o IRRF efetivamente
+// retido — este fica fora até o resgate. Com a exclusão, o IRRF de julho é
+// R$ 555,38 e o IRPJ de julho bate com o DARF pago (R$ 29.487,70).
+export const idsIrProvisionadoNaoRetido = new Set(["JUL-APL-GREEN-004"]);
+
 // Base acumulada Jan-Jun/2026, conforme planilha "CÁLCULO IRPJ E CSLL — LUCRO REAL POR
 // ESTIMATIVA MENSAL — Competência JUNHO/2026" enviada pelo contador em 27/08/2026.
 // Fonte externa (planilha do escritório) — não recalculada aqui, só transcrita.

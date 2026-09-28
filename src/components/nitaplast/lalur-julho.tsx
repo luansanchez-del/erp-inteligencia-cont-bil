@@ -2,9 +2,9 @@ import { useMemo } from "react";
 import {
   calcularApuracaoIrpjCsllJulho,
   contaIrrfAplicacoesFinanceirasNitaplast,
+  idsIrProvisionadoNaoRetido,
 } from "@/data/nitaplast-irpj-csll-julho";
 import { calcularDreJulhoFinal } from "@/data/nitaplast-dre-julho-final";
-import { calcularBalanceteJulho } from "@/data/nitaplast-balancete-julho-engine";
 import { lancamentosIntegradosJulhoFinal } from "@/data/nitaplast-razao-julho-final-v2";
 import { useLalurAjustes } from "@/hooks/use-lalur-ajustes";
 import { useReclassificacoesInteligentes } from "@/hooks/use-reclassificacoes-inteligentes";
@@ -21,8 +21,15 @@ export function useApuracaoLalurJulho() {
   const { aplicar } = useReclassificacoesInteligentes(COMPETENCIA);
   const razaoAjustado = useMemo(() => aplicar(lancamentosIntegradosJulhoFinal), [aplicar]);
   const dre = useMemo(() => calcularDreJulhoFinal(razaoAjustado).dre, [razaoAjustado]);
-  const balanceteJulho = useMemo(() => calcularBalanceteJulho(razaoAjustado), [razaoAjustado]);
-  const irrfAplicacoesFinanceiras = balanceteJulho.movimentoPorConta.get(contaIrrfAplicacoesFinanceirasNitaplast)?.debitos ?? 0;
+  const irrfAplicacoesFinanceiras = useMemo(
+    () =>
+      Math.round(
+        razaoAjustado
+          .filter((l) => l.debitoCodigo === contaIrrfAplicacoesFinanceirasNitaplast && !idsIrProvisionadoNaoRetido.has(l.id))
+          .reduce((s, l) => s + l.valor, 0) * 100,
+      ) / 100,
+    [razaoAjustado],
+  );
 
   const lalur = useLalurAjustes(COMPETENCIA);
   const { totais } = lalur;
