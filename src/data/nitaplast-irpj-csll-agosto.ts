@@ -7,14 +7,13 @@ import {
   type AjustesLalurJulho,
   type ApuracaoIrpjCsllJulho,
 } from "./nitaplast-irpj-csll-julho";
+import { darfIrpjCsllPagoAgosto } from "./nitaplast-darf-irpj-csll-agosto";
 
 export type AjustesLalurAgosto = AjustesLalurJulho;
 
-// DARFs de estimativa de 07/2026 efetivamente recolhidos, confirmados pelo usuário
-// em 28/09/2026. Foram apurados pelo lucro real do próprio mês (versão anterior do
-// LALUR de julho), não pelo balanço de suspensão que a tela de julho mostra hoje —
-// por isso não vêm de `apuracaoJulho.irpjAPagar`.
-export const darfPagoJulho = { irpj: 29_487.70, csll: 11_535.51 } as const;
+// DARFs de estimativa de 07/2026 efetivamente recolhidos em 31/08/2026 — mesmos
+// valores lançados no Razão de agosto (nitaplast-darf-irpj-csll-agosto.ts).
+const darfPagoJulho = darfIrpjCsllPagoAgosto;
 
 export type ApuracaoIrpjCsllAgosto = ApuracaoIrpjCsllBalancoSuspensaoReducaoResultado & {
   lucroContabilAcumuladoJaneiroAAgosto: number;
