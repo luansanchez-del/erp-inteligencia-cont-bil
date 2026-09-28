@@ -44,18 +44,25 @@ const contasEstruturaBase = new Set(estruturaBalanceteNitaplast.map((x) => x.con
 // Contas que nasceram depois da implantação de 31/05 (mesma lista usada no motor de
 // julho): sem isso, movimentos legítimos e documentados caem na conta de encaixe
 // "9.9.99 - Conta não encontrada no plano" em vez da classificação real.
-const estruturaBalanceteCompleta: LinhaEstruturaBalancete[] = [
-  ...estruturaBalanceteNitaplast,
-  ...contasPosImplantacao
-    .filter(([conta]) => !contasEstruturaBase.has(conta))
-    .map(([conta, classificacao, descricao]) => ({
-      conta,
-      tipo: "A" as const,
-      classificacao,
-      descricao,
-      nivel: classificacao.split(".").length,
-    })),
-];
+// Cada conta nova entra logo depois da última linha com classificação menor ou igual
+// à dela — no fim da lista, contas de ativo (ex.: 25949) apareciam depois dos custos.
+const compararClassificacao = (a: string, b: string) => {
+  const pa = a.split(".").map(Number);
+  const pb = b.split(".").map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] ?? -1) - (pb[i] ?? -1);
+    if (d !== 0) return d;
+  }
+  return 0;
+};
+const estruturaBalanceteCompleta: LinhaEstruturaBalancete[] = contasPosImplantacao
+  .filter(([conta]) => !contasEstruturaBase.has(conta))
+  .reduce<LinhaEstruturaBalancete[]>((lista, [conta, classificacao, descricao]) => {
+    let posicao = lista.length;
+    while (posicao > 0 && compararClassificacao(lista[posicao - 1]!.classificacao, classificacao) > 0) posicao--;
+    const linha = { conta, tipo: "A" as const, classificacao, descricao, nivel: classificacao.split(".").length };
+    return [...lista.slice(0, posicao), linha, ...lista.slice(posicao)];
+  }, [...estruturaBalanceteNitaplast]);
 const analiticas = estruturaBalanceteCompleta.filter((x) => x.tipo === "A");
 const contasEstrutura = new Set(analiticas.map((x) => x.conta));
 /** Classificação e descrição por conta cobrindo o plano de contas completo (implantação + contas criadas depois), usadas onde `info` (só saldosImplantacao) ficaria incompleto. */
