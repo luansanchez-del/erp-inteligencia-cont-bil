@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { calcularApuracaoIrpjCsllAgosto } from "@/data/nitaplast-irpj-csll-agosto";
+import { calcularApuracaoIrpjCsllAgosto, lalurAgostoFechado } from "@/data/nitaplast-irpj-csll-agosto";
 import { contaIrrfAplicacoesFinanceirasNitaplast } from "@/data/nitaplast-irpj-csll-julho";
 import { useLalurAjustes } from "@/hooks/use-lalur-ajustes";
 import { useLancamentosCompetencia } from "@/hooks/use-lancamentos-competencia";
@@ -42,6 +42,7 @@ export function LalurAgosto() {
       lucroContabilAcumulado={irpjCsll.lucroContabilAcumuladoJaneiroAAgosto}
       irpjCsll={irpjCsll}
       lalur={lalur}
+      fechamento={lalurAgostoFechado}
     />
   );
 }

@@ -15,6 +15,11 @@ export type AjustesLalurAgosto = AjustesLalurJulho;
 // valores lançados no Razão de agosto (nitaplast-darf-irpj-csll-agosto.ts).
 const darfPagoJulho = darfIrpjCsllPagoAgosto;
 
+// LALUR 08/2026 fechado em 28/09/2026. O DARF vence em 30/09/2026 e entra no Razão
+// de setembro quando pago (D 25119/25120 — C banco), e no LALUR de setembro como
+// pagamento anterior. Se o cálculo ao vivo mudar, a tela acusa divergência.
+export const lalurAgostoFechado = { irpj: 25_262.41, csll: 9_918.16, vencimento: "30/09/2026" } as const;
+
 export type ApuracaoIrpjCsllAgosto = ApuracaoIrpjCsllBalancoSuspensaoReducaoResultado & {
   lucroContabilAcumuladoJaneiroAAgosto: number;
   lucroContabilDoMes: number;

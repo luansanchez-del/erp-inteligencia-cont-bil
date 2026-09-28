@@ -30,6 +30,8 @@ type Props = {
   lucroContabilAcumulado: number;
   irpjCsll: ApuracaoIrpjCsllBalancoSuspensaoReducaoResultado;
   lalur: ReturnType<typeof useLalurAjustes>;
+  /** Apuração fechada: valores gravados e vencimento do DARF (pago no mês seguinte). */
+  fechamento?: { irpj: number; csll: number; vencimento: string };
 };
 
 /**
@@ -49,6 +51,10 @@ export function LalurApuracaoCard(props: Props) {
   const [erro, setErro] = useState<string | null>(null);
 
   const jaGerado = lancamentos.some((item) => item.dados?.historico.includes(tagGeracao));
+  const { fechamento } = props;
+  const divergente =
+    fechamento !== undefined &&
+    (Math.abs(fechamento.irpj - irpjCsll.irpjAPagar) > 0.01 || Math.abs(fechamento.csll - irpjCsll.csllAPagar) > 0.01);
 
   function parseValor(texto: string) {
     const limpo = texto.trim();
@@ -112,7 +118,14 @@ export function LalurApuracaoCard(props: Props) {
           <div>
             <CardTitle className="text-base">LALUR — Apuração IRPJ/CSLL — {rotulo}</CardTitle>
           </div>
-          {jaGerado ? (
+          {fechamento ? (
+            <Badge
+              variant="outline"
+              className={divergente ? "border-red-600 text-red-700" : "border-emerald-600 text-emerald-800"}
+            >
+              {divergente ? "Divergente do fechamento" : <><CheckCircle2 className="mr-1 size-3.5" /> Fechado</>}
+            </Badge>
+          ) : jaGerado ? (
             <Badge variant="outline" className="border-emerald-600 text-emerald-800">
               <CheckCircle2 className="mr-1 size-3.5" /> Lançamento gerado
             </Badge>
@@ -200,6 +213,16 @@ export function LalurApuracaoCard(props: Props) {
           </table>
         </div>
 
+        {fechamento ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900">
+            <span>DARF vencimento {fechamento.vencimento}</span>
+            <span className="tabular-nums">
+              IRPJ {brl.format(fechamento.irpj)} · CSLL {brl.format(fechamento.csll)} · Total{" "}
+              <strong>{brl.format(fechamento.irpj + fechamento.csll)}</strong>
+            </span>
+          </div>
+        ) : (
+        <>
         <div className="rounded-md border bg-background/60 p-3">
           <p className="mb-2 text-xs font-semibold">Adições e exclusões</p>
           <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto_auto_auto]">
@@ -253,6 +276,8 @@ export function LalurApuracaoCard(props: Props) {
             Gerar lançamento
           </Button>
         </div>
+        </>
+        )}
       </CardContent>
     </Card>
   );
