@@ -54,6 +54,8 @@ export const contasPosImplantacao = [
   ["4760", "5.9.01.003.002", "Custo Vendas do Ativo Imobilizado"],
   ["25255", "2.1.07.005.008", "Provisão de Custos a Pagar"],
   ["25948", "5.7.03.015.036", "Despesa com Provisão de Custos"],
+  ["25949", "1.1.04.025.001", "Outros Créditos - Provisão de Receita a Receber"],
+  ["25950", "4.2.01.001.006", "Outras Receitas Não Operacionais"],
 ] as const;
 const contasPosImplantacaoConhecidas = new Set<string>(contasPosImplantacao.map(([conta]) => conta));
 for (const [conta, classificacao, descricao] of contasPosImplantacao) {

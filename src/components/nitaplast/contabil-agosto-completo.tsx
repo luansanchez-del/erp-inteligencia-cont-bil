@@ -933,7 +933,9 @@ export function calcularResultadoAgosto(lancamentos: ReturnType<typeof useBase>[
   // 25948 (Despesa com Provisão de Custos) fica fora de "operacionais" e some
   // aqui: decisão do cliente em 18/09/2026 (o cliente classifica essa
   // provisão/reversão como não operacional, não despesa operacional comum).
-  const naoOperacional = arred(Math.max(0, credito("4736")) - Math.max(0, mov("4760")) - mov("25948")),
+  // 25950 (Outras Receitas Não Operacionais): provisão de receita de 08/2026,
+  // ajuste manual autorizado pelo cliente (nitaplast-provisao-receita-agosto.ts).
+  const naoOperacional = arred(Math.max(0, credito("4736")) - Math.max(0, mov("4760")) - mov("25948") + credito("25950")),
     resultado = arred(resultadoOperacional + naoOperacional);
   return {
     mov, credito, custos, operacionais, financeiras,
