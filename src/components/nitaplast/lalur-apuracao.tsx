@@ -26,8 +26,6 @@ type Props = {
   rotulo: string;
   /** Último dia da competência, data do lançamento gerado (ex.: "31/08/2026"). */
   dataLancamento: string;
-  /** Data até a qual os DARFs anteriores foram pagos (ex.: "31/07/2026"). */
-  dataPagamentos: string;
   lucroContabilDoMes: number;
   lucroContabilAcumulado: number;
   irpjCsll: ApuracaoIrpjCsllBalancoSuspensaoReducaoResultado;
@@ -171,7 +169,7 @@ export function LalurApuracaoCard(props: Props) {
                 <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.irpjAdicional)}</td>
               </tr>
               <tr className="border-b text-xs text-muted-foreground">
-                <td className="py-2">(-) Pagamentos até {props.dataPagamentos}</td>
+                <td className="py-2">(-) Pagamentos até {dataLancamento}</td>
                 <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.pagamentosEstimativaIrpjAnteriores)}</td>
               </tr>
               <tr className="border-b">
@@ -191,7 +189,7 @@ export function LalurApuracaoCard(props: Props) {
                 <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.csllDevida)}</td>
               </tr>
               <tr className="border-b text-xs text-muted-foreground">
-                <td className="py-2">(-) Pagamentos até {props.dataPagamentos}</td>
+                <td className="py-2">(-) Pagamentos até {dataLancamento}</td>
                 <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.pagamentosEstimativaCsllAnteriores)}</td>
               </tr>
               <tr className="font-bold">

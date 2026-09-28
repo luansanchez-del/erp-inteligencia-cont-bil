@@ -43,7 +43,6 @@ export function LalurJulho() {
       competencia={COMPETENCIA}
       rotulo="07/2026"
       dataLancamento="31/07/2026"
-      dataPagamentos="30/06/2026"
       lucroContabilDoMes={irpjCsll.lucroContabilDoMes}
       lucroContabilAcumulado={irpjCsll.lucroContabilAcumuladoJaneiroAJulho}
       irpjCsll={irpjCsll}
