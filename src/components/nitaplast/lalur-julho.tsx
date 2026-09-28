@@ -43,18 +43,7 @@ export function LalurJulho() {
       competencia={COMPETENCIA}
       rotulo="07/2026"
       dataLancamento="31/07/2026"
-      descricao={
-        <>
-          Balanço de Suspensão/Redução (mesmo método usado em janeiro-junho/2026): lucro real
-          acumulado de janeiro a julho ± ajustes do LALUR abaixo, abatidos os DARFs de
-          estimativa já pagos até junho.
-        </>
-      }
-      periodoAcumulado="janeiro a julho/2026"
-      periodoAcumuladoCurto="Jan-Jul"
-      mesesAcumulados={7}
-      periodoPagamentos="jan-jun/2026"
-      rotuloDre="Resultado da DRE de julho"
+      dataPagamentos="30/06/2026"
       lucroContabilDoMes={irpjCsll.lucroContabilDoMes}
       lucroContabilAcumulado={irpjCsll.lucroContabilAcumuladoJaneiroAJulho}
       irpjCsll={irpjCsll}

@@ -1,8 +1,8 @@
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { CheckCircle2, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type { ApuracaoIrpjCsllBalancoSuspensaoReducaoResultado } from "@/lib/apuracao-irpj-csll";
 import { saldosImplantacao } from "@/data/nitaplast-implantacao";
@@ -26,23 +26,12 @@ type Props = {
   rotulo: string;
   /** Último dia da competência, data do lançamento gerado (ex.: "31/08/2026"). */
   dataLancamento: string;
-  descricao: ReactNode;
-  /** Ex.: "janeiro a agosto/2026". */
-  periodoAcumulado: string;
-  /** Ex.: "Jan-Ago". */
-  periodoAcumuladoCurto: string;
-  mesesAcumulados: number;
-  /** Ex.: "jan-jul/2026". */
-  periodoPagamentos: string;
-  rotuloDre: string;
+  /** Data até a qual os DARFs anteriores foram pagos (ex.: "31/07/2026"). */
+  dataPagamentos: string;
   lucroContabilDoMes: number;
   lucroContabilAcumulado: number;
   irpjCsll: ApuracaoIrpjCsllBalancoSuspensaoReducaoResultado;
   lalur: ReturnType<typeof useLalurAjustes>;
-  /** Linhas de memória exibidas logo antes do IRPJ a pagar (ex.: composição dos pagamentos). */
-  memoriaIrpj?: ReactNode;
-  memoriaCsll?: ReactNode;
-  observacao?: ReactNode;
 };
 
 /**
@@ -95,7 +84,7 @@ export function LalurApuracaoCard(props: Props) {
             centroCusto: "SEM CENTRO DE CUSTO",
             valor: irpjCsll.irpjAPagar,
           },
-          `Cálculo do LALUR de ${rotulo} (Balanço de Suspensão/Redução): lucro contábil acumulado ${props.periodoAcumuladoCurto.toLowerCase()} ${brl.format(props.lucroContabilAcumulado)}, base IRPJ ${brl.format(irpjCsll.baseIrpj)}.`,
+          `Cálculo do LALUR de ${rotulo} (Balanço de Suspensão/Redução): lucro contábil acumulado até ${dataLancamento} ${brl.format(props.lucroContabilAcumulado)}, base IRPJ ${brl.format(irpjCsll.baseIrpj)}.`,
         );
       }
       if (irpjCsll.csllAPagar > 0) {
@@ -110,7 +99,7 @@ export function LalurApuracaoCard(props: Props) {
             centroCusto: "SEM CENTRO DE CUSTO",
             valor: irpjCsll.csllAPagar,
           },
-          `Cálculo do LALUR de ${rotulo} (Balanço de Suspensão/Redução): lucro contábil acumulado ${props.periodoAcumuladoCurto.toLowerCase()} ${brl.format(props.lucroContabilAcumulado)}, base CSLL ${brl.format(irpjCsll.baseCsll)}.`,
+          `Cálculo do LALUR de ${rotulo} (Balanço de Suspensão/Redução): lucro contábil acumulado até ${dataLancamento} ${brl.format(props.lucroContabilAcumulado)}, base CSLL ${brl.format(irpjCsll.baseCsll)}.`,
         );
       }
     } catch (e) {
@@ -124,7 +113,6 @@ export function LalurApuracaoCard(props: Props) {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <CardTitle className="text-base">LALUR — Apuração IRPJ/CSLL — {rotulo}</CardTitle>
-            <CardDescription>{props.descricao}</CardDescription>
           </div>
           {jaGerado ? (
             <Badge variant="outline" className="border-emerald-600 text-emerald-800">
@@ -142,11 +130,11 @@ export function LalurApuracaoCard(props: Props) {
           <table className="w-full text-sm">
             <tbody>
               <tr className="border-b text-xs text-muted-foreground">
-                <td className="py-2">Lucro Contábil do mês ({props.rotuloDre})</td>
+                <td className="py-2">Lucro contábil do mês</td>
                 <td className="py-2 text-right tabular-nums">{brl.format(props.lucroContabilDoMes)}</td>
               </tr>
               <tr className="border-b font-semibold">
-                <td className="py-2">Lucro Contábil Acumulado ({props.periodoAcumulado})</td>
+                <td className="py-2">Lucro contábil acumulado até {dataLancamento}</td>
                 <td className="py-2 text-right tabular-nums">{brl.format(props.lucroContabilAcumulado)}</td>
               </tr>
               {ajustes.map((ajuste) => (
@@ -171,43 +159,41 @@ export function LalurApuracaoCard(props: Props) {
                 </tr>
               ))}
               <tr className="border-b font-semibold">
-                <td className="py-2">Base IRPJ (lucro real acumulado {props.periodoAcumuladoCurto} ± adições/exclusões do LALUR)</td>
+                <td className="py-2">Base de cálculo IRPJ</td>
                 <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.baseIrpj)}</td>
               </tr>
               <tr className="border-b">
-                <td className="py-2">IRPJ normal (15%)</td>
+                <td className="py-2">IRPJ 15%</td>
                 <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.irpjNormal)}</td>
               </tr>
               <tr className="border-b">
-                <td className="py-2">Adicional IRPJ (10% sobre o que exceder R$ 20.000,00 × {props.mesesAcumulados} meses)</td>
+                <td className="py-2">Adicional IRPJ 10%</td>
                 <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.irpjAdicional)}</td>
               </tr>
               <tr className="border-b text-xs text-muted-foreground">
-                <td className="py-2">(-) Pagamentos de estimativa de IRPJ já efetuados ({props.periodoPagamentos})</td>
+                <td className="py-2">(-) Pagamentos até {props.dataPagamentos}</td>
                 <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.pagamentosEstimativaIrpjAnteriores)}</td>
               </tr>
               <tr className="border-b">
-                <td className="py-2">(-) IRRF sobre Aplicações Financeiras a compensar (acumulado {props.periodoAcumuladoCurto.toLowerCase()})</td>
+                <td className="py-2">(-) IRRF sobre aplicações até {dataLancamento}</td>
                 <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.irrfAcumuladoCompensavel)}</td>
               </tr>
-              {props.memoriaIrpj}
               <tr className="border-b font-bold">
                 <td className="py-2">IRPJ a pagar</td>
                 <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.irpjAPagar)}</td>
               </tr>
               <tr className="border-b font-semibold">
-                <td className="py-2">Base CSLL (lucro real acumulado {props.periodoAcumuladoCurto} ± adições/exclusões do LALUR)</td>
+                <td className="py-2">Base de cálculo CSLL</td>
                 <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.baseCsll)}</td>
               </tr>
               <tr className="border-b">
-                <td className="py-2">CSLL devida (9%)</td>
+                <td className="py-2">CSLL 9%</td>
                 <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.csllDevida)}</td>
               </tr>
               <tr className="border-b text-xs text-muted-foreground">
-                <td className="py-2">(-) Pagamentos de estimativa de CSLL já efetuados ({props.periodoPagamentos})</td>
+                <td className="py-2">(-) Pagamentos até {props.dataPagamentos}</td>
                 <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.pagamentosEstimativaCsllAnteriores)}</td>
               </tr>
-              {props.memoriaCsll}
               <tr className="font-bold">
                 <td className="py-2">CSLL a pagar</td>
                 <td className="py-2 text-right tabular-nums">{brl.format(irpjCsll.csllAPagar)}</td>
@@ -216,15 +202,13 @@ export function LalurApuracaoCard(props: Props) {
           </table>
         </div>
 
-        {props.observacao}
-
         <div className="rounded-md border bg-background/60 p-3">
-          <p className="mb-2 text-xs font-semibold">Adicionar ajuste do LALUR (adição ou exclusão)</p>
+          <p className="mb-2 text-xs font-semibold">Adições e exclusões</p>
           <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto_auto_auto]">
             <Input
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
-              placeholder="Ex.: multa indedutível, doação, IRRF sobre aplicações…"
+              placeholder="Descrição"
               className="h-9"
             />
             <select
@@ -260,8 +244,7 @@ export function LalurApuracaoCard(props: Props) {
 
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-sky-300 bg-sky-50 p-3 text-xs text-sky-900">
           <span>
-            Gera o lançamento no mesmo padrão já usado pela Nitaplast (D {nomeConta(CONTA_IRPJ)} / D {nomeConta(CONTA_CSLL)} — C{" "}
-            {nomeConta(CONTA_BANCO)}), auditável e editável como qualquer lançamento manual.
+            D {nomeConta(CONTA_IRPJ)} / D {nomeConta(CONTA_CSLL)} — C {nomeConta(CONTA_BANCO)}
           </span>
           <Button
             type="button"
