@@ -18,9 +18,14 @@ const nomeConta = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(cod
  * Por isso a contrapartida aqui é 25126, não uma conta de desconto/receita.
  *
  * Reduz o saldo do adiantamento de R$ 4.360,00 para R$ 3.240,00 em agosto.
- * O cliente relatou que o saldo em agosto deveria ser R$ 1.120,00 (zerando
- * em setembro) — ou seja, falta ainda outra baixa de R$ 2.120,00 no
- * adiantamento, fora do escopo desta NF; pendente de documento de origem.
+ *
+ * O cliente informou (25/09/2026) mais dois descontos de R$ 1.120,00 contra o
+ * adiantamento — 05/03/2026 e 04/05/2026 — que a contabilidade anterior não
+ * baixou, por isso seguem no saldo de implantação de 31/05. São regularizados
+ * aqui em agosto (AGO-PAG-HAUSTIN-ADTO-REG-*), mesma contrapartida da baixa de
+ * 05/08. Saldo final da 25126 em agosto: R$ 1.000,00. O cliente citou
+ * R$ 1.120,00 (baixa de 05/09, em setembro) — a diferença de R$ 120,00 fica
+ * no saldo por decisão do usuário, pendente de explicação.
  */
 export const lancamentosPagamentoHaustinAgosto: LancamentoIntegrado[] = [
   {
@@ -58,5 +63,41 @@ export const lancamentosPagamentoHaustinAgosto: LancamentoIntegrado[] = [
     observacao: "Parcela da NF 29 quitada com o adiantamento a fornecedores já concedido ao Haustin (conta 25126), não é desconto comercial — confirmado pelo cliente em 23/09/2026. Reduz o saldo do adiantamento de R$ 4.360,00 para R$ 3.240,00.",
     rastreio: "documento",
     fonte: "PAGAMENTOS EFETUADOS.pdf",
+  },
+  {
+    id: "AGO-PAG-HAUSTIN-ADTO-REG-0503",
+    data: "31/08/2026",
+    origem: "REGULARIZAÇÃO ADIANTAMENTO 08/2026",
+    debitoCodigo: "1496",
+    debito: nomeConta("1496"),
+    creditoCodigo: "25126",
+    credito: nomeConta("25126"),
+    historico: "Baixa manual do adiantamento — desconto de 05/03/2026 não baixado pela contabilidade anterior — F02474 HAUSTIN CASTER VIEIRA SANDES",
+    documento: "Informação do cliente em 25/09/2026",
+    cc: "303",
+    centroCusto: "CONTROLADORIA",
+    valor: 1_120.00,
+    status: "validado",
+    observacao: "Desconto de R$ 1.120,00 abatido do adiantamento em 05/03/2026 (antes da implantação de 31/05), não baixado pela contabilidade anterior. Sem documento bancário do período — baseado na informação do cliente.",
+    rastreio: "documento",
+    fonte: "Informação do cliente em 25/09/2026",
+  },
+  {
+    id: "AGO-PAG-HAUSTIN-ADTO-REG-0405",
+    data: "31/08/2026",
+    origem: "REGULARIZAÇÃO ADIANTAMENTO 08/2026",
+    debitoCodigo: "1496",
+    debito: nomeConta("1496"),
+    creditoCodigo: "25126",
+    credito: nomeConta("25126"),
+    historico: "Baixa manual do adiantamento — desconto de 04/05/2026 não baixado pela contabilidade anterior — F02474 HAUSTIN CASTER VIEIRA SANDES",
+    documento: "Informação do cliente em 25/09/2026",
+    cc: "303",
+    centroCusto: "CONTROLADORIA",
+    valor: 1_120.00,
+    status: "validado",
+    observacao: "Desconto de R$ 1.120,00 abatido do adiantamento em 04/05/2026 (antes da implantação de 31/05), não baixado pela contabilidade anterior. Com esta baixa o saldo da 25126 fica em R$ 1.000,00 em 31/08/2026.",
+    rastreio: "documento",
+    fonte: "Informação do cliente em 25/09/2026",
   },
 ];
