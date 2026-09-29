@@ -55,14 +55,24 @@ const compararClassificacao = (a: string, b: string) => {
   }
   return 0;
 };
-const estruturaBalanceteCompleta: LinhaEstruturaBalancete[] = contasPosImplantacao
-  .filter(([conta]) => !contasEstruturaBase.has(conta))
+// Receitas financeiras reunidas no sintético 5.7.12 RECEITAS FINANCEIRAS: a 2859
+// ficava em 4.1.05.001 (grupo de Receitas) e o sintético não compunha o total.
+// Mesmo código de conta; só a posição no balancete muda. 2857 (4.1.05.001), que
+// só agrupava a 2859, sai da estrutura.
+const reposicionadasBalancete: [string, string, string][] = [
+  ["2859", "5.7.12.001.002", "Receitas Aplicações Financeiras"],
+];
+const contasRemovidasBalancete = new Set(["2857", ...reposicionadasBalancete.map(([conta]) => conta)]);
+const estruturaBalanceteCompleta: LinhaEstruturaBalancete[] = [
+  ...contasPosImplantacao.filter(([conta]) => !contasEstruturaBase.has(conta)),
+  ...reposicionadasBalancete,
+]
   .reduce<LinhaEstruturaBalancete[]>((lista, [conta, classificacao, descricao]) => {
     let posicao = lista.length;
     while (posicao > 0 && compararClassificacao(lista[posicao - 1]!.classificacao, classificacao) > 0) posicao--;
     const linha = { conta, tipo: "A" as const, classificacao, descricao, nivel: classificacao.split(".").length };
     return [...lista.slice(0, posicao), linha, ...lista.slice(posicao)];
-  }, [...estruturaBalanceteNitaplast]);
+  }, estruturaBalanceteNitaplast.filter((x) => !contasRemovidasBalancete.has(x.conta)));
 const analiticas = estruturaBalanceteCompleta.filter((x) => x.tipo === "A");
 const contasEstrutura = new Set(analiticas.map((x) => x.conta));
 /** Classificação e descrição por conta cobrindo o plano de contas completo (implantação + contas criadas depois), usadas onde `info` (só saldosImplantacao) ficaria incompleto. */
