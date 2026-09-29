@@ -23,9 +23,10 @@ const nomeConta = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(cod
  * adiantamento — 05/03/2026 e 04/05/2026 — que a contabilidade anterior não
  * baixou, por isso seguem no saldo de implantação de 31/05. São regularizados
  * aqui em agosto (AGO-PAG-HAUSTIN-ADTO-REG-*), mesma contrapartida da baixa de
- * 05/08. Saldo final da 25126 em agosto: R$ 1.000,00. O cliente citou
- * R$ 1.120,00 (baixa de 05/09, em setembro) — a diferença de R$ 120,00 fica
- * no saldo por decisão do usuário, pendente de explicação.
+ * 05/08. Saldo de implantação corrigido em 29/09/2026 de R$ 4.360,00 para
+ * R$ 4.480,00 (contrapartida 5747 Ajuste de Exercício Anterior), por decisão do
+ * usuário — o balancete Domínio de maio mostra R$ 4.360,00. Saldo final da 25126
+ * em agosto: R$ 1.120,00, baixado em 05/09 (setembro), como o cliente informou.
  */
 export const lancamentosPagamentoHaustinAgosto: LancamentoIntegrado[] = [
   {
@@ -96,7 +97,7 @@ export const lancamentosPagamentoHaustinAgosto: LancamentoIntegrado[] = [
     centroCusto: "CONTROLADORIA",
     valor: 1_120.00,
     status: "validado",
-    observacao: "Desconto de R$ 1.120,00 abatido do adiantamento em 04/05/2026 (antes da implantação de 31/05), não baixado pela contabilidade anterior. Com esta baixa o saldo da 25126 fica em R$ 1.000,00 em 31/08/2026.",
+    observacao: "Desconto de R$ 1.120,00 abatido do adiantamento em 04/05/2026 (antes da implantação de 31/05), não baixado pela contabilidade anterior. Com esta baixa o saldo da 25126 fica em R$ 1.120,00 em 31/08/2026.",
     rastreio: "documento",
     fonte: "Informação do cliente em 25/09/2026",
   },
