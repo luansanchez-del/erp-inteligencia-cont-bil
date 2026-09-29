@@ -935,8 +935,14 @@ export function calcularResultadoAgosto(lancamentos: ReturnType<typeof useBase>[
   const receitasFinanceiras = arred(
     [...contasReceitasFinanceirasAgosto].reduce((s, c) => s + Math.max(0, credito(c)), 0),
   );
+  // 4.1.05.003 Receitas Operacionais Diversas (2892 Reembolsos, 2893 Outras Receitas):
+  // estavam no balancete mas fora do resultado — a DRE ficava R$ 1.136,59 abaixo do
+  // balancete em agosto (reembolso NPLOG de 24/08).
+  const outrasReceitasOperacionais = arred(credito("2892") + credito("2893"));
   const lucroBruto = arred(receitaLiquida - cpv),
-    resultadoOperacional = arred(lucroBruto - despesas - despesasFinanceiras + receitasFinanceiras);
+    resultadoOperacional = arred(
+      lucroBruto - despesas - despesasFinanceiras + receitasFinanceiras + outrasReceitasOperacionais,
+    );
   // 25948 (Despesa com Provisão de Custos) fica fora de "operacionais" e some
   // aqui: decisão do cliente em 18/09/2026 (o cliente classifica essa
   // provisão/reversão como não operacional, não despesa operacional comum).
@@ -947,7 +953,7 @@ export function calcularResultadoAgosto(lancamentos: ReturnType<typeof useBase>[
   return {
     mov, credito, custos, operacionais, financeiras,
     receitaProducao, receitaRevenda, receitaBruta, deducoes, receitaLiquida,
-    cpv, despesas, despesasFinanceiras, receitasFinanceiras,
+    cpv, despesas, despesasFinanceiras, receitasFinanceiras, outrasReceitasOperacionais,
     lucroBruto, resultadoOperacional, naoOperacional, resultado,
   };
 }
@@ -1190,7 +1196,7 @@ export function DreAgostoPadrao() {
   const {
     mov, credito, custos, operacionais, financeiras,
     receitaProducao, receitaRevenda, receitaBruta, deducoes, receitaLiquida,
-    cpv, despesas, despesasFinanceiras, receitasFinanceiras,
+    cpv, despesas, despesasFinanceiras, receitasFinanceiras, outrasReceitasOperacionais,
     lucroBruto, resultadoOperacional, naoOperacional, resultado,
   } = calcularResultadoAgosto(lancamentos);
   const impactoCustoPorEstabelecimento = (estabelecimento: "Matriz" | "Filial SP") =>
@@ -1389,6 +1395,9 @@ export function DreAgostoPadrao() {
       if (Math.abs(v) < 0.004) return [];
       return [{ id: `fin-r-${c}`, descricao: `${c} - ${descricaoPorContaCompleta.get(c) ?? "Conta não encontrada no plano"}`, valor: v, nivel: 2 as const, pai: "fin-r" }];
     }),
+    ...(Math.abs(outrasReceitasOperacionais) >= 0.005
+      ? [{ id: "outras-rec-op", descricao: "Outras receitas operacionais", valor: outrasReceitasOperacionais, nivel: 0 as const }]
+      : []),
     {
       id: "operacional",
       descricao: "(=) Resultado Operacional",
