@@ -27,7 +27,12 @@ const nomeConta = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(cod
  *   contábeis da Nitaplast ("VALOR REF. BAIXA PGTO...", "RECEBIMENTO EXPORTAÇÃO" etc.).
  */
 const contasBaseJcp = ["2348", "25240", "2515", "5747", "25241"] as const;
-export const baseJcpJulho = arred(-contasBaseJcp.reduce((total, conta) => total + (saldoAberturaJulhoPorConta.get(conta) ?? 0), 0));
+// A correção do saldo de implantação do Haustin (29/09/2026, +R$ 120,00 a crédito
+// na 5747) não altera a base do JCP de julho já apurado — decisão do usuário.
+const correcaoImplantacaoHaustin = 120;
+export const baseJcpJulho = arred(
+  -contasBaseJcp.reduce((total, conta) => total + (saldoAberturaJulhoPorConta.get(conta) ?? 0), 0) - correcaoImplantacaoHaustin,
+);
 export const taxaTjlpJulho = 0.007617;
 export const jcpBrutoJulho = arred(baseJcpJulho * taxaTjlpJulho);
 export const aliquotaIrrfJcpJulho = 0.175;

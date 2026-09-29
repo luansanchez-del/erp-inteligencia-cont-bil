@@ -188,7 +188,9 @@ const capitalSocialIntegralizado = saldoCredorAbertura("2348");
 const reservaCapitalContabil = saldoCredorAbertura("25239");
 const reservasLucros = saldoCredorAbertura("25240");
 const lucrosAcumuladosAnteriores = saldoCredorAbertura("2515");
-const ajusteExercicioAnterior = saldoDevedorAbertura("5747");
+// Correção de implantação do Haustin (29/09/2026, +R$ 120,00 a crédito na 5747)
+// fora da base do JCP de julho já apurado — decisão do usuário.
+const ajusteExercicioAnterior = arred(saldoDevedorAbertura("5747") + 120);
 const distribuicaoLucros = saldoDevedorAbertura("25241");
 const reservaCapitalConsiderada = 0;
 const redutorasPatrimonio = arred(ajusteExercicioAnterior + distribuicaoLucros);

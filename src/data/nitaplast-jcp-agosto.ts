@@ -15,7 +15,10 @@ const saldoDevedor = (codigo: string) => Math.max(0, saldoAberturaAgostoPorConta
 const capitalSocialIntegralizado = saldoCredor("2348");
 const reservasLucros = saldoCredor("25240");
 const lucrosAcumuladosAnteriores = saldoCredor("2515");
-const ajusteExercicioAnterior = saldoDevedor("5747");
+// A correção do saldo de implantação do Haustin (29/09/2026, +R$ 120,00 a crédito
+// na 5747) não altera a base do JCP de agosto já apurado — decisão do usuário.
+const correcaoImplantacaoHaustin = 120;
+const ajusteExercicioAnterior = arred(saldoDevedor("5747") + correcaoImplantacaoHaustin);
 const distribuicaoLucros = saldoDevedor("25241");
 const redutorasPatrimonio = arred(ajusteExercicioAnterior + distribuicaoLucros);
 const lucrosEReservasLiquidos = arred(reservasLucros + lucrosAcumuladosAnteriores - redutorasPatrimonio);
