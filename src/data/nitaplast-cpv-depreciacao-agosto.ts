@@ -2,6 +2,7 @@ import { regrasImobilizadoNitaplast } from "./nitaplast-imobilizado-regras";
 import { saldosImplantacao } from "./nitaplast-implantacao";
 import type { LancamentoIntegrado } from "./nitaplast-razao-base";
 import { saldoAberturaAgostoPorConta } from "./nitaplast-saldos-agosto";
+import { creditosTicona113241 } from "./nitaplast-provisao-impostos-agosto";
 
 const arred = (valor: number) => Math.round(valor * 100) / 100;
 const descricao = new Map(saldosImplantacao.map((conta) => [conta.conta, conta.descricao]));
@@ -23,8 +24,9 @@ export const lancamentosComprasCpvAgosto: LancamentoIntegrado[] = [
   base({ id: "AGO-CUSTO-MAT-IND-M", data: "31/08/2026", origem: "ENTRADAS POR CC 08/2026", debitoCodigo: "3244", creditoCodigo: "1496", historico: "Materiais indiretos — Matriz/Produção", documento: "11.01.002 / CC 102 / 1 documento", cc: "102", centroCusto: "PRODUÇÃO", valor: 19_284.56, observacao: "Valor bruto após exclusão dos NOPs de retorno/transferência adotada no fechamento anterior. NF 113241 (Ticona) retirada em 30/09/2026 e lançada como matéria-prima (AGO-CUSTO-MP-TICONA-113241); resta a NF 60082 Lamiex Indústria (CFOP 1925).", fonte: "RELATATORIO DETALHADO ENTRADAS POR CENTRO DE CUSTO - SOFTDIB 082026.csv" }),
   // NF 113241 Ticona: granulado POM Hostaform M30RS, 12.000 kg (SPED C170) — matéria-prima,
   // embora o Softdib a tenha na gerencial 11.01.002 (Materiais Indiretos). Reclassificada
-  // por decisão do usuário em 30/09/2026; mesma conta das demais compras de MP.
-  base({ id: "AGO-CUSTO-MP-TICONA-113241", data: "26/08/2026", origem: "ENTRADAS POR CC 08/2026", debitoCodigo: "3093", creditoCodigo: "1496", historico: "Matéria-prima — NF 113241 — Ticona Polymers — granulado POM Hostaform M30RS 12.000 kg", documento: "NF 113241 série 3 / CFOP 2101", cc: "102", centroCusto: "PRODUÇÃO", valor: 178_515.83, observacao: "Mercadoria R$ 172.896,69 + IPI R$ 5.619,14. No Softdib consta na gerencial 11.01.002 (Materiais Indiretos); reclassificada para matéria-prima em 30/09/2026. Créditos de ICMS/IPI/PIS/COFINS da nota acompanham a 3093 na apuração.", fonte: "RELATATORIO DETALHADO ENTRADAS POR CENTRO DE CUSTO - SOFTDIB 082026.csv + ARQUIVO EFD FISCAL.TXT (C170)" }),
+  // por decisão do usuário em 30/09/2026 para o estoque de matéria-prima (ativo), como a
+  // correção de junho da 11.01.002; o fechamento abaixo baixa o saldo com ela.
+  base({ id: "AGO-CUSTO-MP-TICONA-113241", data: "26/08/2026", origem: "ENTRADAS POR CC 08/2026", debitoCodigo: "25135", creditoCodigo: "1496", historico: "Matéria-prima — NF 113241 — Ticona Polymers — granulado POM Hostaform M30RS 12.000 kg", documento: "NF 113241 série 3 / CFOP 2101", cc: "102", centroCusto: "PRODUÇÃO", valor: 178_515.83, observacao: "Mercadoria R$ 172.896,69 + IPI R$ 5.619,14. No Softdib consta na gerencial 11.01.002 (Materiais Indiretos); reclassificada para matéria-prima em 30/09/2026. Lançada no estoque de matéria-prima (25135); créditos de ICMS/IPI/PIS/COFINS reduzem o mesmo estoque.", fonte: "RELATATORIO DETALHADO ENTRADAS POR CENTRO DE CUSTO - SOFTDIB 082026.csv + ARQUIVO EFD FISCAL.TXT (C170)" }),
   base({ id: "AGO-CUSTO-MAT-IND-V", data: "31/08/2026", origem: "ENTRADAS POR CC 08/2026", debitoCodigo: "3244", creditoCodigo: "1496", historico: "Materiais indiretos — Vendas", documento: "11.01.002 / CC 201 / 2 documentos", cc: "201", centroCusto: "VENDAS", valor: 44_534.68, observacao: "Valor bruto após exclusão dos NOPs de retorno/transferência adotada no fechamento anterior.", fonte: "RELATATORIO DETALHADO ENTRADAS POR CENTRO DE CUSTO - SOFTDIB 082026.csv" }),
   // Compras de mercadoria para revenda da Filial SP em agosto, CFOP 1102, extraídas de
   // RESUMO NOTAS FISCAIS ENTRADA.csv (C:/082026/FILIAL - AGO 26). Mesmo tratamento aplicado
@@ -169,8 +171,16 @@ export const lancamentosFechamentoEstoqueFilialAgosto: LancamentoIntegrado[] = [
   }),
 ].filter((linha) => Math.abs(linha.valor) > 0.005);
 
+function movimentoComprasEstoqueAgosto(conta: string) {
+  const compras = lancamentosComprasCpvAgosto.filter((l) => l.debitoCodigo === conta).reduce((s, l) => s + l.valor, 0);
+  const creditos = conta === "25135" ? Object.values(creditosTicona113241).reduce((s, v) => s + v, 0) : 0;
+  return arred(compras - creditos);
+}
+
 export const lancamentosFechamentoEstoqueAgosto: LancamentoIntegrado[] = Object.entries(estoqueFinalMatrizAgostoPorConta).flatMap(([conta, saldoFinal], indice) => {
-  const saldoAnterior = saldoAberturaAgostoPorConta.get(conta) ?? 0;
+  // Saldo contábil antes do fechamento = abertura + compras do mês lançadas direto no
+  // estoque (hoje só a NF 113241 Ticona na 25135, líquida dos créditos de impostos).
+  const saldoAnterior = arred((saldoAberturaAgostoPorConta.get(conta) ?? 0) + movimentoComprasEstoqueAgosto(conta));
   const linhas: LancamentoIntegrado[] = [];
   if (Math.abs(saldoAnterior) >= 0.005) linhas.push(base({ id: `AGO-CPV-BAIXA-${indice + 1}`, data: "31/08/2026", origem: "FECHAMENTO ESTOQUE MATRIZ 08/2026", debitoCodigo: "25944", creditoCodigo: conta, historico: `Baixa integral do estoque anterior da conta ${conta}`, documento: "INVENTÁRIO 31/08/2026", cc: "102", centroCusto: "PRODUÇÃO", valor: Math.abs(saldoAnterior), observacao: "Fechamento periódico: baixa do saldo patrimonial anterior antes do reconhecimento do inventário físico final.", fonte: "Saldo contábil fechado em 31/07/2026 + REGISTRO INVENTARIO ESTOQUE 31/08/2026.pdf", rastreio: "derivado" }));
   if (saldoFinal > 0.005) linhas.push(base({ id: `AGO-CPV-FINAL-${indice + 1}`, data: "31/08/2026", origem: "FECHAMENTO ESTOQUE MATRIZ 08/2026", debitoCodigo: conta, creditoCodigo: "25944", historico: `Reconhecimento do inventário físico final da conta ${conta}`, documento: "INVENTÁRIO 31/08/2026", cc: "102", centroCusto: "PRODUÇÃO", valor: saldoFinal, observacao: "Saldo final documentado; permanece no ativo e não é lançamento de encaixe.", fonte: "REGISTRO INVENTARIO ESTOQUE 31/08/2026.pdf", rastreio: "documento" }));

@@ -102,11 +102,13 @@ const IMPOSTOS_COM_DEBITO_RATEADO = new Set<Imposto["chave"]>(["icms", "ipi"]);
 
 // Crédito de entradas rateado por conta real, extraído do CSV de entradas por
 // CC de agosto/2026 via a tabela de tradução gerencial+CC → conta de junho.
-// 30/09/2026: créditos da NF 113241 Ticona (ICMS 20.747,60, IPI 5.619,14, PIS 2.510,46,
-// COFINS 11.563,33) passados da 3244 para a 3093, junto com a reclassificação da nota.
+// 30/09/2026: créditos da NF 113241 Ticona saem da 3244 e acompanham a nota no estoque
+// de matéria-prima (25135) — reduzem o custo do estoque, não o resultado.
+export const creditosTicona113241 = { icms: 20_747.60, ipi: 5_619.14, pis: 2_510.46, cofins: 11_563.33 } as const;
 type CreditoPorConta = { conta: string; icms: number; ipi: number; pis: number; cofins: number };
 const creditoPorConta: CreditoPorConta[] = [
-  { conta: "3093", icms: 61_494.67, ipi: 74_322.37, pis: 21_727.94, cofins: 99_962.25 },
+  { conta: "3093", icms: 40_747.07, ipi: 68_703.23, pis: 19_217.48, cofins: 88_398.92 },
+  { conta: "25135", ...creditosTicona113241 },
   { conta: "3035", icms: 41_781.09, ipi: 49_153.06, pis: 5_055.52, cofins: 23_285.93 },
   { conta: "3244", icms: 4_869.38, ipi: 4_035.58, pis: 589.19, cofins: 2_713.87 },
   { conta: "25937", icms: 7_179.26, ipi: 1_944.38, pis: 7_096.90, cofins: 32_688.00 },
