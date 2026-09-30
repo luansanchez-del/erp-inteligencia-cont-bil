@@ -215,7 +215,7 @@ export function LalurApuracaoCard(props: Props) {
 
         {fechamento ? (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900">
-            <span>DARF vencimento {fechamento.vencimento}</span>
+            <span>{fechamento.irpj + fechamento.csll > 0 ? `DARF vencimento ${fechamento.vencimento}` : "Sem DARF a pagar"}</span>
             <span className="tabular-nums">
               IRPJ {brl.format(fechamento.irpj)} · CSLL {brl.format(fechamento.csll)} · Total{" "}
               <strong>{brl.format(fechamento.irpj + fechamento.csll)}</strong>
