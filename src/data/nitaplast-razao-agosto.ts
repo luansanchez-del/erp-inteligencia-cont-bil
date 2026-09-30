@@ -19,6 +19,7 @@ import { lancamentosFolhaAgosto } from "./nitaplast-folha-agosto";
 import { lancamentosDespesasFilialAgosto } from "./nitaplast-despesas-filial-agosto";
 import { lancamentosProvisoesAgosto } from "./nitaplast-provisoes-agosto";
 import { lancamentosJcpAgosto } from "./nitaplast-jcp-agosto";
+import { lancamentosProvisaoReceitaAgosto } from "./nitaplast-provisao-receita-agosto";
 import { lancamentosDarfIrpjCsllAgosto } from "./nitaplast-darf-irpj-csll-agosto";
 import { lancamentosVersaoJulho, lancamentosProvisaoCustoClienteJulho } from "./nitaplast-razao-julho-final-v2";
 import type { LancamentoIntegrado } from "./nitaplast-razao-base";
@@ -114,8 +115,7 @@ export const lancamentosIntegradosAgosto: LancamentoIntegrado[] = [
   ...lancamentosDespesasFilialAgosto,
   ...lancamentosProvisoesAgosto,
   ...lancamentosJcpAgosto,
-  // Provisão de receita de R$ 400 mil (nitaplast-provisao-receita-agosto.ts) fora do
-  // Razão desde 30/09/2026: ainda não será lançada, por decisão do usuário.
+  ...lancamentosProvisaoReceitaAgosto,
   ...lancamentosDarfIrpjCsllAgosto,
   ...lancamentosFechamentoEstoqueAgosto,
   ...lancamentosFechamentoEstoqueFilialAgosto,

@@ -1,9 +1,7 @@
 import type { LancamentoIntegrado } from "./nitaplast-razao-base";
 
 /**
- * NÃO LANÇADA: retirada do Razão de agosto em 30/09/2026 por decisão do usuário
- * ("ainda não vamos lançar isso"). Mantida aqui só como registro, sem entrar em
- * `lancamentosIntegradosAgosto`.
+ * Retirada do Razão em 30/09/2026 e relançada no mesmo dia por decisão do usuário.
  *
  * Provisão de receita não operacional de R$ 400.000,00 na competência 08/2026 —
  * ajuste manual solicitado pelo usuário em 28/09/2026, com autorização do

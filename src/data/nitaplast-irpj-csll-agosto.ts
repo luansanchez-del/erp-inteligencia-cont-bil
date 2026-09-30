@@ -17,10 +17,10 @@ const darfPagoJulho = darfIrpjCsllPagoAgosto;
 
 // LALUR 08/2026 fechado em 28/09/2026, refeito em 29/09/2026 com o reembolso NPLOG
 // (2892, R$ 1.136,59) incluído no resultado, e de novo em 30/09/2026 sem a provisão de
-// receita de R$ 400 mil: resultado real, suspensão, sem DARF (crédito de IRPJ e CSLL). O DARF vence em 30/09/2026 e entra no Razão
+// receita de R$ 400 mil e, ainda em 30/09/2026, com ela relançada (DARF de agosto). O DARF vence em 30/09/2026 e entra no Razão
 // de setembro quando pago (D 25119/25120 — C banco), e no LALUR de setembro como
 // pagamento anterior. Se o cálculo ao vivo mudar, a tela acusa divergência.
-export const lalurAgostoFechado = { irpj: 0, csll: 0, vencimento: "30/09/2026" } as const;
+export const lalurAgostoFechado = { irpj: 25_546.56, csll: 10_020.45, vencimento: "30/09/2026" } as const;
 
 export type ApuracaoIrpjCsllAgosto = ApuracaoIrpjCsllBalancoSuspensaoReducaoResultado & {
   lucroContabilAcumuladoJaneiroAAgosto: number;
