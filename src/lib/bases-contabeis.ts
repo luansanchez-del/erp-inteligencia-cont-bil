@@ -5,6 +5,7 @@
  */
 const BASES_CONTABEIS_CARREGADAS = new Set([
   "nitaplast-matriz|2026-08",
+  "nitaplast-matriz|2026-09",
 ]);
 
 export function temBaseContabilCarregada(empresaId: string, competenciaId: string) {

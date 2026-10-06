@@ -37,7 +37,7 @@ export function ErpProvider({ children }: { children: ReactNode }) {
   const empresas = useMemo(() => [...empresasBase, ...empresasAdicionais], [empresasAdicionais]);
   const [empresaId, setEmpresaId] = useState(empresasBase[0]!.id);
   const [competenciaId, setCompetenciaId] = useState(
-    (competenciasDisponiveis.find((c) => c.id === "2026-07") ?? competenciasDisponiveis[0]!).id,
+    (competenciasDisponiveis.find((c) => c.status === "aberta") ?? competenciasDisponiveis[0]!).id,
   );
   const [competenciasAdicionais, setCompetenciasAdicionais] = useState<Competencia[]>([]);
   const [statusOverrides, setStatusOverrides] = useState<Record<string, StatusCompetencia>>({});

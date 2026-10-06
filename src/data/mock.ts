@@ -78,7 +78,8 @@ export const empresas: Empresa[] = [
 ];
 
 export const competenciasDisponiveis: { id: string; label: string; status: StatusCompetencia }[] = [
-  { id: "2026-08", label: "08/2026", status: "aberta" },
+  { id: "2026-09", label: "09/2026", status: "aberta" },
+  { id: "2026-08", label: "08/2026", status: "fechada" },
   { id: "2026-07", label: "07/2026", status: "fechada" },
   { id: "2026-06", label: "06/2026", status: "fechada" },
   { id: "2026-05", label: "05/2026", status: "fechada" },

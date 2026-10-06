@@ -13,6 +13,14 @@ import {
 } from "@/hooks/use-lancamentos-competencia";
 import type { Competencia } from "@/context/erp-context";
 import { saldoAberturaAgostoPorConta } from "@/data/nitaplast-razao-agosto";
+import { saldoAberturaSetembroPorConta } from "@/data/nitaplast-saldos-setembro";
+
+/** Saldo final do mês anterior transportado como abertura, por competência com base carregada. */
+const saldosAberturaPorCompetencia: Record<string, Map<string, number>> = {
+  "2026-08": saldoAberturaAgostoPorConta,
+  "2026-09": saldoAberturaSetembroPorConta,
+};
+const saldoAberturaDa = (competenciaId: string) => saldosAberturaPorCompetencia[competenciaId];
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -143,8 +151,8 @@ function Campo({ label, children }: { label: string; children: ReactNode }) {
 export function RazaoCompetenciaAberta({ lancamentos, competencia }: { lancamentos: LancamentoCompetencia[]; competencia: Competencia }) {
   const porConta = useMemo(() => {
     const mapa = new Map<string, { conta: string; descricao: string; debitos: number; creditos: number; lancamentos: number }>();
-    if (competencia.id === "2026-08") {
-      for (const [codigo, saldo] of saldoAberturaAgostoPorConta) {
+    {
+      for (const [codigo, saldo] of saldoAberturaDa(competencia.id) ?? []) {
         if (saldo !== 0) mapa.set(codigo, { conta: codigo, descricao: contaInfo(codigo)?.descricao ?? "conta não cadastrada", debitos: 0, creditos: 0, lancamentos: 0 });
       }
     }
@@ -158,7 +166,7 @@ export function RazaoCompetenciaAberta({ lancamentos, competencia }: { lancament
     }
     return [...mapa.values()].sort((a, b) => a.conta.localeCompare(b.conta, "pt-BR", { numeric: true }));
   }, [competencia.id, lancamentos]);
-  const saldoAnterior = competencia.id === "2026-08" ? saldoAberturaAgostoPorConta : new Map<string, number>();
+  const saldoAnterior = saldoAberturaDa(competencia.id) ?? new Map<string, number>();
 
   if (!lancamentos.length) return <CandidatoVazio competencia={competencia} mensagem="O Razão desta competência é derivado direto dos lançamentos — registre a primeira partida em Lançamentos." />;
 
@@ -178,8 +186,8 @@ export function RazaoCompetenciaAberta({ lancamentos, competencia }: { lancament
 export function BalanceteCompetenciaAberta({ lancamentos, competencia }: { lancamentos: LancamentoCompetencia[]; competencia: Competencia }) {
   const porConta = useMemo(() => {
     const mapa = new Map<string, { conta: string; descricao: string; grupo: string; debitos: number; creditos: number }>();
-    if (competencia.id === "2026-08") {
-      for (const [codigo, saldo] of saldoAberturaAgostoPorConta) {
+    {
+      for (const [codigo, saldo] of saldoAberturaDa(competencia.id) ?? []) {
         if (saldo === 0) continue;
         const info = contaInfo(codigo);
         mapa.set(codigo, { conta: codigo, descricao: info?.descricao ?? "conta não cadastrada", grupo: info?.grupo ?? "Sem classificação", debitos: 0, creditos: 0 });
@@ -195,14 +203,14 @@ export function BalanceteCompetenciaAberta({ lancamentos, competencia }: { lanca
     }
     return [...mapa.values()].sort((a, b) => a.grupo.localeCompare(b.grupo, "pt-BR") || a.conta.localeCompare(b.conta, "pt-BR", { numeric: true }));
   }, [competencia.id, lancamentos]);
-  const saldoAnterior = competencia.id === "2026-08" ? saldoAberturaAgostoPorConta : new Map<string, number>();
+  const saldoAnterior = saldoAberturaDa(competencia.id) ?? new Map<string, number>();
 
   if (!lancamentos.length) return <CandidatoVazio competencia={competencia} mensagem="O Balancete desta competência aparece assim que houver lançamentos." />;
 
   return (
     <div className="grid gap-4">
-      <Card className={competencia.id === "2026-08" ? "border-blue-500/30 bg-blue-500/5" : "border-amber-500/40 bg-amber-500/5"}>
-        <CardContent className="pt-5 text-sm">{competencia.id === "2026-08" ? <><strong>Saldo anterior transportado.</strong> O saldo final contábil de 07/2026 é referência de abertura por conta e não constitui lançamento.</> : <><strong>Saldo anterior ainda não definido.</strong> Este Balancete mostra apenas o movimento (débitos e créditos) desta competência — a decisão de trazer o saldo final de {labelCompetenciaAnterior(competencia.id)} como saldo de abertura por conta depende de conferência do contador antes de ser automatizada.</>}</CardContent>
+      <Card className={saldoAberturaDa(competencia.id) ? "border-blue-500/30 bg-blue-500/5" : "border-amber-500/40 bg-amber-500/5"}>
+        <CardContent className="pt-5 text-sm">{saldoAberturaDa(competencia.id) ? <><strong>Saldo anterior transportado.</strong> O saldo final contábil de {labelCompetenciaAnterior(competencia.id)} é referência de abertura por conta e não constitui lançamento.</> : <><strong>Saldo anterior ainda não definido.</strong> Este Balancete mostra apenas o movimento (débitos e créditos) desta competência — a decisão de trazer o saldo final de {labelCompetenciaAnterior(competencia.id)} como saldo de abertura por conta depende de conferência do contador antes de ser automatizada.</>}</CardContent>
       </Card>
       <Card>
         <CardHeader><CardTitle className="text-base">Balancete — movimento de {competencia.label}</CardTitle><CardDescription>Agrupado por classificação patrimonial/resultado do plano de contas.</CardDescription></CardHeader>

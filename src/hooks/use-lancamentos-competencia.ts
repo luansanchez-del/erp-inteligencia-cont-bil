@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { lancamentosIntegradosAgosto } from "@/data/nitaplast-razao-agosto";
+import { lancamentosIntegradosSetembro } from "@/data/nitaplast-razao-setembro";
+
+const basesPorCompetencia: Record<string, { linhas: typeof lancamentosIntegradosAgosto; criadoEm: string }> = {
+  "2026-08": { linhas: lancamentosIntegradosAgosto, criadoEm: "2026-08-31T23:59:59.000Z" },
+  "2026-09": { linhas: lancamentosIntegradosSetembro, criadoEm: "2026-09-30T23:59:59.000Z" },
+};
 import { temBaseContabilCarregada } from "@/lib/bases-contabeis";
 
 const STORAGE_KEY = "erp-lancamentos-competencia-v1";
@@ -62,8 +68,9 @@ export function useLancamentosCompetencia(empresaId: string, competenciaId: stri
   }
 
   const lancamentosBase = useMemo<LancamentoCompetencia[]>(() => {
-    if (!temBaseContabilCarregada(empresaId, competenciaId)) return [];
-    return lancamentosIntegradosAgosto.map((linha) => ({
+    const base = basesPorCompetencia[competenciaId];
+    if (!base || !temBaseContabilCarregada(empresaId, competenciaId)) return [];
+    return base.linhas.map((linha) => ({
       id: linha.id,
       empresaId,
       competenciaId,
@@ -75,7 +82,7 @@ export function useLancamentosCompetencia(empresaId: string, competenciaId: stri
       cc: linha.cc,
       centroCusto: linha.centroCusto,
       valor: linha.valor,
-      criadoEm: "2026-08-31T23:59:59.000Z",
+      criadoEm: base.criadoEm,
       origem: "importado",
       status: linha.status,
       observacao: linha.observacao,
