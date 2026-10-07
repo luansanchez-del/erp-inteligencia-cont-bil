@@ -1,5 +1,8 @@
 import type { LancamentoIntegrado } from "./nitaplast-razao-base";
 import { lancamentosProvisaoReceitaAgosto } from "./nitaplast-provisao-receita-agosto";
+import { lancamentosFolhaSetembro } from "./nitaplast-folha-setembro";
+import { lancamentosProvisoesSetembro } from "./nitaplast-provisoes-setembro";
+import { lancamentosAcertosBancosSetembro } from "./nitaplast-acertos-bancos-setembro";
 
 /**
  * Estorno, em setembro, da provisão de receita não operacional de R$ 400.000,00
@@ -28,4 +31,9 @@ export const estornoProvisaoReceitaSetembro: LancamentoIntegrado[] = lancamentos
  * o movimento do mês entra conforme os documentos de setembro forem recebidos.
  * Pendente: pagamento do DARF de IRPJ/CSLL de agosto (R$ 35.567,01), quando sair do banco.
  */
-export const lancamentosIntegradosSetembro: LancamentoIntegrado[] = [...estornoProvisaoReceitaSetembro];
+export const lancamentosIntegradosSetembro: LancamentoIntegrado[] = [
+  ...estornoProvisaoReceitaSetembro,
+  ...lancamentosFolhaSetembro,
+  ...lancamentosProvisoesSetembro,
+  ...lancamentosAcertosBancosSetembro,
+];
