@@ -12,6 +12,7 @@ import { lancamentosEntradasSetembro } from "./nitaplast-entradas-setembro";
 import { lancamentosImpostosSetembro } from "./nitaplast-impostos-setembro";
 import { lancamentosCpvFilialSetembro, lancamentosTransferenciasSetembro } from "./nitaplast-cpv-setembro";
 import { lancamentosAjustesSetembro } from "./nitaplast-ajustes-setembro";
+import { lancamentosCartaoSetembro } from "./nitaplast-cartao-setembro";
 
 /**
  * Estorno, em setembro, da provisão de receita não operacional de R$ 400.000,00
@@ -57,4 +58,5 @@ export const lancamentosIntegradosSetembro: LancamentoIntegrado[] = [
   ...lancamentosTransferenciasSetembro,
   ...lancamentosCpvFilialSetembro,
   ...lancamentosAjustesSetembro,
+  ...lancamentosCartaoSetembro,
 ];
