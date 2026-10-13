@@ -3,6 +3,10 @@ import { lancamentosProvisaoReceitaAgosto } from "./nitaplast-provisao-receita-a
 import { lancamentosFolhaSetembro } from "./nitaplast-folha-setembro";
 import { lancamentosProvisoesSetembro } from "./nitaplast-provisoes-setembro";
 import { lancamentosAcertosBancosSetembro } from "./nitaplast-acertos-bancos-setembro";
+import { lancamentosItauSetembro } from "./nitaplast-itau-setembro";
+import { lancamentosBradesco6349Setembro } from "./nitaplast-bradesco-6349-setembro";
+import { lancamentosBancosSetembro } from "./nitaplast-bancos-setembro";
+import { lancamentosDepreciacaoSetembro, lancamentosJcpSetembro } from "./nitaplast-depreciacao-jcp-setembro";
 
 /**
  * Estorno, em setembro, da provisão de receita não operacional de R$ 400.000,00
@@ -36,4 +40,9 @@ export const lancamentosIntegradosSetembro: LancamentoIntegrado[] = [
   ...lancamentosFolhaSetembro,
   ...lancamentosProvisoesSetembro,
   ...lancamentosAcertosBancosSetembro,
+  ...lancamentosItauSetembro,
+  ...lancamentosBradesco6349Setembro,
+  ...lancamentosBancosSetembro,
+  ...lancamentosDepreciacaoSetembro,
+  ...lancamentosJcpSetembro,
 ];
