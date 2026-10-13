@@ -1,5 +1,6 @@
 import type { LancamentoIntegrado } from "./nitaplast-razao-base";
 import { descricaoContaJulho } from "./nitaplast-saldos-julho";
+import { lancamentosCartaoJussaraRodrigoAgosto } from "./nitaplast-cartao-4005-jussara-rodrigo-agosto";
 
 const nome = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(codigo) ?? "Conta a revisar"}`;
 
@@ -17,7 +18,35 @@ const comprasNacionaisAgosto = [
   { nf: "15277", fornecedor: "TRICON ENERGY DO BRASIL", valor: 108_213.92 },
 ];
 
+/**
+ * Despesas de Jussara e Rodrigo da fatura de agosto (aba AGOSTO 26, vencimento 01/09/2026), lançadas em
+ * agosto contra a transitória 4859 em vez de Fornecedores. A fatura foi paga em 01/09 baixando a 1496
+ * (Itaú, F22542). A reclassificação leva a dívida para Fornecedores; a 4859 fica só com a fatura de julho
+ * paga em 03/08. A despesa continua em agosto; não muda o resultado.
+ */
+const cartaoAgostoNaTransitoria = Math.round(
+  lancamentosCartaoJussaraRodrigoAgosto.reduce((t, l) => t + (l.creditoCodigo === "4859" ? l.valor : l.debitoCodigo === "4859" ? -l.valor : 0), 0) * 100,
+) / 100;
+
 export const lancamentosAjustesSetembro: LancamentoIntegrado[] = [
+  {
+    id: "SET-RECLASS-CARTAO-AGOSTO",
+    data: "01/09/2026",
+    origem: "RECLASSIFICAÇÃO 08/2026",
+    debitoCodigo: "4859",
+    debito: nome("4859"),
+    creditoCodigo: "1496",
+    credito: nome("1496"),
+    historico: "Fatura dos cartões de agosto (venc. 01/09/2026) — despesas de Jussara e Rodrigo lançadas contra a transitória",
+    documento: "DESPESAS CARTÃO CRÉDITO.xlsx aba AGOSTO 26 / F22542 1092026",
+    cc: "0",
+    centroCusto: "SEM CENTRO DE CUSTO",
+    valor: cartaoAgostoNaTransitoria,
+    status: "validado",
+    observacao: "Leva para Fornecedores a dívida do cartão já reconhecida como despesa em agosto (AGO-CARTAO-4005-JUSSARA-* e RODRIGO-*), para fechar com o pagamento de 01/09. Sem efeito no resultado.",
+    rastreio: "derivado",
+    fonte: "nitaplast-cartao-4005-jussara-rodrigo-agosto.ts + extrato Itaú 01/09/2026",
+  },
   ...comprasNacionaisAgosto.map((n) => ({
     id: `SET-RECLASS-MP-NAC-${n.nf}`,
     data: "01/09/2026",
