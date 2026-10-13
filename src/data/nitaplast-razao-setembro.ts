@@ -7,6 +7,11 @@ import { lancamentosItauSetembro } from "./nitaplast-itau-setembro";
 import { lancamentosBradesco6349Setembro } from "./nitaplast-bradesco-6349-setembro";
 import { lancamentosBancosSetembro } from "./nitaplast-bancos-setembro";
 import { lancamentosDepreciacaoSetembro, lancamentosJcpSetembro } from "./nitaplast-depreciacao-jcp-setembro";
+import { lancamentosDevolucoesVendasSetembro, lancamentosReceitasSetembro } from "./nitaplast-receitas-setembro";
+import { lancamentosEntradasSetembro } from "./nitaplast-entradas-setembro";
+import { lancamentosImpostosSetembro } from "./nitaplast-impostos-setembro";
+import { lancamentosCpvFilialSetembro, lancamentosTransferenciasSetembro } from "./nitaplast-cpv-setembro";
+import { lancamentosAjustesSetembro } from "./nitaplast-ajustes-setembro";
 
 /**
  * Estorno, em setembro, da provisão de receita não operacional de R$ 400.000,00
@@ -33,7 +38,7 @@ export const estornoProvisaoReceitaSetembro: LancamentoIntegrado[] = lancamentos
 /**
  * Base contábil de 09/2026 (Nitaplast Matriz). Começa só com o que decorre de agosto;
  * o movimento do mês entra conforme os documentos de setembro forem recebidos.
- * Pendente: pagamento do DARF de IRPJ/CSLL de agosto (R$ 35.567,01), quando sair do banco.
+ * Pendente: CPV da Matriz (inventário de 30/09), câmbio da importação Licharz e LALUR.
  */
 export const lancamentosIntegradosSetembro: LancamentoIntegrado[] = [
   ...estornoProvisaoReceitaSetembro,
@@ -45,4 +50,11 @@ export const lancamentosIntegradosSetembro: LancamentoIntegrado[] = [
   ...lancamentosBancosSetembro,
   ...lancamentosDepreciacaoSetembro,
   ...lancamentosJcpSetembro,
+  ...lancamentosReceitasSetembro,
+  ...lancamentosDevolucoesVendasSetembro,
+  ...lancamentosEntradasSetembro,
+  ...lancamentosImpostosSetembro,
+  ...lancamentosTransferenciasSetembro,
+  ...lancamentosCpvFilialSetembro,
+  ...lancamentosAjustesSetembro,
 ];
