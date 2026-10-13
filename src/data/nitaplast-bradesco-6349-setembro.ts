@@ -184,7 +184,7 @@ const linhas: Linha[] = [
   [168,"03/09/2026","","DESPESAS E TARIFAS BANCARIAS — ",-47.52,"25104","0","validado","Tarifa bancária Itaú."],
   [169,"03/09/2026","","DESPESAS E TARIFAS BANCARIAS — ",-11.2,"25104","0","validado","Tarifa bancária Itaú."],
   [170,"03/09/2026","","DESPESAS E TARIFAS BANCARIAS — ",-9.8,"25104","0","validado","Tarifa bancária Itaú."],
-  [171,"03/09/2026","F03303 3092026/1","TRANSFERENCIA FORNECEDOR — BIANCA CASTELLANO",-620.87,"4405","201","validado","DESPESAS DE VIAGEM — título de 03/09/2026 sem entrada fiscal; despesa reconhecida no pagamento."],
+  [171,"03/09/2026","F03303 3092026/1","TRANSFERENCIA FORNECEDOR — BIANCA CASTELLANO",-620.87,"25063","201","validado","DESPESAS DE VIAGEM — título de 03/09/2026 sem entrada fiscal; despesa reconhecida no pagamento."],
   [172,"04/09/2026","","RECEBIMENTO DE DUPLICATAS — IMECA INDUSTRIA METALURGICA LTDA",6505.62,"25111","0","validado","Recebimento de duplicata (Softdib: RECEBIMENTO DE DUPLICATAS)."],
   [173,"04/09/2026","","RECEBIMENTO DE DUPLICATAS — J.M.G. INDUSTRIA METALURGICA LTDA",5761.3,"25111","0","validado","Recebimento de duplicata (Softdib: RECEBIMENTO DE DUPLICATAS)."],
   [174,"04/09/2026","","RECEBIMENTO DE DUPLICATAS — J.M.G. INDUSTRIA METALURGICA LTDA",2053.8,"25111","0","validado","Recebimento de duplicata (Softdib: RECEBIMENTO DE DUPLICATAS)."],

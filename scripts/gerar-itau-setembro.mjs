@@ -74,7 +74,7 @@ const despesaSemNota = {
   "15.02.025": { producao: "4024", comercial: "4024", administrativo: "4338" },
   "15.02.007": "4539", "12.03.010": "4553", "15.02.002": "4553", "15.02.027": "4555",
   "12.03.004": { producao: "4037", comercial: "4037", administrativo: "4351" },
-  "15.01.002": "4405", "15.02.005": "25104", "15.02.016": "4547",
+  "15.01.002": "25063", "15.02.005": "25104", "15.02.016": "4547",
   "13.01.001": { producao: "3524", comercial: "4138", administrativo: "4430" },
   "15.02.011": "4668", "12.03.005": "4250",
 };
@@ -100,7 +100,7 @@ function classificar(m) {
   }
   if (/^ADIANTAMENTO FORNECEDORES/.test(h)) return ["288", "0", "validado", "Adiantamento a fornecedor (Softdib: ADIANTAMENTO FORNECEDORES)."];
   if (/^PENS[ÃA]O ALIMENT/.test(h)) return ["25231", "0", "validado", "Repasse de pensão alimentícia descontada na folha."];
-  if (/^ADIANTAMENTO VIAGEM/.test(h)) return ["4405", "0", "validado", "Adiantamento de viagem — mesmo critério de julho (JUL-BAN-OP-043)."];
+  if (/^ADIANTAMENTO VIAGEM/.test(h)) return ["25063", "0", "validado", "Adiantamento de viagem — Viagens e representações (25063); a 4405 de julho não existe no plano de contas."];
   if (/^DESPESAS E TARIFAS/.test(h)) return ["25104", "0", "validado", "Tarifa bancária Itaú."];
   if (/VERISURE/.test(c)) return ["4547", "304", "validado", "Monitoramento Verisure (débito em conta)."];
   if (/CLOUD DRIVE/.test(c)) return ["4478", "304", "revisar", "Assinatura Cloud Drive debitada em conta; classificada em telecomunicações/TI administrativas."];
