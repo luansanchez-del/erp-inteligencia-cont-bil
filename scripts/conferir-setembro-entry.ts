@@ -1,10 +1,12 @@
 import { lancamentosIntegradosSetembro } from "../src/data/nitaplast-razao-setembro";
 import { saldoAberturaSetembroPorConta } from "../src/data/nitaplast-saldos-setembro";
 import { saldosImplantacao } from "../src/data/nitaplast-implantacao";
+import { contasPosImplantacao } from "../src/data/nitaplast-balancete-julho-engine";
 
 const arred = (v: number) => Math.round(v * 100) / 100;
 const classif = new Map(saldosImplantacao.map((c) => [c.conta, c.classificacao]));
 const descr = new Map(saldosImplantacao.map((c) => [c.conta, c.descricao]));
+for (const [c, k, d] of contasPosImplantacao) { classif.set(c, k); descr.set(c, d); }
 const mov = new Map<string, number>();
 for (const l of lancamentosIntegradosSetembro) {
   mov.set(l.debitoCodigo, (mov.get(l.debitoCodigo) ?? 0) + l.valor);

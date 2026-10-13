@@ -114,7 +114,7 @@ function classificar(m) {
   if (!m.codigo && /FRUTAS/i.test(c)) return ["4546", "304", "validado", "Compra de frutas da semana (reembolso a funcionário)."];
   if (!m.codigo && /REEMBOLSO UNIMED/i.test(c)) return ["4337", "304", "validado", "Reembolso de Unimed recebido de funcionário — reduz a despesa de assistência médica."];
   if (!m.codigo) return ["4859", "0", "revisar", `${h} sem título vinculado — conferir a natureza.`];
-  if (m.codigo === "I00001") return ["1541", "0", "validado", "Pagamento de ICMS a recolher."];
+  if (m.codigo === "I00001") return [m.filial === "002" ? "25235" : "1541", "0", "validado", `Pagamento de ICMS a recolher ${m.filial === "002" ? "da Filial SP" : "da Matriz"}.`];
   if (m.codigo === "I00002") return [m.filial === "002" ? "25236" : "1543", "0", "validado", `Pagamento de IPI a recolher ${m.filial === "002" ? "da Filial SP" : "da Matriz"}.`];
   if (m.codigo === "I00017") return ["1542", "0", "validado", "Pagamento de ICMS ST a recolher."];
   if (m.codigo === "I00012") return ["1580", "0", "validado", "Pagamento de contribuições retidas (CSLL/PIS/COFINS)."];
