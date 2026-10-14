@@ -60,6 +60,56 @@ ws.column_dimensions["E"].width = 12
 ws.column_dimensions["F"].width = 16
 ws.freeze_panes = "B4"
 
+# Análise horizontal e vertical (mesmo layout de "DRE - ANALISTE HORIZONTAL E VERTICAL 082026.xlsx").
+v = {desc.strip(): (ago, sete) for desc, ago, sete in d["dre"]}
+def par(nome):
+    return v.get(nome, (0.0, 0.0))
+fin = tuple(-(a - b) for a, b in zip(par("Despesas Financeiras"), par("(-)Receitas Financeiras")))
+layout = [("(+) Receita Operacional Bruta", par("(+)Receita Operacional Bruta"), True)]
+for k in ["Receita Venda Produção Matriz", "Receita Revenda Matriz", "Receita Venda Produção Filial", "Receita Revenda Filial"]:
+    layout.append((k, par(k), False))
+layout.append(("(-) Deduções da Receita Bruta", par("(-)Deduções da Receita Bruta"), True))
+for k in ["Devoluções - Matriz", "Devoluções - Filial", "IPI Matriz", "ICMS Matriz", "Pis Matriz", "Cofins Matriz", "ICMS ST", "ICMS s/ vendas Filial", "IPI Filial", "Pis Filial", "Cofins Filial"]:
+    layout.append((k, par(k), False))
+layout += [("(=) Receita Operacional Líquida", par("(=) Receita Operacional Líquida"), True),
+           ("(-) CPV / CMV Total", par("(-) Custo TOTAL"), True),
+           ("CPV Matriz", par("(-) CPV Matriz"), False), ("CPV Filial", par("(-) CPV Filial"), False),
+           ("(=) Lucro Bruto", par("LUCRO BRUTO"), True),
+           ("(-) Despesas Operacionais", par("(-)Despesas Operacionais"), True)]
+for k in ["Despesas Administrativas", "Despesas com Serviço - NPLog", "Despesas Comerciais", "Despesas Produção", "Despesas Veiculos", "Despesas Barracão", "Despesas com Imobilizado", "Despesas com Industrialização", "Despesas Tributárias", "Despesas comercial SP", "Outras despesas operacionais sem classificação gerencial"]:
+    if k in v and (abs(v[k][0]) > 0.005 or abs(v[k][1]) > 0.005):
+        layout.append((k, par(k), False))
+layout += [("Resultado Financeiro Líquido", fin, True), ("Despesas Financeiras", par("Despesas Financeiras"), False),
+           ("(-) Receitas Financeiras", par("(-)Receitas Financeiras"), False)]
+if any(abs(x) > 0.005 for x in par("Outras receitas operacionais")):
+    layout.append(("Outras receitas operacionais", par("Outras receitas operacionais"), False))
+layout += [("(=) Resultado Operacional", par("Resultado Operacional"), True),
+           ("Resultado não operacional", par("RESULTADO NÃO OPERACIONAL"), True),
+           ("(=) Lucro / Prejuízo Líquido (antes IRPJ/CSLL)", par("LUCRO/PREJUÍZO LÍQUIDO (antes IRPJ/CSLL)"), True)]
+h = wb.create_sheet("Análise H e V", 1)
+h.append(["Composição DRE", "AGO 26", "AV 08", "SET 26", "AV 09", "Diferença R$", "Variação %", "Variação p.p."])
+for c in h[1]:
+    c.font = B; c.fill = AZUL; c.border = Border(bottom=fino); c.alignment = Alignment(horizontal="center")
+for nome, (a, s9), forte in layout:
+    r = h.max_row + 1
+    h.cell(r, 1, nome if forte else "   " + nome)
+    h.cell(r, 2, round(a, 2)).number_format = NUM
+    h.cell(r, 3, f"=IF($B$2=0,0,B{r}/$B$2)").number_format = PCT
+    h.cell(r, 4, round(s9, 2)).number_format = NUM
+    h.cell(r, 5, f"=IF($D$2=0,0,D{r}/$D$2)").number_format = PCT
+    h.cell(r, 6, f"=D{r}-B{r}").number_format = NUM
+    h.cell(r, 7, f'=IF(B{r}=0,"",(D{r}-B{r})/ABS(B{r}))').number_format = PCT
+    h.cell(r, 8, f"=(E{r}-C{r})*100").number_format = '0.00;[Red]-0.00'
+    if forte:
+        for c in h[r]:
+            c.font = B; c.fill = CINZA
+h.column_dimensions["A"].width = 52
+for col in "BDF":
+    h.column_dimensions[col].width = 16
+for col in "CEGH":
+    h.column_dimensions[col].width = 12
+h.freeze_panes = "B2"
+
 # Composição lançamento a lançamento, uma aba por linha da DRE (mesmo modelo de agosto).
 grupos = OrderedDict()
 for x in d["itens"]:
