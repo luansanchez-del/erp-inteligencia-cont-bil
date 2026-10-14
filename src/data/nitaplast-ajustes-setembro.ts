@@ -8,7 +8,8 @@ const nome = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(codigo) 
  * Compras nacionais de matéria-prima de agosto creditadas na 25116 (Importações em Andamento) dentro de
  * AGO-CUSTO-MP-NAC, em vez de Fornecedores (1496). Os títulos foram pagos em setembro debitando a 1496.
  * Agosto fica como está; a reclassificação é patrimonial e não muda o resultado.
- * Ficam na 25116 as duas notas de importação que também estavam em AGO-CUSTO-MP-NAC (94262 Licharz e 94251 Greatland).
+ * Fica na 25116 a nota de importação que também está em AGO-CUSTO-MP-NAC (94262 Licharz); a 94251 Greatland saiu de lá
+ * em 14/10/2026 (duplicava AGO-CUSTO-MP-IMP-94251).
  */
 const comprasNacionaisAgosto = [
   { nf: "15223", fornecedor: "TRICON ENERGY DO BRASIL", valor: 202_901.1 },
