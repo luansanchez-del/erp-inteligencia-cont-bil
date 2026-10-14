@@ -1,7 +1,8 @@
+import { writeFileSync } from "node:fs";
 import { lancamentosIntegradosAgosto } from "../src/data/nitaplast-razao-agosto";
 import { lancamentosIntegradosSetembro } from "../src/data/nitaplast-razao-setembro";
 import { estabelecimentoLancamentoNitaplast } from "../src/data/nitaplast-estabelecimento";
-import { calcularResultadoAgosto, categorizarDespesasAgosto, categoriasDespesasAgostoDefs } from "../src/components/nitaplast/contabil-agosto-completo";
+import { calcularResultadoAgosto, categorizarDespesasAgosto, categoriasDespesasAgostoDefs, descricaoPorContaCompleta } from "../src/components/nitaplast/contabil-agosto-completo";
 import type { LancamentoIntegrado } from "../src/data/nitaplast-razao-base";
 
 // DRE no layout da planilha de envio (DRE Conferência — Nitaplast), agosto x setembro/2026.
@@ -82,3 +83,29 @@ if (process.env.DETALHE) {
   for (const c of ["4736", "4760", "25948", "25950"]) if (Math.abs(set.r.mov(c)) > 0.004) console.log(`   ${c} | ${fmt(-set.r.mov(c))}`);
 }
 
+
+// JSON=arquivo: grava a DRE (agosto x setembro) e a composição de setembro lançamento a lançamento.
+if (process.env.JSON) {
+  const lanc = paraMotor(lancamentosIntegradosSetembro, "2026-09") as any[];
+  type Item = { grupo: string; conta: string; nomeConta: string; data: string; cc: string; historico: string; documento: string; valor: number };
+  const itens: Item[] = [];
+  const nomeConta = (c: string) => descricaoPorContaCompleta.get(c) ?? "";
+  const add = (grupo: string, conta: string, l: any, valor: number) =>
+    itens.push({ grupo, conta, nomeConta: nomeConta(conta), data: l.data.split("-").reverse().join("/"), cc: l.cc ?? "", historico: l.historico ?? "", documento: l.documento ?? "", valor: arred(valor) });
+  const nomes = new Map(categoriasDespesasAgostoDefs);
+  categorizarDespesasAgosto(lanc as any, set.r.operacionais, (cat, conta, l, v) => add(nomes.get(cat) ?? cat, conta, l, v));
+  const porConta = (grupo: string, contas: Iterable<string>, sinal: 1 | -1) => {
+    const cs = new Set(contas);
+    for (const l of lanc) {
+      if (cs.has(l.debitoCodigo)) add(grupo, l.debitoCodigo, l, sinal * l.valor);
+      if (cs.has(l.creditoCodigo)) add(grupo, l.creditoCodigo, l, -sinal * l.valor);
+    }
+  };
+  porConta("CPV Matriz", set.r.custos.filter((c) => c !== "25945"), 1);
+  porConta("CPV Filial", ["25945"], 1);
+  porConta("Despesas Financeiras", set.r.financeiras, 1);
+  porConta("Receitas Financeiras", ["4927", "25095", "25096", "25097", "25098", "25099", "25100", "25101", "2859"], -1);
+  porConta("Outras Receitas Operacionais", ["2892", "2893"], -1);
+  porConta("Resultado Não Operacional", ["4736", "4760", "25948", "25950"], -1);
+  writeFileSync(process.env.JSON, JSON.stringify({ dre: set.v.map(([d, x], i) => [d, ago.v[i][1], x]), itens: itens.filter((x) => Math.abs(x.valor) > 0.004) }));
+}

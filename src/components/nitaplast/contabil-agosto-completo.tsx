@@ -1177,12 +1177,19 @@ function categoriaDaMovimento(l: LinhaMovimentoAnalise, conta: string, categoria
   if (CONTAS_DECIDIDAS_POR_MOVIMENTO_AGOSTO.has(conta)) return cc === "0" ? (categoriaFallbackMovimento.get(conta) ?? "outras") : categoriaPorCC(cc);
   return categoriaPorConta.get(conta) ?? "outras";
 }
-export function categorizarDespesasAgosto(lancamentos: ReturnType<typeof useBase>["lancamentos"], operacionais: string[]) {
+export function categorizarDespesasAgosto(
+  lancamentos: ReturnType<typeof useBase>["lancamentos"],
+  operacionais: string[],
+  /** Opcional: recebe cada movimento já categorizado (composição lançamento a lançamento). */
+  aoCategorizar?: (categoria: string, conta: string, lancamento: ReturnType<typeof useBase>["lancamentos"][number], valor: number) => void,
+) {
   const operacionaisSet = new Set(operacionais);
   const categoriaPorConta = categoriaDominantePorConta(lancamentos, operacionaisSet);
   const categoriaFallbackMovimento = categoriaDominantePorContaMovimento(lancamentos, CONTAS_DECIDIDAS_POR_MOVIMENTO_AGOSTO);
   const porCategoria = new Map<string, Map<string, ItemDespesaAgosto>>();
+  let lancamentoAtual: ReturnType<typeof useBase>["lancamentos"][number] | undefined;
   const somar = (categoria: string, conta: string, delta: number) => {
+    if (aoCategorizar && lancamentoAtual) aoCategorizar(categoria, conta, lancamentoAtual, delta);
     const contas = porCategoria.get(categoria) ?? new Map<string, ItemDespesaAgosto>();
     const atual = contas.get(conta) ?? { conta, descricao: descricaoPorContaCompleta.get(conta) ?? "Conta não encontrada no plano", classificacao: classificacaoPorConta.get(conta) ?? "9.9.99", valor: 0 };
     atual.valor = arred(atual.valor + delta);
@@ -1190,6 +1197,7 @@ export function categorizarDespesasAgosto(lancamentos: ReturnType<typeof useBase
     porCategoria.set(categoria, contas);
   };
   for (const l of lancamentos) {
+    lancamentoAtual = l;
     if (operacionaisSet.has(l.debitoCodigo)) somar(ehNplog(l) ? "nplog" : categoriaDaMovimento(l, l.debitoCodigo, categoriaPorConta, categoriaFallbackMovimento), l.debitoCodigo, l.valor);
     if (operacionaisSet.has(l.creditoCodigo)) somar(categoriaDaMovimento(l, l.creditoCodigo, categoriaPorConta, categoriaFallbackMovimento), l.creditoCodigo, -l.valor);
   }
