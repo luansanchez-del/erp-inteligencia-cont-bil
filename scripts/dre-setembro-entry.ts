@@ -1,0 +1,84 @@
+import { lancamentosIntegradosAgosto } from "../src/data/nitaplast-razao-agosto";
+import { lancamentosIntegradosSetembro } from "../src/data/nitaplast-razao-setembro";
+import { estabelecimentoLancamentoNitaplast } from "../src/data/nitaplast-estabelecimento";
+import { calcularResultadoAgosto, categorizarDespesasAgosto, categoriasDespesasAgostoDefs } from "../src/components/nitaplast/contabil-agosto-completo";
+import type { LancamentoIntegrado } from "../src/data/nitaplast-razao-base";
+
+// DRE no layout da planilha de envio (DRE Conferência — Nitaplast), agosto x setembro/2026.
+// Usa o mesmo motor da tela de agosto (calcularResultadoAgosto / categorizarDespesasAgosto).
+const arred = (v: number) => Math.round(v * 100) / 100;
+const paraMotor = (linhas: LancamentoIntegrado[], competencia: string) =>
+  linhas.map((l) => ({ ...l, empresaId: "nitaplast-matriz", competenciaId: competencia, data: l.data.split("/").reverse().join("-"), criadoEm: `${competencia}-28T00:00:00.000Z`, origem: "importado" as const }));
+
+function dre(linhas: LancamentoIntegrado[], competencia: string) {
+  const lanc = paraMotor(linhas, competencia) as any[];
+  const r = calcularResultadoAgosto(lanc as any);
+  const porEstab = (conta: string, estab: "Matriz" | "Filial SP", sinal: 1 | -1) =>
+    arred(sinal * lanc.reduce((t, l) => (estabelecimentoLancamentoNitaplast(l) !== estab ? t : t + (l.debitoCodigo === conta ? l.valor : 0) - (l.creditoCodigo === conta ? l.valor : 0)), 0));
+  // CPV por conta: 25945 é o CPV da Filial; o resto (25944, 3035, 3093) é Matriz. Assim as
+  // transferências entre estabelecimentos ficam no CPV de cada lado.
+  const cpvFilial = r.mov("25945");
+  const cat = categorizarDespesasAgosto(lanc as any, r.operacionais);
+  const v: [string, number][] = [
+    ["(+)Receita Operacional Bruta", r.receitaBruta],
+    ["     Receita Venda Produção Matriz", porEstab("2606", "Matriz", -1)],
+    ["     Receita Revenda Matriz", porEstab("2655", "Matriz", -1)],
+    ["     Receita Venda Produção Filial", porEstab("2606", "Filial SP", -1)],
+    ["     Receita Revenda Filial", porEstab("2655", "Filial SP", -1)],
+    ["(-)Deduções da Receita Bruta", r.deducoes],
+    ["Devoluções - Matriz", porEstab("25943", "Matriz", 1)],
+    ["Devoluções - Filial", porEstab("25943", "Filial SP", 1)],
+    ["IPI Matriz", r.mov("2826")],
+    ["ICMS Matriz", r.mov("2827")],
+    ["Pis Matriz", porEstab("2829", "Matriz", 1)],
+    ["Cofins Matriz", porEstab("2830", "Matriz", 1)],
+    ["ICMS ST", r.mov("2832")],
+    ["ICMS s/ vendas Filial", r.mov("25054")],
+    ["IPI Filial", r.mov("25055")],
+    ["Pis Filial", porEstab("2829", "Filial SP", 1)],
+    ["Cofins Filial", porEstab("2830", "Filial SP", 1)],
+    ["(=) Receita Operacional Líquida", r.receitaLiquida],
+    ["(-) Custo TOTAL", r.cpv],
+    ["(-) CPV Matriz", arred(r.cpv - cpvFilial)],
+    ["(-) CPV Filial", cpvFilial],
+    ["LUCRO BRUTO", r.lucroBruto],
+    ["(-)Despesas Operacionais", r.despesas],
+    ...categoriasDespesasAgostoDefs.map(([id, d]) => [d, cat.total(id)] as [string, number]),
+    ["Despesas Financeiras", r.despesasFinanceiras],
+    ["(-)Receitas Financeiras", r.receitasFinanceiras],
+    ["Despesas Financeiras Líquidas", arred(r.despesasFinanceiras - r.receitasFinanceiras)],
+    ["Outras receitas operacionais", r.outrasReceitasOperacionais],
+    ["Resultado Operacional", r.resultadoOperacional],
+    ["RESULTADO NÃO OPERACIONAL", r.naoOperacional],
+    ["LUCRO/PREJUÍZO LÍQUIDO (antes IRPJ/CSLL)", r.resultado],
+  ];
+  return { r, v, cat };
+}
+
+const ago = dre(lancamentosIntegradosAgosto, "2026-08");
+const set = dre(lancamentosIntegradosSetembro, "2026-09");
+const fmt = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const rb = set.r.receitaBruta;
+console.log(["Linha", "AGO 26", "SET 26", "% RB set"].join(" | "));
+set.v.forEach(([d, x], i) => {
+  if (Math.abs(x) < 0.005 && Math.abs(ago.v[i][1]) < 0.005) return;
+  console.log([d.trim(), fmt(ago.v[i][1]), fmt(x), `${((x / rb) * 100).toFixed(1)}%`].join(" | "));
+});
+
+if (process.env.DETALHE) {
+  for (const [id, d] of categoriasDespesasAgostoDefs) {
+    const itens = set.cat.itens(id).sort((a, b) => Math.abs(b.valor) - Math.abs(a.valor));
+    if (!itens.length) continue;
+    console.log(`\n-- ${d}: ${fmt(set.cat.total(id))}`);
+    for (const it of itens) console.log(`   ${it.conta} ${it.descricao} | ${fmt(it.valor)}`);
+  }
+  for (const [t, contas] of [["CPV", set.r.custos], ["Desp. financeiras", set.r.financeiras]] as const) {
+    console.log(`\n-- ${t}`);
+    for (const c of contas) if (Math.abs(set.r.mov(c)) > 0.004) console.log(`   ${c} | ${fmt(set.r.mov(c))}`);
+  }
+  console.log("\n-- Receitas financeiras");
+  for (const c of ["4927", "25095", "25096", "25097", "25098", "25099", "25100", "25101", "2859"]) if (Math.abs(set.r.credito(c)) > 0.004) console.log(`   ${c} | ${fmt(set.r.credito(c))}`);
+  console.log("\n-- Não operacional");
+  for (const c of ["4736", "4760", "25948", "25950"]) if (Math.abs(set.r.mov(c)) > 0.004) console.log(`   ${c} | ${fmt(-set.r.mov(c))}`);
+}
+
