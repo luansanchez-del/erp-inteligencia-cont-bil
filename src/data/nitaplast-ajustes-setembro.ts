@@ -8,8 +8,7 @@ const nome = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(codigo) 
  * Compras nacionais de matéria-prima de agosto creditadas na 25116 (Importações em Andamento) dentro de
  * AGO-CUSTO-MP-NAC, em vez de Fornecedores (1496). Os títulos foram pagos em setembro debitando a 1496.
  * Agosto fica como está; a reclassificação é patrimonial e não muda o resultado.
- * Fica na 25116 a nota de importação que também está em AGO-CUSTO-MP-NAC (94262 Licharz); a 94251 Greatland saiu de lá
- * em 14/10/2026 (duplicava AGO-CUSTO-MP-IMP-94251).
+ * Ficam na 25116 as duas notas de importação que também estavam em AGO-CUSTO-MP-NAC (94262 Licharz e 94251 Greatland).
  */
 const comprasNacionaisAgosto = [
   { nf: "15223", fornecedor: "TRICON ENERGY DO BRASIL", valor: 202_901.1 },
@@ -66,6 +65,24 @@ export const lancamentosAjustesSetembro: LancamentoIntegrado[] = [
     rastreio: "derivado" as const,
     fonte: "RELATATORIO DETALHADO ENTRADAS POR CENTRO DE CUSTO - SOFTDIB 082026.csv + PAGAMENTOS 092026.csv",
   })),
+  {
+    id: "SET-EST-AGO-DUPLIC-94251",
+    data: "01/09/2026",
+    origem: "CORREÇÃO 08/2026",
+    debitoCodigo: "25116",
+    debito: nome("25116"),
+    creditoCodigo: "3093",
+    credito: nome("3093"),
+    historico: "Estorno de lançamento em duplicidade — NF 94251 Greatland Valve no custo de agosto",
+    documento: "NF 94251 / AGO-CUSTO-MP-IMP-94251",
+    cc: "209",
+    centroCusto: "IMPORTAÇÃO",
+    valor: 109_923.88,
+    status: "validado",
+    observacao: "A NF 94251 (R$ 109.923,89 no Softdib) entrou em agosto duas vezes: dentro de AGO-CUSTO-MP-NAC (gerencial 11.01.003, 7 documentos, R$ 856.124,54) e em AGO-CUSTO-MP-IMP-94251. Erro de lançamento do sistema; os relatórios do cliente trazem a nota uma vez. Agosto não é alterado; o estorno entra em setembro por decisão do usuário em 14/10/2026.",
+    rastreio: "derivado",
+    fonte: "C:/082026/FISCAL/RELATATORIO DETALHADO ENTRADAS POR CENTRO DE CUSTO -  SOFTDIB 082026.csv + DANFE NF 94251",
+  },
   {
     id: "SET-CAMBIO-LICHARZ-VCA",
     data: "22/09/2026",
