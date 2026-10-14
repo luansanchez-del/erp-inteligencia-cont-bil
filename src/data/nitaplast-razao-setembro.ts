@@ -10,7 +10,7 @@ import { lancamentosDepreciacaoSetembro, lancamentosJcpSetembro } from "./nitapl
 import { lancamentosDevolucoesVendasSetembro, lancamentosReceitasSetembro } from "./nitaplast-receitas-setembro";
 import { lancamentosEntradasSetembro } from "./nitaplast-entradas-setembro";
 import { lancamentosImpostosSetembro } from "./nitaplast-impostos-setembro";
-import { lancamentosCpvFilialSetembro, lancamentosTransferenciasSetembro } from "./nitaplast-cpv-setembro";
+import { lancamentosCpvFilialSetembro, lancamentosCpvMatrizSetembro, lancamentosTransferenciasSetembro } from "./nitaplast-cpv-setembro";
 import { lancamentosAjustesSetembro } from "./nitaplast-ajustes-setembro";
 import { lancamentosCartaoFaturaAgosto, lancamentosCartaoFaturaJulho, lancamentosCartaoSetembro } from "./nitaplast-cartao-setembro";
 import { lancamentosTransitoriaSetembro } from "./nitaplast-transitoria-setembro";
@@ -60,6 +60,7 @@ export const lancamentosIntegradosSetembro: LancamentoIntegrado[] = [
   ...lancamentosImpostosSetembro,
   ...lancamentosTransferenciasSetembro,
   ...lancamentosCpvFilialSetembro,
+  ...lancamentosCpvMatrizSetembro,
   ...lancamentosAjustesSetembro,
   ...lancamentosCartaoSetembro,
   ...lancamentosCartaoFaturaAgosto,

@@ -57,8 +57,38 @@ export const lancamentosCpvFilialSetembro: LancamentoIntegrado[] = [
 ].filter((l) => l.valor > 0.005);
 
 /**
- * CPV da Matriz: pendente. O "REGISTR INVENTARIO ESTOQUE.pdf" da pasta NITAPLAST - SET 26 é cópia do
- * relatório de devoluções (mesmo arquivo), a "Situação Atual do Estoque" não traz valores e o SPED não
- * tem Bloco H. Sem o inventário valorizado de 30/09 não há baixa do estoque nem estoque final.
+ * CPV da Matriz em 09/2026, mesmo critério de agosto (AGO-CPV-BAIXA/FINAL): baixa do saldo de cada conta
+ * de estoque contra o CPV (25944) e reconhecimento do inventário final de 30/09.
+ * Registro de inventário de 30/09/2026 (emitido em 13/10/2026), total geral R$ 5.202.864,26, por grupo:
+ *  - 25135: matérias-primas (001) R$ 749.756,73 + produtos não definidos (901, moídos) R$ 17.686,06;
+ *  - 25134: aparas (201) R$ 36.216,41 + refugo (202) R$ 2.630,96 + rejeitos (205) R$ 298,64;
+ *  - 25133: grupos 101 a 136 (produto acabado);
+ *  - 25136: registro de produtos em elaboração, R$ 107.919,59 (mesmo valor e itens de 31/08).
  */
-export const pendenciaCpvMatrizSetembro = "Falta o registro de inventário da Matriz de 30/09/2026 com valores." as const;
+const inventarioMatrizSetembro = { total: 5_202_864.26, estoque: 5_094_944.67, elaboracao: 107_919.59 } as const;
+const materiaPrimaSetembro = arred(749_756.73 + 17_686.06);
+const sucatasSetembro = arred(36_216.41 + 2_630.96 + 298.64);
+
+export const estoqueFinalMatrizSetembroPorConta: Record<string, number> = {
+  "25133": arred(inventarioMatrizSetembro.estoque - materiaPrimaSetembro - sucatasSetembro),
+  "25134": sucatasSetembro,
+  "25135": materiaPrimaSetembro,
+  "25136": inventarioMatrizSetembro.elaboracao,
+  "25137": 0,
+};
+
+const somaEstoqueFinal = arred(Object.values(estoqueFinalMatrizSetembroPorConta).reduce((t, v) => t + v, 0));
+if (Math.abs(somaEstoqueFinal - inventarioMatrizSetembro.total) > 0.005) {
+  throw new Error(`Inventário Matriz 30/09: ${somaEstoqueFinal} x ${inventarioMatrizSetembro.total} do registro`);
+}
+
+const fonteInventarioMatriz = "C:/092026/NITAPLAST - SET 26/REGISTRO INVENTARIO ESTOQUE (1).pdf — referência 30/09/2026";
+
+export const lancamentosCpvMatrizSetembro: LancamentoIntegrado[] = Object.entries(estoqueFinalMatrizSetembroPorConta).flatMap(([conta, saldoFinal], indice) => {
+  // As contas de estoque não têm movimento em setembro: o saldo anterior é o inventário de 31/08.
+  const saldoAnterior = arred(saldoAberturaSetembroPorConta.get(conta) ?? 0);
+  const linhas: LancamentoIntegrado[] = [];
+  if (Math.abs(saldoAnterior) >= 0.005) linhas.push(base({ id: `SET-CPV-BAIXA-${indice + 1}`, data: "30/09/2026", origem: "FECHAMENTO ESTOQUE MATRIZ 09/2026", debitoCodigo: "25944", creditoCodigo: conta, historico: `Baixa integral do estoque anterior da conta ${conta}`, documento: "INVENTÁRIO 31/08/2026", cc: "102", centroCusto: "PRODUÇÃO", valor: Math.abs(saldoAnterior), observacao: "Fechamento periódico: baixa do saldo de 31/08 antes do reconhecimento do inventário de 30/09.", fonte: "Saldo contábil 31/08/2026", rastreio: "derivado" }));
+  if (saldoFinal > 0.005) linhas.push(base({ id: `SET-CPV-FINAL-${indice + 1}`, data: "30/09/2026", origem: "FECHAMENTO ESTOQUE MATRIZ 09/2026", debitoCodigo: conta, creditoCodigo: "25944", historico: `Reconhecimento do inventário final da conta ${conta}`, documento: "INVENTÁRIO 30/09/2026", cc: "102", centroCusto: "PRODUÇÃO", valor: saldoFinal, observacao: conta === "25136" ? "Registro de produtos em elaboração com os mesmos itens e valor de 31/08 — confirmar com a empresa." : "Saldo final do registro de inventário de 30/09/2026.", fonte: fonteInventarioMatriz }));
+  return linhas;
+});
