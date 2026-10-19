@@ -60,6 +60,83 @@ ws.column_dimensions["E"].width = 12
 ws.column_dimensions["F"].width = 16
 ws.freeze_panes = "B4"
 
+# DRE no layout da planilha de envio ("DRE Conferência — Nitaplast", aba do mês).
+v0 = {desc.strip(): sete for desc, ago, sete in d["dre"]}
+g = lambda k: round(v0.get(k, 0.0), 2)
+e = wb.create_sheet("DRE Envio", 0)
+e["C1"] = "NITAPLAST"; e["C1"].font = Font(bold=True, size=12)
+e["A2"] = "DEMONSTRAÇÃO DO RESULTADO DE SETEMBRO 2026"; e["A2"].font = Font(bold=True, size=12)
+e["C4"] = "COMPOSIÇÃO DRE"; e["C4"].font = B
+cat = lambda k: g(k)
+desp_fin_liq = round(g("Despesas Financeiras") - g("(-)Receitas Financeiras"), 2)
+desp_oper = round(g("(-)Despesas Operacionais") - g("Outras receitas operacionais"), 2)
+linhas_envio = [
+    ("(+)Receita Operacional Bruta", g("(+)Receita Operacional Bruta"), True),
+    ("     Receita Venda Produção Matriz", g("Receita Venda Produção Matriz"), False),
+    ("     Receita Revenda Matriz", g("Receita Revenda Matriz"), False),
+    ("     Receita Venda de Serviços", 0, False),
+    ("     Receita Venda Produção Filial", g("Receita Venda Produção Filial"), False),
+    ("     Receita Revenda Filial", g("Receita Revenda Filial"), False),
+    None,
+    ("(-)Deduções da Receita Bruta", g("(-)Deduções da Receita Bruta"), True),
+    ("Devoluções -  Matriz", g("Devoluções - Matriz"), False),
+    ("Devoluções - Filial", g("Devoluções - Filial"), False),
+    ("IPI Matriz", g("IPI Matriz"), False), ("ICMS Matriz", g("ICMS Matriz"), False),
+    ("Pis Matriz", g("Pis Matriz"), False), ("Cofins Matriz", g("Cofins Matriz"), False),
+    ("ICMS ST", g("ICMS ST"), False), ("ICMS s/ vendas Filial", g("ICMS s/ vendas Filial"), False),
+    ("IPI Filial", g("IPI Filial"), False), ("Pis Filial", g("Pis Filial"), False), ("Cofins Filial", g("Cofins Filial"), False),
+    ("(-) Custo TOTAL", g("(-) Custo TOTAL"), True),
+    ("(-) CPV Matriz", g("(-) CPV Matriz"), False), ("(-) CMV Matriz", 0, False),
+    ("(-) CPV Filial", g("(-) CPV Filial"), False), ("(-) CMV Filial", 0, False),
+    ("LUCRO BRUTO", g("LUCRO BRUTO"), True),
+    None,
+    ("(-)Despesas Operacionais", round(desp_oper + desp_fin_liq, 2), True),
+    ("Despesas Administrativas", cat("Despesas Administrativas"), False),
+    ("Despesas com Serviço - NPLog", cat("Despesas com Serviço - NPLog"), False),
+    ("Despesas Comerciais", cat("Despesas Comerciais"), False),
+    ("Despesas Produção", cat("Despesas Produção"), False),
+    ("Despesas Veiculos", cat("Despesas Veiculos"), False),
+    ("Despesas com Imobilizado", cat("Despesas com Imobilizado"), False),
+    ("Despesas com Industrialização ", cat("Despesas com Industrialização"), False),
+    ("Despesas comercial SP", cat("Despesas comercial SP"), False),
+    ("(", desp_oper, False),
+    ("Despesas Financeiras", g("Despesas Financeiras"), False),
+    ("(-)Receitas Financeiras", g("(-)Receitas Financeiras"), False),
+    ("Despesas Financeiras Líquidas", desp_fin_liq, True),
+    None,
+    ("TOTAL DAS DESPESAS OPERACIONAIS", round(desp_oper + desp_fin_liq, 2), True),
+    None,
+    ("Resultado Operacional", g("Resultado Operacional"), True),
+    None,
+    ("RESULTADO NÃO OPERACIONAL", g("RESULTADO NÃO OPERACIONAL"), True),
+    ("       Receita de Alienação Imobilizado", 0, False),
+    ("       Custo na Baixa/Alienação Imobilizado", 0, False),
+    ("      Provisão para Custos - meses anteriores", 0, False),
+    ("      Provisão para Custos - 07/2026", 0, False),
+    ("     Reversão De provisão  Custos - 07/2026", 0, False),
+    ("      Recuperação de Despesas Vinter", 0, False),
+    ("Ganhos ou Perdas com Sinistros de Bens", 0, False),
+    ("Outras Receitas não Operacionais (estorno da provisão de receita de 08/2026)", g("RESULTADO NÃO OPERACIONAL"), False),
+    ("       Resultado da Equivalência Patrimonial", 0, False),
+    None,
+    ("LUCRO LIQUIDO (antes IRPJ/CSLL)", g("LUCRO/PREJUÍZO LÍQUIDO (antes IRPJ/CSLL)"), True),
+]
+outras_rec = g("Outras receitas operacionais")
+r = 5
+for item in linhas_envio:
+    if item is None:
+        r += 1; continue
+    nome, valor, forte = item
+    e.cell(r, 3, nome); e.cell(r, 4, valor).number_format = NUM
+    if nome.startswith(("(+)Receita", "(-)Deduções", "(-) Custo", "LUCRO BRUTO", "(-)Despesas Oper", "Resultado Operacional", "LUCRO LIQUIDO")):
+        e.cell(r, 5, f"=IF($D$5=0,0,D{r}/$D$5)").number_format = PCT
+    if forte:
+        e.cell(r, 3).font = B; e.cell(r, 4).font = B
+    r += 1
+if abs(outras_rec) > 0.005:
+    e.cell(r + 1, 3, "Obs.: outras receitas operacionais (reembolsos) no resultado operacional"); e.cell(r + 1, 4, outras_rec).number_format = NUM
+e.column_dimensions["C"].width = 62; e.column_dimensions["D"].width = 18; e.column_dimensions["E"].width = 10
+
 # Análise horizontal e vertical (mesmo layout de "DRE - ANALISTE HORIZONTAL E VERTICAL 082026.xlsx").
 v = {desc.strip(): (ago, sete) for desc, ago, sete in d["dre"]}
 def par(nome):

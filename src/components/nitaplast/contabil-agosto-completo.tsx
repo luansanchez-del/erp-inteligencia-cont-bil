@@ -972,7 +972,9 @@ export function calcularResultadoAgosto(lancamentos: ReturnType<typeof useBase>[
 // DRE Report (categoriasDespesas de relatorios.dre.tsx): algumas contas saem por
 // natureza (industrialização, depreciação, veículos, comércio exterior), o resto
 // é agrupado pelo centro de custo real do lançamento de agosto.
-const ccAdministrativasAgosto = new Set(["301", "302", "303", "304", "305", "306"]);
+// 308 e 313 (administrativo) e 208 (comercial), 105/10029/10061 (produção) e 4xx (veículos, um CC por placa):
+// achados em 19/10/2026 em setembro, caíam em "outras". Agosto não tinha movimento nesses CCs.
+const ccAdministrativasAgosto = new Set(["301", "302", "303", "304", "305", "306", "308", "313"]);
 // 206 (Exportação) e 209 (Importação) e 109 (produção) achados em 15/09/2026:
 // CCs reais usados em lançamentos de agosto que faltavam nesses conjuntos —
 // caíam em "outras despesas sem classificação gerencial" em vez da categoria
@@ -983,8 +985,8 @@ const ccAdministrativasAgosto = new Set(["301", "302", "303", "304", "305", "306
 // com Exportação É Despesas Comerciais, não uma categoria própria (correção
 // da decisão anterior, que a separava "igual ao layout de referência do
 // contador"). Volta a integrar ccComerciaisAgosto.
-const ccComerciaisAgosto = new Set(["201", "203", "204", "205", "206", "209", "210"]);
-const ccProducaoAgosto = new Set(["101", "102", "103", "104", "106", "107", "108", "109", "110", "111", "10014", "10032", "19999"]);
+const ccComerciaisAgosto = new Set(["201", "203", "204", "205", "206", "208", "209", "210"]);
+const ccProducaoAgosto = new Set(["101", "102", "103", "104", "106", "107", "108", "109", "110", "111", "105", "10014", "10029", "10032", "10061", "19999"]);
 const ccFilialAgosto = new Set(["501", "502", "503", "504", "505"]);
 /** CC 600 = Barracão — categoria própria, achado em 24/09/2026 a partir do layout de referência do contador. */
 const ccBarracaoAgosto = new Set(["600"]);
@@ -1023,6 +1025,7 @@ const categoriaPorCC = (cc: string): string => {
   if (ccAdministrativasAgosto.has(cc)) return "administrativas";
   if (ccComerciaisAgosto.has(cc)) return "comerciais";
   if (ccProducaoAgosto.has(cc)) return "producao";
+  if (/^4\d\d$/.test(cc)) return "veiculos";
   return "outras";
 };
 /** Reutilizada fora desta função (na análise vertical/horizontal completa) para categorizar despesas de qualquer competência com a mesma regra. */
@@ -1031,9 +1034,20 @@ const categoriaDaConta = (conta: string, cc: string): string => {
   if (conta === "25937") return "industrializacao";
   if (classificacao.startsWith("5.7.01.011")) return "depreciacao";
   if (classificacao.startsWith("5.7.01.015") || classificacao.startsWith("5.7.05")) return "veiculos";
-  if (classificacao.startsWith("5.7.09")) return "tributarias";
+  if (classificacao.startsWith("5.7.09")) return conta === "4669" ? "veiculos" : cc === "0" ? "administrativas" : categoriaPorCC(cc);
   return categoriaPorCC(cc);
 };
+/**
+ * Impostos e taxas (5.7.09) não têm linha própria no layout de envio da DRE: IPVA e Detran vão para
+ * Veículos; IPTU e demais taxas, para o grupo do CC (sem CC: Administrativas). Decidido em 19/10/2026.
+ */
+function categoriaTributo(l: Pick<LinhaMovimentoAnalise, "historico" | "cc">, conta: string): string {
+  if (conta === "4669" || /DETRAN|LICENCIAMENTO/i.test(l.historico ?? "")) return "veiculos";
+  const cc = l.cc ?? "0";
+  if (cc === "0") return "administrativas";
+  const categoria = categoriaPorCC(cc);
+  return categoria === "outras" ? "administrativas" : categoria;
+}
 /**
  * Cada conta pertence a UMA categoria só, decidida pelo CC onde a despesa
  * nasce (o CC com o maior débito absoluto). Achado em 15/09/2026: créditos
@@ -1134,7 +1148,8 @@ function categoriaDominantePorConta(lancamentos: Pick<LinhaMovimentoAnalise, "de
   for (const l of lancamentos) {
     if (!contasSet.has(l.debitoCodigo)) continue;
     const cc = l.cc ?? "0";
-    if (ccFilialAgosto.has(cc) || CONTAS_DECIDIDAS_POR_MOVIMENTO.has(l.debitoCodigo)) continue;
+    // Sem CC não decide a categoria da conta (ex.: títulos de agosto reclassificados da transitória em 09/2026).
+    if (cc === "0" || ccFilialAgosto.has(cc) || CONTAS_DECIDIDAS_POR_MOVIMENTO.has(l.debitoCodigo)) continue;
     const porCC = debitoPorContaECC.get(l.debitoCodigo) ?? new Map<string, number>();
     porCC.set(cc, (porCC.get(cc) ?? 0) + l.valor);
     debitoPorContaECC.set(l.debitoCodigo, porCC);
@@ -1174,6 +1189,7 @@ function categoriaDaMovimento(l: LinhaMovimentoAnalise, conta: string, categoria
   if (!ehLancamentoDeVersao && estabelecimentoLancamentoNitaplast(l) === "Filial SP") return "filial";
   const cc = l.cc ?? "0";
   if (ccFilialAgosto.has(cc)) return "filial";
+  if ((classificacaoPorConta.get(conta) ?? "").startsWith("5.7.09")) return categoriaTributo(l, conta);
   if (CONTAS_DECIDIDAS_POR_MOVIMENTO_AGOSTO.has(conta)) return cc === "0" ? (categoriaFallbackMovimento.get(conta) ?? "outras") : categoriaPorCC(cc);
   return categoriaPorConta.get(conta) ?? "outras";
 }
