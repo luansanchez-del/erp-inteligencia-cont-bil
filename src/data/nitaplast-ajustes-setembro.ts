@@ -5,6 +5,8 @@ import { lancamentosCartaoFaturaAgosto, lancamentosCartaoFaturaJulho, lancamento
 import { lancamentosItauAgosto } from "./nitaplast-itau-agosto";
 
 const nome = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(codigo) ?? "Conta a revisar"}`;
+const reais = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const setor = (centro: string) => centro.toLowerCase().replace(/(^|[\s-])(\p{L})/gu, (m) => m.toUpperCase()).replace(" Da ", " da ").replace(" E ", " e ");
 
 /**
  * Compras nacionais de matéria-prima de agosto creditadas na 25116 (Importações em Andamento) dentro de
@@ -142,7 +144,7 @@ export const lancamentosAluguelVictorsSetembro: LancamentoIntegrado[] = [
       debito: nome("3524"),
       creditoCodigo: "1496",
       credito: nome("1496"),
-      historico: `Aluguel Victors de ${mes}/2026 (parcela 10022026/${parcela}, pago em ${pagamento})${parcela === "008" ? "" : " reconhecido em setembro"} — CC ${cc} ${centro}`,
+      historico: `Aluguel do imóvel da fábrica (Victors Inc) referente a ${mes}/2026 — parcela ${Number(parcela)} do contrato, paga em ${pagamento} pelo Itaú.${parcela === "008" ? "" : ` Não entrou como despesa em ${mes}; reconhecido em setembro.`} Parte do setor ${setor(centro)} (CC ${cc}): ${reais(valor)} de ${reais(ALUGUEL_VICTORS)}.`,
       documento: `F00071 10022026/${parcela}`,
       cc,
       centroCusto: centro,
@@ -174,7 +176,7 @@ export const lancamentosIphoneSetembro: LancamentoIntegrado[] = parcelasIphone.m
   debito: nome("4857"),
   creditoCodigo: "4215",
   credito: nome("4215"),
-  historico: `iPhone 16E (Magazine Luiza NF 69112) — equipamento de informática, não manutenção de veículo (${l.historico.split(" — ")[0]})`,
+  historico: `iPhone 16E para a TI comprado na Magazine Luiza (NF 69112) no cartão do Alexandre — parcela ${l.historico.match(/(\d{2})\/10/)?.[1] ?? "?"} de 10, ${reais(l.valor)}. Passa de manutenção de veículos para equipamento de informática (imobilizado).`,
   documento: `NF 69112 / ${l.id}`,
   cc: l.cc,
   centroCusto: l.centroCusto,
@@ -196,7 +198,7 @@ export const lancamentosSetteCaseSetembro: LancamentoIntegrado[] = [{
   debito: nome("4430"),
   creditoCodigo: "4912",
   credito: nome("4912"),
-  historico: "Sette Case (pago em 05/08/2026) — condomínio, não material de uso e consumo",
+  historico: "Condomínio Sette Case pago em 05/08/2026 pelo Itaú (R$ 3.445,38) — passa de material de uso e consumo para aluguéis e condomínios.",
   documento: "Reclassificação de SET-TRANSIT-AGO-ITAU-EXT-115",
   cc: "304",
   centroCusto: "ADM GERAL",
