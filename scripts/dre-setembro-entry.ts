@@ -109,3 +109,21 @@ if (process.env.JSON) {
   porConta("Resultado Não Operacional", ["4736", "4760", "25948", "25950"], -1);
   writeFileSync(process.env.JSON, JSON.stringify({ dre: set.v.map(([d, x], i) => [d, ago.v[i][1], x]), itens: itens.filter((x) => Math.abs(x.valor) > 0.004) }));
 }
+
+// COMPARA="Despesas Administrativas;Despesas Produção": abre por conta, agosto x setembro.
+if (process.env.COMPARA) {
+  for (const nomeCat of process.env.COMPARA.split(";")) {
+    const id = categoriasDespesasAgostoDefs.find(([, d]) => d === nomeCat)?.[0];
+    if (!id) continue;
+    const porConta = new Map<string, { descricao: string; ago: number; set: number }>();
+    for (const [mes, d] of [["ago", ago], ["set", set]] as const)
+      for (const it of d.cat.itens(id)) {
+        const x = porConta.get(it.conta) ?? { descricao: it.descricao, ago: 0, set: 0 };
+        x[mes] = it.valor;
+        porConta.set(it.conta, x);
+      }
+    console.log(`\n== ${nomeCat}: ${ago.cat.total(id).toFixed(2)} -> ${set.cat.total(id).toFixed(2)}`);
+    for (const [c, x] of [...porConta].sort((a, b) => Math.abs(b[1].set - b[1].ago) - Math.abs(a[1].set - a[1].ago)))
+      console.log([c, x.descricao, x.ago.toFixed(2), x.set.toFixed(2), (x.set - x.ago).toFixed(2)].join(" | "));
+  }
+}

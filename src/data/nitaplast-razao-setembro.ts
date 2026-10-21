@@ -11,7 +11,7 @@ import { lancamentosDevolucoesVendasSetembro, lancamentosReceitasSetembro } from
 import { lancamentosEntradasSetembro } from "./nitaplast-entradas-setembro";
 import { lancamentosImpostosSetembro } from "./nitaplast-impostos-setembro";
 import { lancamentosCpvFilialSetembro, lancamentosCpvMatrizSetembro, lancamentosTransferenciasSetembro } from "./nitaplast-cpv-setembro";
-import { lancamentosAjustesSetembro } from "./nitaplast-ajustes-setembro";
+import { lancamentosAjustesSetembro, lancamentosAluguelVictorsSetembro, lancamentosIphoneSetembro, lancamentosSetteCaseSetembro } from "./nitaplast-ajustes-setembro";
 import { lancamentosCartaoFaturaAgosto, lancamentosCartaoFaturaJulho, lancamentosCartaoSetembro } from "./nitaplast-cartao-setembro";
 import { lancamentosTransitoriaSetembro } from "./nitaplast-transitoria-setembro";
 import { lancamentosJurosDescontosSetembro } from "./nitaplast-juros-descontos-setembro";
@@ -62,6 +62,9 @@ export const lancamentosIntegradosSetembro: LancamentoIntegrado[] = [
   ...lancamentosCpvFilialSetembro,
   ...lancamentosCpvMatrizSetembro,
   ...lancamentosAjustesSetembro,
+  ...lancamentosAluguelVictorsSetembro,
+  ...lancamentosIphoneSetembro,
+  ...lancamentosSetteCaseSetembro,
   ...lancamentosCartaoSetembro,
   ...lancamentosCartaoFaturaAgosto,
   ...lancamentosCartaoFaturaJulho,

@@ -985,7 +985,7 @@ const ccAdministrativasAgosto = new Set(["301", "302", "303", "304", "305", "306
 // com Exportação É Despesas Comerciais, não uma categoria própria (correção
 // da decisão anterior, que a separava "igual ao layout de referência do
 // contador"). Volta a integrar ccComerciaisAgosto.
-const ccComerciaisAgosto = new Set(["201", "203", "204", "205", "206", "208", "209", "210"]);
+const ccComerciaisAgosto = new Set(["201", "202", "203", "204", "205", "206", "208", "209", "210"]);
 const ccProducaoAgosto = new Set(["101", "102", "103", "104", "106", "107", "108", "109", "110", "111", "105", "10014", "10029", "10032", "10061", "19999"]);
 const ccFilialAgosto = new Set(["501", "502", "503", "504", "505"]);
 /** CC 600 = Barracão — categoria própria, achado em 24/09/2026 a partir do layout de referência do contador. */
@@ -1003,6 +1003,7 @@ export const categoriasDespesasAgostoDefs: [string, string][] = [
   ["industrializacao", "Despesas com Industrialização"],
   ["tributarias", "Despesas Tributárias"],
   ["filial", "Despesas comercial SP"],
+  ["previdencia-marcos", "Previdência particular — Marcos (Mongeral)"],
   ["outras", "Outras despesas operacionais sem classificação gerencial"],
 ];
 /**
@@ -1017,6 +1018,10 @@ export const categoriasDespesasAgostoDefs: [string, string][] = [
  */
 function ehNplog(l: Pick<LinhaMovimentoAnalise, "debitoCodigo" | "historico">) {
   return l.debitoCodigo === "25938" && /TRANSPORTE E LOG[IÍ]STICA/i.test(l.historico ?? "");
+}
+/** Mongeral Aegon (4338): previdência particular do Marcos, mantida no resultado e evidenciada em linha própria (decisão do usuário em 21/10/2026). */
+function ehPrevidenciaMarcos(l: Pick<LinhaMovimentoAnalise, "debitoCodigo" | "historico">) {
+  return l.debitoCodigo === "4338" && /MONGERAL/i.test(l.historico ?? "");
 }
 /** Decide a categoria só pelo CC, sem olhar a conta — usada tanto pela conta-dominante quanto por movimento (Filial e 25070). */
 const categoriaPorCC = (cc: string): string => {
@@ -1106,6 +1111,8 @@ const CONTAS_DECIDIDAS_POR_MOVIMENTO_AGOSTO = new Set([
   "25938",
   "4253", "25064", "25061", "5799", "4028", "4014", "4020", "4021",
   "25057", "25058", "25059", "25060", "3244", "3494", "4546",
+  // 3524: aluguel da Victors rateado por CC no Softdib (setembro/2026).
+  "3524",
 ]);
 /**
  * Fallback para movimentos de `CONTAS_DECIDIDAS_POR_MOVIMENTO` que não têm CC
@@ -1214,7 +1221,7 @@ export function categorizarDespesasAgosto(
   };
   for (const l of lancamentos) {
     lancamentoAtual = l;
-    if (operacionaisSet.has(l.debitoCodigo)) somar(ehNplog(l) ? "nplog" : categoriaDaMovimento(l, l.debitoCodigo, categoriaPorConta, categoriaFallbackMovimento), l.debitoCodigo, l.valor);
+    if (operacionaisSet.has(l.debitoCodigo)) somar(ehNplog(l) ? "nplog" : ehPrevidenciaMarcos(l) ? "previdencia-marcos" : categoriaDaMovimento(l, l.debitoCodigo, categoriaPorConta, categoriaFallbackMovimento), l.debitoCodigo, l.valor);
     if (operacionaisSet.has(l.creditoCodigo)) somar(categoriaDaMovimento(l, l.creditoCodigo, categoriaPorConta, categoriaFallbackMovimento), l.creditoCodigo, -l.valor);
   }
   const total = (categoria: string) => arred([...(porCategoria.get(categoria)?.values() ?? [])].reduce((s, x) => s + x.valor, 0));

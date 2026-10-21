@@ -121,6 +121,7 @@ function classificar(m) {
   if (m.codigo === "P00002" || m.codigo === "P00006") return ["1634", "0", "validado", "Pagamento de salários/rescisão."];
   if (m.codigo === "P00004") return ["25238", "0", "validado", "Pagamento de 13º salário."];
   if (["P00009", "P00005"].includes(m.codigo)) return ["312", "0", "validado", "Pagamento de adiantamento salarial/de férias."];
+  if (m.codigo === "F00071") return ["1496", "0", "validado", "Aluguel Victors — a despesa entra rateada por CC em SET-ALUGUEL-VICTORS-008-* (nitaplast-ajustes-setembro.ts); o pagamento baixa Fornecedores."];
   if (m.codigo === "F01528") return ["25254", "0", "revisar", `NPLOG documento ${m.documento} — baixa da dívida com a NPLOG (25254); conferir se o documento é anterior a julho.`];
   if (m.codigo === "F02221") return /VEICULO/i.test(m.observacao) ? ["25225", "0", "validado", "Parcela de consórcio de veículo Ademicon (ativo)."] : ["25172", "0", "revisar", "Parcela de consórcio Ademicon (ativo) — conferir o contrato."];
   const rec = recepcao.get([m.codigo, Number(m.documento), Number(m.parcela), m.data].join("|")) ?? "";

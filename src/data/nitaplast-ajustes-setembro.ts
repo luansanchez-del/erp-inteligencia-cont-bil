@@ -1,6 +1,8 @@
 import type { LancamentoIntegrado } from "./nitaplast-razao-base";
 import { descricaoContaJulho } from "./nitaplast-saldos-julho";
 import { lancamentosCartaoJussaraRodrigoAgosto } from "./nitaplast-cartao-4005-jussara-rodrigo-agosto";
+import { lancamentosCartaoFaturaAgosto, lancamentosCartaoFaturaJulho, lancamentosCartaoSetembro } from "./nitaplast-cartao-setembro";
+import { lancamentosItauAgosto } from "./nitaplast-itau-agosto";
 
 const nome = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(codigo) ?? "Conta a revisar"}`;
 
@@ -102,3 +104,105 @@ export const lancamentosAjustesSetembro: LancamentoIntegrado[] = [
     fonte: "C:/092026/CONTRATO DE CAMBIO 092026/Licharz 635110685.pdf + PAGAMENTOS 092026.csv",
   },
 ];
+
+/**
+ * Aluguel do imóvel da fábrica — Victors Inc (F00071, contrato cadastrado no Softdib em 02/02/2026,
+ * R$ 28.580,10 por mês). Em 31/05 não havia aluguel a pagar (Domínio: "Aluguéis a Pagar" zerado), mas as
+ * parcelas de junho, julho e agosto foram pagas baixando Fornecedores e nunca viraram despesa.
+ * Decisão do usuário em 21/10/2026 (aluguel confirmado pela empresa): reconhecer as três em setembro,
+ * sem reabrir os meses, e ratear essas e a de setembro pelos CCs do Softdib (PAGAMENTOS 092026.csv, conta 1301001).
+ */
+const rateioAluguelVictors: [cc: string, centro: string, valor: number][] = [
+  ["101", "ALMOXARIFADO", 7_450.83], ["102", "PRODUÇÃO", 11_200.54], ["103", "TEFLONAGEM", 657.34],
+  ["104", "TRATAMENTO E PINTURA", 720.22], ["105", "QUALIDADE", 242.93], ["106", "OFICINA", 2_212.1],
+  ["107", "PROJETOS", 242.93], ["108", "ADM DA PRODUÇÃO", 331.53], ["109", "COMPRAS", 331.53],
+  ["201", "VENDAS", 820.25], ["202", "PESAGEM", 1_046.03], ["203", "FATURAMENTO", 94.31],
+  ["204", "ADM DE VENDAS", 217.21], ["205", "EXPEDIÇÃO", 1_166.07], ["206", "EXPORTAÇÃO", 94.31],
+  ["301", "RECEPÇÃO", 734.51], ["302", "FINANCEIRO", 405.84], ["303", "CONTROLADORIA", 202.92],
+  ["304", "ADM GERAL", 154.33], ["305", "TI - TECNOLOGIA DA INFORMAÇÃO", 51.45], ["306", "RH - RECURSOS HUMANOS", 202.92],
+];
+const ALUGUEL_VICTORS = 28_580.1;
+if (Math.abs(rateioAluguelVictors.reduce((t, [, , v]) => t + v, 0) - ALUGUEL_VICTORS) > 0.005) throw new Error("Rateio do aluguel Victors não fecha");
+const fonteVictors = "C:/092026/PAGAMENTOS 092026.csv (F00071 10022026/008, rateio por CC) + BALANCETE Domínio 05/2026 (Aluguéis a Pagar = 0)";
+
+const parcelasVictorsAnteriores = [
+  { parcela: "005", mes: "junho", pagamento: "10/06/2026", lancamento: "movimento financeiro de junho (Itaú)" },
+  { parcela: "006", mes: "julho", pagamento: "10/07/2026", lancamento: "agregado de pagamentos do Itaú de julho (JUL-BAN-OP-028/030)" },
+  { parcela: "007", mes: "agosto", pagamento: "10/08/2026", lancamento: "AGO-ITAU-EXT-222" },
+  { parcela: "008", mes: "setembro", pagamento: "10/09/2026", lancamento: "SET-ITAU-EXT-196" },
+];
+
+export const lancamentosAluguelVictorsSetembro: LancamentoIntegrado[] = [
+  ...parcelasVictorsAnteriores.flatMap(({ parcela, mes, pagamento, lancamento }) =>
+    rateioAluguelVictors.map(([cc, centro, valor]): LancamentoIntegrado => ({
+      id: `SET-ALUGUEL-VICTORS-${parcela}-${cc}`,
+      data: parcela === "008" ? "10/09/2026" : "30/09/2026",
+      origem: parcela === "008" ? "ALUGUEL 09/2026" : "ALUGUEL DE MESES ANTERIORES 09/2026",
+      debitoCodigo: "3524",
+      debito: nome("3524"),
+      creditoCodigo: "1496",
+      credito: nome("1496"),
+      historico: `Aluguel Victors de ${mes}/2026 (parcela 10022026/${parcela}, pago em ${pagamento})${parcela === "008" ? "" : " reconhecido em setembro"} — CC ${cc} ${centro}`,
+      documento: `F00071 10022026/${parcela}`,
+      cc,
+      centroCusto: centro,
+      valor,
+      status: "validado",
+      observacao: parcela === "008"
+        ? "Aluguel do mês, rateado pelos CCs do Softdib; o pagamento (SET-ITAU-EXT-196) baixa Fornecedores."
+        : `Pago em ${pagamento} baixando Fornecedores (${lancamento}) sem dívida aberta; a despesa não tinha entrado. Reconhecida em setembro por decisão do usuário (21/10/2026); o crédito devolve a Fornecedores o débito indevido.`,
+      rastreio: "documento",
+      fonte: fonteVictors,
+    })),
+  ),
+];
+
+/**
+ * iPhone 16E (Magazine Luiza, NF 69112, 10 × R$ 399,90 no cartão do Alexandre) lançado como manutenção de
+ * veículos (4215). Por decisão do usuário (21/10/2026) é equipamento de informática: R$ 3.999,00 passa do
+ * limite de R$ 1.200,00 e vai para o imobilizado (4857). Reclassifica as parcelas lançadas em setembro.
+ */
+const parcelasIphone = [...lancamentosCartaoFaturaJulho, ...lancamentosCartaoFaturaAgosto, ...lancamentosCartaoSetembro]
+  .filter((l) => l.debitoCodigo === "4215" && /MAGAZINE LUIZA/i.test(l.historico));
+if (parcelasIphone.length !== 3) throw new Error(`Parcelas do iPhone no cartão: ${parcelasIphone.length} (esperado 3)`);
+
+export const lancamentosIphoneSetembro: LancamentoIntegrado[] = parcelasIphone.map((l): LancamentoIntegrado => ({
+  id: `SET-RECLASS-IPHONE-${l.id}`,
+  data: l.data,
+  origem: "RECLASSIFICAÇÃO 09/2026",
+  debitoCodigo: "4857",
+  debito: nome("4857"),
+  creditoCodigo: "4215",
+  credito: nome("4215"),
+  historico: `iPhone 16E (Magazine Luiza NF 69112) — equipamento de informática, não manutenção de veículo (${l.historico.split(" — ")[0]})`,
+  documento: `NF 69112 / ${l.id}`,
+  cc: l.cc,
+  centroCusto: l.centroCusto,
+  valor: l.valor,
+  status: "validado",
+  observacao: "Aparelho de TI comprado no cartão em 10 parcelas (R$ 3.999,00). Ativo imobilizado; as parcelas anteriores ficaram em despesa no fechamento dos meses de origem.",
+  rastreio: "derivado",
+  fonte: `Referência contábil: ${l.id} / ${l.fonte}`,
+}));
+
+/** Sette Case (pago em 05/08, veio da transitória para 4912 Material de Consumo) é condomínio: 4430. */
+const setteCaseAgosto = lancamentosItauAgosto.find((l) => l.id === "AGO-ITAU-EXT-115");
+if (!setteCaseAgosto) throw new Error("AGO-ITAU-EXT-115 (Sette Case) não encontrado");
+export const lancamentosSetteCaseSetembro: LancamentoIntegrado[] = [{
+  id: "SET-RECLASS-SETTE-CASE-AGO",
+  data: "01/09/2026",
+  origem: "RECLASSIFICAÇÃO 09/2026",
+  debitoCodigo: "4430",
+  debito: nome("4430"),
+  creditoCodigo: "4912",
+  credito: nome("4912"),
+  historico: "Sette Case (pago em 05/08/2026) — condomínio, não material de uso e consumo",
+  documento: "Reclassificação de SET-TRANSIT-AGO-ITAU-EXT-115",
+  cc: "304",
+  centroCusto: "ADM GERAL",
+  valor: setteCaseAgosto.valor,
+  status: "validado",
+  observacao: "Mesma natureza do pagamento de setembro da Sette Case (4430). Não muda o resultado.",
+  rastreio: "derivado",
+  fonte: "Referência contábil: AGO-ITAU-EXT-115",
+}];

@@ -46,6 +46,8 @@ notas = [
     "Notas:",
     "• CPV Matriz inclui estorno de R$ 109.923,88 da NF 94251 (Greatland), lançada em duplicidade no custo de agosto (erro de lançamento do sistema; agosto não foi alterado).",
     "• Resultado não operacional: estorno da provisão de receita de agosto (R$ 400.000,00).",
+    "• Aluguel Victors: parcelas de junho a agosto (R$ 85.740,30) reconhecidas em setembro; aluguel rateado por CC conforme o Softdib.",
+    "• Previdência Mongeral: particular do Marcos, mantida no resultado e evidenciada em linha própria.",
     "• Estoque Matriz pelo registro de inventário de 30/09/2026 (R$ 5.202.864,26); produto em elaboração igual a 31/08 (R$ 107.919,59), a confirmar.",
     "• Rendimento das aplicações Trust DI e Greencred sujeito aos extratos de setembro (ainda não recebidos).",
 ]
@@ -99,6 +101,7 @@ linhas_envio = [
     ("Despesas com Imobilizado", cat("Despesas com Imobilizado"), False),
     ("Despesas com Industrialização ", cat("Despesas com Industrialização"), False),
     ("Despesas comercial SP", cat("Despesas comercial SP"), False),
+    ("Previdência particular — Marcos (Mongeral)", cat("Previdência particular — Marcos (Mongeral)"), False),
     ("(", desp_oper, False),
     ("Despesas Financeiras", g("Despesas Financeiras"), False),
     ("(-)Receitas Financeiras", g("(-)Receitas Financeiras"), False),
@@ -153,7 +156,7 @@ layout += [("(=) Receita Operacional Líquida", par("(=) Receita Operacional Lí
            ("CPV Matriz", par("(-) CPV Matriz"), False), ("CPV Filial", par("(-) CPV Filial"), False),
            ("(=) Lucro Bruto", par("LUCRO BRUTO"), True),
            ("(-) Despesas Operacionais", par("(-)Despesas Operacionais"), True)]
-for k in ["Despesas Administrativas", "Despesas com Serviço - NPLog", "Despesas Comerciais", "Despesas Produção", "Despesas Veiculos", "Despesas Barracão", "Despesas com Imobilizado", "Despesas com Industrialização", "Despesas Tributárias", "Despesas comercial SP", "Outras despesas operacionais sem classificação gerencial"]:
+for k in ["Despesas Administrativas", "Despesas com Serviço - NPLog", "Despesas Comerciais", "Despesas Produção", "Despesas Veiculos", "Despesas Barracão", "Despesas com Imobilizado", "Despesas com Industrialização", "Despesas Tributárias", "Despesas comercial SP", "Previdência particular — Marcos (Mongeral)", "Outras despesas operacionais sem classificação gerencial"]:
     if k in v and (abs(v[k][0]) > 0.005 or abs(v[k][1]) > 0.005):
         layout.append((k, par(k), False))
 layout += [("Resultado Financeiro Líquido", fin, True), ("Despesas Financeiras", par("Despesas Financeiras"), False),
@@ -191,8 +194,8 @@ h.freeze_panes = "B2"
 grupos = OrderedDict()
 for x in d["itens"]:
     grupos.setdefault(x["grupo"], OrderedDict()).setdefault(x["conta"], []).append(x)
-ORDEM = ["CPV Matriz", "CPV Filial", "Despesas Administrativas", "Despesas com Serviço - NPLog", "Despesas Comerciais", "Despesas Produção", "Despesas Veiculos", "Despesas com Imobilizado", "Despesas com Industrialização", "Despesas Tributárias", "Despesas comercial SP", "Outras despesas operacionais sem classificação gerencial", "Despesas Financeiras", "Receitas Financeiras", "Outras Receitas Operacionais", "Resultado Não Operacional"]
-ABA = {"Outras despesas operacionais sem classificação gerencial": "Desp. sem classificação"}
+ORDEM = ["CPV Matriz", "CPV Filial", "Despesas Administrativas", "Despesas com Serviço - NPLog", "Despesas Comerciais", "Despesas Produção", "Despesas Veiculos", "Despesas com Imobilizado", "Despesas com Industrialização", "Despesas Tributárias", "Despesas comercial SP", "Previdência particular — Marcos (Mongeral)", "Outras despesas operacionais sem classificação gerencial", "Despesas Financeiras", "Receitas Financeiras", "Outras Receitas Operacionais", "Resultado Não Operacional"]
+ABA = {"Outras despesas operacionais sem classificação gerencial": "Desp. sem classificação", "Previdência particular — Marcos (Mongeral)": "Previdência Marcos"}
 for grupo, contas in sorted(grupos.items(), key=lambda kv: ORDEM.index(kv[0]) if kv[0] in ORDEM else 99):
     t = wb.create_sheet(ABA.get(grupo, grupo)[:31])
     t["A1"] = f"{grupo.upper()} — SETEMBRO/2026"

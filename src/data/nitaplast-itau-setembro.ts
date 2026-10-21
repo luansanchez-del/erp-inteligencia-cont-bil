@@ -209,7 +209,7 @@ const linhas: Linha[] = [
   [193,"10/09/2026","F00496 122243/1","PAGAMENTO TITULOS BANCO — MASTMED MEDICINA OCUPACIONAL LTDA",-208.48,"1496","0","validado","Pagamento de título — baixa do fornecedor."],
   [194,"10/09/2026","F00558 1017735/1","PAGAMENTO TITULOS BANCO — PLUXEE FROTA E COMBUSTIVEL BRASIL LTDA",-751,"1496","0","validado","Pagamento de título — baixa do fornecedor."],
   [195,"10/09/2026","F22637 1585/1","PAGAMENTO TITULOS BANCO — SOFTDIB INFORMATICA LTDA",-1907,"1496","0","validado","Pagamento de título — baixa do fornecedor."],
-  [196,"10/09/2026","F00071 10022026/8","TRANSFERENCIA FORNECEDOR — VICTORS INC E ADM DE BENS E SERV LTDA",-28580.1,"3524","101","validado","ALUGUÉIS — título de 02/02/2026 sem entrada fiscal; despesa reconhecida no pagamento (título anterior a agosto)."],
+  [196,"10/09/2026","F00071 10022026/8","TRANSFERENCIA FORNECEDOR — VICTORS INC E ADM DE BENS E SERV LTDA",-28580.1,"1496","0","validado","Aluguel Victors — a despesa entra rateada por CC em SET-ALUGUEL-VICTORS-008-* (nitaplast-ajustes-setembro.ts); o pagamento baixa Fornecedores."],
   [197,"10/09/2026","F03273 608/1","TRANSFERENCIA FORNECEDOR — NPL INDUSTRIA E COMERCIO DE EQUIPAMENTOS",-11752.86,"1496","0","validado","Pagamento de título recebido em 13/08/2026 — baixa do fornecedor."],
   [198,"10/09/2026","F03273 610/1","TRANSFERENCIA FORNECEDOR — NPL INDUSTRIA E COMERCIO DE EQUIPAMENTOS",-1164.37,"1496","0","validado","Pagamento de título recebido em 13/08/2026 — baixa do fornecedor."],
   [199,"10/09/2026","F03273 613/1","TRANSFERENCIA FORNECEDOR — NPL INDUSTRIA E COMERCIO DE EQUIPAMENTOS",-8366.53,"1496","0","validado","Pagamento de título recebido em 13/08/2026 — baixa do fornecedor."],
