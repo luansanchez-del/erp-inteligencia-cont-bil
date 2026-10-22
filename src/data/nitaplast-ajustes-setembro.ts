@@ -256,3 +256,53 @@ export const lancamentosCombustivelProducaoSetembro: LancamentoIntegrado[] = [
     fonte: `Referência contábil: ${naciopetro.id}`,
   },
 ];
+
+/**
+ * Vinter Plásticos (NF 236568, NOP 2101, R$ 22.122,73) veio do Softdib como 11.01.002 Materiais Indiretos no
+ * CC 201 e caiu na 3244 (Despesas Comerciais). Por decisão do usuário (22/10/2026) é matéria-prima: o bruto vai
+ * para a 3093 e os créditos da nota (abatidos na 3244 pela apuração) acompanham. Não muda o resultado; o custo
+ * líquido passa de Despesas Comerciais para o CPV Matriz.
+ */
+const notaVinter = lancamentosEntradasSetembro.filter((l) => l.debitoCodigo === "3244" && /^NF 236568 /.test(l.documento ?? "") && /VINTER/.test(l.historico));
+if (notaVinter.length !== 1) throw new Error(`NF 236568 Vinter: ${notaVinter.length} lançamento(s) (esperado 1)`);
+const vinter = notaVinter[0]!;
+const creditosVinter = { icms: 2_492.7, ipi: 1_350.23, pis: 301.62, cofins: 1_389.26 } as const;
+const totalCreditosVinter = Math.round(Object.values(creditosVinter).reduce((t, v) => t + v, 0) * 100) / 100;
+export const lancamentosVinterMateriaPrimaSetembro: LancamentoIntegrado[] = [
+  {
+    id: "SET-RECLASS-VINTER-236568-MP",
+    data: vinter.data,
+    origem: "RECLASSIFICAÇÃO 09/2026",
+    debitoCodigo: "3093",
+    debito: nome("3093"),
+    creditoCodigo: "3244",
+    credito: nome("3244"),
+    historico: `Vinter Plásticos NF 236568 (${reais(vinter.valor)}) — passa de materiais indiretos para matéria-prima.`,
+    documento: `NF 236568 / ${vinter.id}`,
+    cc: vinter.cc,
+    centroCusto: vinter.centroCusto,
+    valor: vinter.valor,
+    status: "validado",
+    observacao: "Decisão do usuário em 22/10/2026. O lançamento da nota permanece preservado.",
+    rastreio: "derivado",
+    fonte: `Referência contábil: ${vinter.id}`,
+  },
+  {
+    id: "SET-RECLASS-VINTER-236568-CREDITOS",
+    data: vinter.data,
+    origem: "RECLASSIFICAÇÃO 09/2026",
+    debitoCodigo: "3244",
+    debito: nome("3244"),
+    creditoCodigo: "3093",
+    credito: nome("3093"),
+    historico: `Créditos da Vinter Plásticos NF 236568 acompanham a matéria-prima: ICMS ${reais(creditosVinter.icms)}, IPI ${reais(creditosVinter.ipi)}, PIS ${reais(creditosVinter.pis)} e COFINS ${reais(creditosVinter.cofins)}.`,
+    documento: `NF 236568 / ${vinter.id}`,
+    cc: "0",
+    centroCusto: "SEM CENTRO DE CUSTO",
+    valor: totalCreditosVinter,
+    status: "validado",
+    observacao: "Créditos da nota no Softdib (ENTRADAS POR CENTRO DE CUSTO 092026), abatidos na 3244 pela apuração de setembro (sem CC, como os SET-TAX-M-ENT-*).",
+    rastreio: "derivado",
+    fonte: `Referência contábil: ${vinter.id} / SET-TAX-M-ENT-*`,
+  },
+];

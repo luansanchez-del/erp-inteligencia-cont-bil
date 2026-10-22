@@ -1124,12 +1124,13 @@ const CONTAS_DECIDIDAS_POR_MOVIMENTO_AGOSTO = new Set([
  * CC dominante dos movimentos REAIS da própria conta (ignorando os sem CC e
  * os de Filial) como critério, achado em 17/09/2026.
  */
-function categoriaDominantePorContaMovimento(lancamentos: Pick<LinhaMovimentoAnalise, "debitoCodigo" | "creditoCodigo" | "valor" | "cc">[], contas: Iterable<string>) {
+function categoriaDominantePorContaMovimento(lancamentos: (Pick<LinhaMovimentoAnalise, "debitoCodigo" | "creditoCodigo" | "valor" | "cc"> & { id?: string })[], contas: Iterable<string>) {
   const contasSet = new Set(contas);
   const porContaECC = new Map<string, Map<string, number>>();
   for (const l of lancamentos) {
     const cc = l.cc ?? "0";
-    if (cc === "0" || ccFilialAgosto.has(cc)) continue;
+    // Reclassificações (SET-RECLASS-*) só movem valor entre linhas; não decidem a categoria da conta (22/10/2026).
+    if (cc === "0" || ccFilialAgosto.has(cc) || (l.id ?? "").includes("-RECLASS-")) continue;
     for (const conta of [l.debitoCodigo, l.creditoCodigo]) {
       if (!contasSet.has(conta)) continue;
       const porCC = porContaECC.get(conta) ?? new Map<string, number>();
