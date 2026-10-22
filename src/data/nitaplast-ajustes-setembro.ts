@@ -340,3 +340,31 @@ export const lancamentosDuplicidadesQuestorSetembro: LancamentoIntegrado[] = dup
     fonte: `Referência contábil: ${l.id} / ${d.referencia}`,
   };
 });
+
+/**
+ * Correbrokers NF 143: o Softdib trouxe R$ 10.265,87, valor pago pelo Itaú em 22/09 (F32332 17193/81), mas o fiscal
+ * do Questor confirmou (22/10/2026) que a nota é de R$ 750,00 (honorário). O restante foi pago sem documento fiscal:
+ * numerário do despacho, que fica em Adiantamento a Fornecedores (288) até a prestação de contas (decisão do usuário).
+ */
+const notaCorrebrokers = lancamentosEntradasSetembro.filter((l) => l.debitoCodigo === "25070" && /^NF 143 /.test(l.documento ?? "") && /CORREBROKERS/.test(l.historico));
+if (notaCorrebrokers.length !== 1) throw new Error(`NF 143 Correbrokers: ${notaCorrebrokers.length} lançamento(s) (esperado 1)`);
+const correbrokers = notaCorrebrokers[0]!;
+const honorarioCorrebrokersQuestor = 750;
+export const lancamentosCorrebrokersSetembro: LancamentoIntegrado[] = [{
+  id: "SET-RECLASS-CORREBROKERS-143-ADIANT",
+  data: "22/09/2026",
+  origem: "RECLASSIFICAÇÃO 09/2026",
+  debitoCodigo: "288",
+  debito: nome("288"),
+  creditoCodigo: "25070",
+  credito: nome("25070"),
+  historico: `Correbrokers — pagamento de 22/09 (${reais(correbrokers.valor)}) acima da NF 143 de ${reais(honorarioCorrebrokersQuestor)}: numerário do despacho sem documento fiscal, em adiantamento até a prestação de contas.`,
+  documento: `NF 143 / ${correbrokers.id} / Itaú F32332 17193/81`,
+  cc: correbrokers.cc,
+  centroCusto: correbrokers.centroCusto,
+  valor: Math.round((correbrokers.valor - honorarioCorrebrokersQuestor) * 100) / 100,
+  status: "validado",
+  observacao: "Fiscal do Questor (22/10/2026): a NF 143 é de R$ 750,00. Baixar o adiantamento quando chegar o demonstrativo de despesas do processo.",
+  rastreio: "derivado",
+  fonte: `Referência contábil: ${correbrokers.id} / SET-ITAU-EXT-507`,
+}];
