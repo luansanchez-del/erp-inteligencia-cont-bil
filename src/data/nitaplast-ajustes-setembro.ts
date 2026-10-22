@@ -3,6 +3,7 @@ import { descricaoContaJulho } from "./nitaplast-saldos-julho";
 import { lancamentosCartaoJussaraRodrigoAgosto } from "./nitaplast-cartao-4005-jussara-rodrigo-agosto";
 import { lancamentosCartaoFaturaAgosto, lancamentosCartaoFaturaJulho, lancamentosCartaoSetembro } from "./nitaplast-cartao-setembro";
 import { lancamentosItauAgosto } from "./nitaplast-itau-agosto";
+import { lancamentosEntradasSetembro } from "./nitaplast-entradas-setembro";
 
 const nome = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(codigo) ?? "Conta a revisar"}`;
 const reais = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -208,3 +209,50 @@ export const lancamentosSetteCaseSetembro: LancamentoIntegrado[] = [{
   rastreio: "derivado",
   fonte: "Referência contábil: AGO-ITAU-EXT-115",
 }];
+
+/**
+ * Combustível Naciopetro (NF 12702, R$ 8.900,00) veio do Softdib no CC 204 (Adm de Vendas). Por decisão do
+ * usuário (22/10/2026) é combustível da produção: estorna no CC 204 e relança no CC 102, na mesma conta 4213.
+ * Não muda o resultado; a DRE leva a 4213 com CC de produção para Despesas Produção.
+ */
+const combustivelNaciopetro = lancamentosEntradasSetembro.filter((l) => l.debitoCodigo === "4213" && /^NF 12702 /.test(l.documento ?? "") && /NACIOPETRO/.test(l.historico));
+if (combustivelNaciopetro.length !== 1) throw new Error(`NF 12702 Naciopetro: ${combustivelNaciopetro.length} lançamento(s) (esperado 1)`);
+const naciopetro = combustivelNaciopetro[0]!;
+export const lancamentosCombustivelProducaoSetembro: LancamentoIntegrado[] = [
+  {
+    id: "SET-RECLASS-NACIOPETRO-12702-ESTORNO",
+    data: naciopetro.data,
+    origem: "RECLASSIFICAÇÃO 09/2026",
+    debitoCodigo: naciopetro.creditoCodigo,
+    debito: nome(naciopetro.creditoCodigo),
+    creditoCodigo: "4213",
+    credito: nome("4213"),
+    historico: `Combustível Naciopetro NF 12702 (${reais(naciopetro.valor)}) — sai do CC 204 Adm de Vendas; é combustível da produção.`,
+    documento: `NF 12702 / ${naciopetro.id}`,
+    cc: naciopetro.cc,
+    centroCusto: naciopetro.centroCusto,
+    valor: naciopetro.valor,
+    status: "validado",
+    observacao: "Estorno do CC de origem (Softdib). O lançamento da nota permanece preservado.",
+    rastreio: "derivado",
+    fonte: `Referência contábil: ${naciopetro.id}`,
+  },
+  {
+    id: "SET-RECLASS-NACIOPETRO-12702-PRODUCAO",
+    data: naciopetro.data,
+    origem: "RECLASSIFICAÇÃO 09/2026",
+    debitoCodigo: "4213",
+    debito: nome("4213"),
+    creditoCodigo: naciopetro.creditoCodigo,
+    credito: nome(naciopetro.creditoCodigo),
+    historico: `Combustível Naciopetro NF 12702 (${reais(naciopetro.valor)}) — entra no CC 102 Produção.`,
+    documento: `NF 12702 / ${naciopetro.id}`,
+    cc: "102",
+    centroCusto: "PRODUÇÃO",
+    valor: naciopetro.valor,
+    status: "validado",
+    observacao: "Decisão do usuário em 22/10/2026. Não muda o resultado.",
+    rastreio: "derivado",
+    fonte: `Referência contábil: ${naciopetro.id}`,
+  },
+];

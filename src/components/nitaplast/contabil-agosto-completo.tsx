@@ -1197,6 +1197,8 @@ function categoriaDaMovimento(l: LinhaMovimentoAnalise, conta: string, categoria
   const cc = l.cc ?? "0";
   if (ccFilialAgosto.has(cc)) return "filial";
   if ((classificacaoPorConta.get(conta) ?? "").startsWith("5.7.09")) return categoriaTributo(l, conta);
+  // Combustível com CC de produção é despesa de produção, não de veículos (decidido em 22/10/2026).
+  if (conta === "4213" && categoriaPorCC(cc) === "producao") return "producao";
   if (CONTAS_DECIDIDAS_POR_MOVIMENTO_AGOSTO.has(conta)) return cc === "0" ? (categoriaFallbackMovimento.get(conta) ?? "outras") : categoriaPorCC(cc);
   return categoriaPorConta.get(conta) ?? "outras";
 }
