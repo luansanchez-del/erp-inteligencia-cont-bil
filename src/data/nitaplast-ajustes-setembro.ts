@@ -306,3 +306,37 @@ export const lancamentosVinterMateriaPrimaSetembro: LancamentoIntegrado[] = [
     fonte: `Referência contábil: ${vinter.id} / SET-TAX-M-ENT-*`,
   },
 ];
+
+/**
+ * Notas do Softdib recebidas em setembro que o fiscal do Questor confirmou (22/10/2026) já lançadas em meses
+ * anteriores: estornadas em setembro por duplicidade. NF 7 e NF 55394 também estão no Razão de agosto do sistema
+ * (AGO-QST-039 e AGO-QST-015); a NF 54819 está no Questor de julho.
+ */
+const duplicidadesQuestor = [
+  { nf: "7", fornecedor: "CM COMERCIO DE SUCATAS", lancadaEm: "25/08/2026", referencia: "AGO-QST-039" },
+  { nf: "54819", fornecedor: "MMN TERMINAIS DE CARGAS", lancadaEm: "31/07/2026", referencia: "Questor 07/2026" },
+  { nf: "55394", fornecedor: "MMN TERMINAIS DE CARGAS", lancadaEm: "08/08/2026", referencia: "AGO-QST-015" },
+] as const;
+export const lancamentosDuplicidadesQuestorSetembro: LancamentoIntegrado[] = duplicidadesQuestor.map((d): LancamentoIntegrado => {
+  const achados = lancamentosEntradasSetembro.filter((l) => l.documento?.startsWith(`NF ${d.nf} `) && l.historico.includes(d.fornecedor));
+  if (achados.length !== 1) throw new Error(`NF ${d.nf} ${d.fornecedor}: ${achados.length} lançamento(s) (esperado 1)`);
+  const l = achados[0]!;
+  return {
+    id: `SET-EST-DUPLIC-NF${d.nf}`,
+    data: l.data,
+    origem: "CORREÇÃO 09/2026",
+    debitoCodigo: l.creditoCodigo,
+    debito: nome(l.creditoCodigo),
+    creditoCodigo: l.debitoCodigo,
+    credito: nome(l.debitoCodigo),
+    historico: `Estorno de lançamento em duplicidade — NF ${d.nf} ${d.fornecedor} (${reais(l.valor)}) já lançada em ${d.lancadaEm}`,
+    documento: `NF ${d.nf} / ${l.id}`,
+    cc: l.cc,
+    centroCusto: l.centroCusto,
+    valor: l.valor,
+    status: "validado",
+    observacao: `Confirmado pelo fiscal do Questor em 22/10/2026: lançada em ${d.lancadaEm} (${d.referencia}). O lançamento de setembro permanece preservado.`,
+    rastreio: "derivado",
+    fonte: `Referência contábil: ${l.id} / ${d.referencia}`,
+  };
+});
