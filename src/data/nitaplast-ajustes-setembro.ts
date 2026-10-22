@@ -4,6 +4,7 @@ import { lancamentosCartaoJussaraRodrigoAgosto } from "./nitaplast-cartao-4005-j
 import { lancamentosCartaoFaturaAgosto, lancamentosCartaoFaturaJulho, lancamentosCartaoSetembro } from "./nitaplast-cartao-setembro";
 import { lancamentosItauAgosto } from "./nitaplast-itau-agosto";
 import { lancamentosEntradasSetembro } from "./nitaplast-entradas-setembro";
+import { lancamentosDespesasDocumentaisAgosto } from "./nitaplast-despesas-documentais-agosto";
 
 const nome = (codigo: string) => `${codigo} - ${descricaoContaJulho.get(codigo) ?? "Conta a revisar"}`;
 const reais = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -368,3 +369,32 @@ export const lancamentosCorrebrokersSetembro: LancamentoIntegrado[] = [{
   rastreio: "derivado",
   fonte: `Referência contábil: ${correbrokers.id} / SET-ITAU-EXT-507`,
 }];
+
+/**
+ * Correbrokers em agosto: as NF 38, 39 e 43 entraram pelo Softdib com o valor pago (04/08, 05/08 e 07/08), e os
+ * honorários de R$ 750,00 dessas notas também entraram pelo Questor (AGO-QST-*). O excedente é numerário pago sem
+ * documento fiscal. Agosto fica como está; em setembro o valor do Softdib sai da despesa para Adiantamento a
+ * Fornecedores (288), mesmo critério da NF 143 (decisão do usuário em 22/10/2026).
+ */
+const correbrokersAgosto = lancamentosDespesasDocumentaisAgosto.filter((l) => ["AGO-ENT-DOC-0348", "AGO-ENT-DOC-0349", "AGO-ENT-DOC-0425"].includes(l.id));
+if (correbrokersAgosto.length !== 3 || correbrokersAgosto.some((l) => !/CORREBROKERS/.test(l.historico) || l.debitoCodigo !== "25070")) {
+  throw new Error("Correbrokers de agosto: esperado AGO-ENT-DOC-0348, 0349 e 0425 na 25070");
+}
+export const lancamentosCorrebrokersAgostoSetembro: LancamentoIntegrado[] = correbrokersAgosto.map((l): LancamentoIntegrado => ({
+  id: `SET-RECLASS-CORREBROKERS-AGO-${l.id}`,
+  data: "01/09/2026",
+  origem: "CORREÇÃO 08/2026",
+  debitoCodigo: "288",
+  debito: nome("288"),
+  creditoCodigo: "25070",
+  credito: nome("25070"),
+  historico: `Correbrokers — ${l.documento.split(" / ")[0]} entrou em agosto com o valor pago (${reais(l.valor)}); o honorário de R$ 750,00 já está pelo Questor. Numerário sem documento fiscal vai para adiantamento até a prestação de contas.`,
+  documento: `${l.documento} / ${l.id}`,
+  cc: l.cc,
+  centroCusto: l.centroCusto,
+  valor: l.valor,
+  status: "validado",
+  observacao: "Agosto não é alterado. Baixar o adiantamento quando chegar o demonstrativo de despesas de cada processo.",
+  rastreio: "derivado",
+  fonte: `Referência contábil: ${l.id}`,
+}));
