@@ -10,7 +10,7 @@ import { LalurApuracaoCard } from "./lalur-apuracao";
 const COMPETENCIA = "2026-08";
 const arred = (v: number) => Math.round(v * 100) / 100;
 
-export function LalurAgosto() {
+export function useApuracaoLalurAgosto() {
   // Mesma base e mesmo motor do DRE de agosto (Razão + lançamentos manuais da competência).
   const { lancamentos } = useLancamentosCompetencia("nitaplast-matriz", COMPETENCIA);
   const { resultado: resultadoAgosto } = useMemo(() => calcularResultadoAgosto(lancamentos), [lancamentos]);
@@ -32,6 +32,12 @@ export function LalurAgosto() {
     () => calcularApuracaoIrpjCsllAgosto(apuracaoJulho, lalurJulho.totais, resultadoAgosto, irrfAgosto, totais),
     [apuracaoJulho, lalurJulho.totais, resultadoAgosto, irrfAgosto, totais],
   );
+
+  return { irpjCsll, lalur, lalurJulho };
+}
+
+export function LalurAgosto() {
+  const { irpjCsll, lalur } = useApuracaoLalurAgosto();
 
   return (
     <LalurApuracaoCard

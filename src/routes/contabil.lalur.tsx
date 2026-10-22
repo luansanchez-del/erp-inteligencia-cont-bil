@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader, PageShell } from "@/components/page-header";
 import { LalurJulho } from "@/components/nitaplast/lalur-julho";
 import { LalurAgosto } from "@/components/nitaplast/lalur-agosto";
+import { LalurSetembro } from "@/components/nitaplast/lalur-setembro";
 import { useErp } from "@/context/erp-context";
 
 export const Route = createFileRoute("/contabil/lalur")({
@@ -20,10 +21,18 @@ export const Route = createFileRoute("/contabil/lalur")({
 function LalurPage() {
   const { competencia } = useErp();
 
-  // O LALUR está implantado para 07/2026 e 08/2026 (este encadeado em julho). O
+  // O LALUR está implantado para 07/2026, 08/2026 e 09/2026 (cada um encadeado no anterior). O
   // fallback genérico de PageShell trata 06/2026 como competência "carregada"
   // (Balancete/Razão/DRE têm dado real ali), então esta rota precisa do próprio
   // guard para não herdar o número de outro mês.
+  if (competencia.id === "2026-09") {
+    return (
+      <PageShell>
+        <LalurSetembro />
+      </PageShell>
+    );
+  }
+
   if (competencia.id === "2026-08") {
     return (
       <PageShell>
@@ -37,7 +46,7 @@ function LalurPage() {
       <PageShell>
         <PageHeader
           titulo={`LALUR — ${competencia.label}`}
-          descricao="O cálculo do LALUR está implantado apenas para as competências 07/2026 e 08/2026 da Nitaplast."
+          descricao="O cálculo do LALUR está implantado apenas para as competências 07/2026, 08/2026 e 09/2026 da Nitaplast."
         />
       </PageShell>
     );
