@@ -12,7 +12,7 @@ import { lancamentosEntradasSetembro } from "./nitaplast-entradas-setembro";
 import { lancamentosImpostosSetembro } from "./nitaplast-impostos-setembro";
 import { lancamentosCpvFilialSetembro, lancamentosCpvMatrizSetembro, lancamentosTransferenciasSetembro } from "./nitaplast-cpv-setembro";
 import { lancamentosAjustesSetembro, lancamentosAluguelVictorsSetembro, lancamentosIphoneSetembro, lancamentosSetteCaseSetembro, lancamentosCombustivelProducaoSetembro, lancamentosVinterMateriaPrimaSetembro, lancamentosDuplicidadesQuestorSetembro, lancamentosCorrebrokersSetembro, lancamentosCorrebrokersAgostoSetembro } from "./nitaplast-ajustes-setembro";
-import { lancamentosCartaoFaturaAgosto, lancamentosCartaoFaturaJulho, lancamentosCartaoSetembro } from "./nitaplast-cartao-setembro";
+import { lancamentosCartaoSetembro } from "./nitaplast-cartao-setembro";
 import { lancamentosTransitoriaSetembro } from "./nitaplast-transitoria-setembro";
 import { lancamentosJurosDescontosSetembro } from "./nitaplast-juros-descontos-setembro";
 import { lancamentosAdiantamentosClientesSetembro } from "./nitaplast-adiantamentos-clientes-setembro";
@@ -71,8 +71,8 @@ export const lancamentosIntegradosSetembro: LancamentoIntegrado[] = [
   ...lancamentosCorrebrokersSetembro,
   ...lancamentosCorrebrokersAgostoSetembro,
   ...lancamentosCartaoSetembro,
-  ...lancamentosCartaoFaturaAgosto,
-  ...lancamentosCartaoFaturaJulho,
+  // Faturas de julho e agosto (lancamentosCartaoFaturaJulho/Agosto) não entram: despesa de cartão que não foi
+  // lançada no próprio mês não é lançada depois (decisão do usuário em 23/10/2026).
   ...lancamentosTransitoriaSetembro,
   ...lancamentosJurosDescontosSetembro,
   ...lancamentosAdiantamentosClientesSetembro,

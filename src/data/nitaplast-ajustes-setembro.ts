@@ -1,7 +1,7 @@
 import type { LancamentoIntegrado } from "./nitaplast-razao-base";
 import { descricaoContaJulho } from "./nitaplast-saldos-julho";
 import { lancamentosCartaoJussaraRodrigoAgosto } from "./nitaplast-cartao-4005-jussara-rodrigo-agosto";
-import { lancamentosCartaoFaturaAgosto, lancamentosCartaoFaturaJulho, lancamentosCartaoSetembro } from "./nitaplast-cartao-setembro";
+import { lancamentosCartaoSetembro } from "./nitaplast-cartao-setembro";
 import { lancamentosItauAgosto } from "./nitaplast-itau-agosto";
 import { lancamentosEntradasSetembro } from "./nitaplast-entradas-setembro";
 import { lancamentosDespesasDocumentaisAgosto } from "./nitaplast-despesas-documentais-agosto";
@@ -164,11 +164,12 @@ export const lancamentosAluguelVictorsSetembro: LancamentoIntegrado[] = [
 /**
  * iPhone 16E (Magazine Luiza, NF 69112, 10 × R$ 399,90 no cartão do Alexandre) lançado como manutenção de
  * veículos (4215). Por decisão do usuário (21/10/2026) é equipamento de informática: R$ 3.999,00 passa do
- * limite de R$ 1.200,00 e vai para o imobilizado (4857). Reclassifica as parcelas lançadas em setembro.
+ * limite de R$ 1.200,00 e vai para o imobilizado (4857). Reclassifica as parcelas lançadas em setembro; desde
+ * 23/10/2026 só a da fatura de setembro, porque as faturas de julho e agosto deixaram de ser lançadas.
  */
-const parcelasIphone = [...lancamentosCartaoFaturaJulho, ...lancamentosCartaoFaturaAgosto, ...lancamentosCartaoSetembro]
+const parcelasIphone = lancamentosCartaoSetembro
   .filter((l) => l.debitoCodigo === "4215" && /MAGAZINE LUIZA/i.test(l.historico));
-if (parcelasIphone.length !== 3) throw new Error(`Parcelas do iPhone no cartão: ${parcelasIphone.length} (esperado 3)`);
+if (parcelasIphone.length !== 1) throw new Error(`Parcelas do iPhone no cartão: ${parcelasIphone.length} (esperado 1)`);
 
 export const lancamentosIphoneSetembro: LancamentoIntegrado[] = parcelasIphone.map((l): LancamentoIntegrado => ({
   id: `SET-RECLASS-IPHONE-${l.id}`,
